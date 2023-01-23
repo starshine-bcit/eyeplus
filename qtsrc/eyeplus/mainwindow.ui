@@ -24,28 +24,185 @@
        <attribute name="title">
         <string>Processed Runs</string>
        </attribute>
-       <widget class="QWidget" name="verticalLayoutWidget_3">
-        <property name="geometry">
-         <rect>
-          <x>60</x>
-          <y>140</y>
-          <width>371</width>
-          <height>281</height>
-         </rect>
-        </property>
-        <layout class="QVBoxLayout" name="verticalLayout_2"/>
-       </widget>
-       <widget class="QWidget" name="verticalLayoutWidget_4">
-        <property name="geometry">
-         <rect>
-          <x>480</x>
-          <y>140</y>
-          <width>451</width>
-          <height>281</height>
-         </rect>
-        </property>
-        <layout class="QVBoxLayout" name="verticalLayout_3"/>
-       </widget>
+       <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="1,2">
+        <item>
+         <widget class="QFrame" name="frameLeftProcessed">
+          <property name="frameShape">
+           <enum>QFrame::StyledPanel</enum>
+          </property>
+          <property name="frameShadow">
+           <enum>QFrame::Plain</enum>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_6" stretch="1,0">
+           <item>
+            <widget class="QTableWidget" name="tableWidgetRuns">
+             <property name="frameShadow">
+              <enum>QFrame::Plain</enum>
+             </property>
+             <property name="editTriggers">
+              <set>QAbstractItemView::NoEditTriggers</set>
+             </property>
+             <property name="alternatingRowColors">
+              <bool>true</bool>
+             </property>
+             <property name="selectionMode">
+              <enum>QAbstractItemView::SingleSelection</enum>
+             </property>
+             <property name="selectionBehavior">
+              <enum>QAbstractItemView::SelectRows</enum>
+             </property>
+             <property name="rowCount">
+              <number>0</number>
+             </property>
+             <property name="columnCount">
+              <number>3</number>
+             </property>
+             <attribute name="horizontalHeaderMinimumSectionSize">
+              <number>80</number>
+             </attribute>
+             <attribute name="horizontalHeaderDefaultSectionSize">
+              <number>80</number>
+             </attribute>
+             <attribute name="horizontalHeaderStretchLastSection">
+              <bool>true</bool>
+             </attribute>
+             <attribute name="verticalHeaderDefaultSectionSize">
+              <number>20</number>
+             </attribute>
+             <column/>
+             <column/>
+             <column/>
+            </widget>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayoutSearch" stretch="1,0">
+             <item>
+              <widget class="QPlainTextEdit" name="plainTextEdit">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="minimumSize">
+                <size>
+                 <width>0</width>
+                 <height>0</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>16777215</width>
+                 <height>28</height>
+                </size>
+               </property>
+               <property name="baseSize">
+                <size>
+                 <width>0</width>
+                 <height>30</height>
+                </size>
+               </property>
+               <property name="placeholderText">
+                <string>Enter Space Seperated Tags or Dates</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="pushButtonSearch">
+               <property name="minimumSize">
+                <size>
+                 <width>50</width>
+                 <height>0</height>
+                </size>
+               </property>
+               <property name="baseSize">
+                <size>
+                 <width>0</width>
+                 <height>0</height>
+                </size>
+               </property>
+               <property name="text">
+                <string>Filter</string>
+               </property>
+               <property name="icon">
+                <iconset resource="icons.qrc">
+                 <normaloff>:/icons/search.svg</normaloff>:/icons/search.svg</iconset>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QFrame" name="frameSummary">
+          <property name="frameShape">
+           <enum>QFrame::StyledPanel</enum>
+          </property>
+          <property name="frameShadow">
+           <enum>QFrame::Plain</enum>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_2" stretch="1,0">
+           <item>
+            <widget class="QLabel" name="labelSummaryExample">
+             <property name="font">
+              <font>
+               <pointsize>28</pointsize>
+              </font>
+             </property>
+             <property name="text">
+              <string>Summary Information / Graphics Displayed Here</string>
+             </property>
+             <property name="scaledContents">
+              <bool>false</bool>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignCenter</set>
+             </property>
+             <property name="wordWrap">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayoutSummaryButtons">
+             <item>
+              <spacer name="horizontalSpacer">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+             <item>
+              <widget class="QPushButton" name="pushButtonExportDisplayed">
+               <property name="minimumSize">
+                <size>
+                 <width>110</width>
+                 <height>0</height>
+                </size>
+               </property>
+               <property name="text">
+                <string>Export as CSV</string>
+               </property>
+               <property name="icon">
+                <iconset resource="icons.qrc">
+                 <normaloff>:/icons/file-spreadsheet.svg</normaloff>:/icons/file-spreadsheet.svg</iconset>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+          </layout>
+         </widget>
+        </item>
+       </layout>
       </widget>
       <widget class="QWidget" name="tabReviewData">
        <attribute name="title">
@@ -55,20 +212,52 @@
         <item>
          <layout class="QVBoxLayout" name="verticalLayoutReviewLeft">
           <item>
-           <widget class="QListWidget" name="listWidget"/>
+           <widget class="QPlainTextEdit" name="plainTextEditStats">
+            <property name="font">
+             <font>
+              <family>Lucida Sans Typewriter</family>
+             </font>
+            </property>
+            <property name="frameShadow">
+             <enum>QFrame::Plain</enum>
+            </property>
+            <property name="lineWrapMode">
+             <enum>QPlainTextEdit::NoWrap</enum>
+            </property>
+            <property name="readOnly">
+             <bool>true</bool>
+            </property>
+           </widget>
           </item>
          </layout>
         </item>
         <item>
          <layout class="QVBoxLayout" name="verticalLayoutReviewRight" stretch="1,3,0">
           <item>
-           <widget class="QFrame" name="frameImages">
+           <widget class="QFrame" name="frameReviewImages">
             <property name="frameShape">
              <enum>QFrame::StyledPanel</enum>
             </property>
             <property name="frameShadow">
              <enum>QFrame::Plain</enum>
             </property>
+            <layout class="QVBoxLayout" name="verticalLayout_3">
+             <item>
+              <widget class="QLabel" name="labelReviewExample">
+               <property name="font">
+                <font>
+                 <pointsize>28</pointsize>
+                </font>
+               </property>
+               <property name="text">
+                <string>Graphical Display of Data</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
+               </property>
+              </widget>
+             </item>
+            </layout>
            </widget>
           </item>
           <item>
@@ -137,6 +326,59 @@
         </item>
        </layout>
       </widget>
+      <widget class="QWidget" name="tabOverallSummary">
+       <attribute name="title">
+        <string>Overall Summary</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_5" stretch="1,0">
+        <item>
+         <widget class="QLabel" name="labelOverallSummaryExample">
+          <property name="font">
+           <font>
+            <pointsize>28</pointsize>
+           </font>
+          </property>
+          <property name="text">
+           <string>Overall Summary of Findings</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+          <property name="wordWrap">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayoutOverallButtons" stretch="0,0">
+          <item>
+           <spacer name="horizontalSpacer_2">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QPushButton" name="pushButtonExportAll">
+            <property name="text">
+             <string>Export All as CSV</string>
+            </property>
+            <property name="icon">
+             <iconset resource="icons.qrc">
+              <normaloff>:/icons/download.svg</normaloff>:/icons/download.svg</iconset>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
      </widget>
     </item>
    </layout>
@@ -155,9 +397,18 @@
      <string>File</string>
     </property>
     <addaction name="actionImport_Zip"/>
+    <addaction name="actionExport_All_Data"/>
     <addaction name="actionExit"/>
    </widget>
+   <widget class="QMenu" name="menuHelp">
+    <property name="title">
+     <string>Help</string>
+    </property>
+    <addaction name="actionIndex"/>
+    <addaction name="actionAbout"/>
+   </widget>
    <addaction name="menuFile"/>
+   <addaction name="menuHelp"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <widget class="QToolBar" name="toolBar">
@@ -179,6 +430,7 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
+   <addaction name="actionMute"/>
    <addaction name="actionStop"/>
    <addaction name="actionPause"/>
    <addaction name="actionPlay"/>
@@ -189,7 +441,10 @@
      <normaloff>:/icons/upload.svg</normaloff>:/icons/upload.svg</iconset>
    </property>
    <property name="text">
-    <string>Import Zip...</string>
+    <string>Import Zip(s)...</string>
+   </property>
+   <property name="toolTip">
+    <string>Select one or more zip files to import</string>
    </property>
   </action>
   <action name="actionExit">
@@ -229,6 +484,48 @@
    </property>
    <property name="text">
     <string>Stop</string>
+   </property>
+  </action>
+  <action name="actionExport_All_Data">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/download.svg</normaloff>:/icons/download.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Export All Data...</string>
+   </property>
+   <property name="toolTip">
+    <string>Export all data in csv format</string>
+   </property>
+  </action>
+  <action name="actionIndex">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/help-circle.svg</normaloff>:/icons/help-circle.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Index</string>
+   </property>
+  </action>
+  <action name="actionAbout">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/info.svg</normaloff>:/icons/info.svg</iconset>
+   </property>
+   <property name="text">
+    <string>About</string>
+   </property>
+  </action>
+  <action name="actionMute">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/volume-x.svg</normaloff>:/icons/volume-x.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Mute</string>
    </property>
   </action>
  </widget>
