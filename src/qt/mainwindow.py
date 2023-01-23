@@ -1,5 +1,6 @@
 from pathlib import Path
 import sys
+import os
 
 from PyQt6 import QtCore, QtGui, QtWidgets
 
@@ -28,6 +29,11 @@ class EyeMainWindow(Ui_MainWindow):
         self.actionPause.setEnabled(False)
         self.actionStop.setEnabled(False)
         self.toolBar.setVisible(False)
+        self._reset_stats_text()
+        self._populate_runs_tables()
+        self._init_input_file_chooser()
+        self._init_output_file_chooser()
+        self._init_output_dir_chooser()
 
     def _connect_events(self):
         self.horizontalSliderSeek.sliderMoved.connect(self._seekbar_moved)
@@ -38,6 +44,10 @@ class EyeMainWindow(Ui_MainWindow):
         self.actionPause.triggered.connect(self._pause_clicked)
         self.actionStop.triggered.connect(self._stop_clicked)
         self.tabWidgetMain.currentChanged.connect(self._main_tab_changed)
+        self.pushButtonExportDisplayed.clicked.connect(
+            self._export_single_clicked)
+        self.actionImport_Zip.triggered.connect(self._import_zip_clicked)
+        self.actionExport_All_Data.triggered.connect(self._export_all_clicked)
 
     def _init_player(self):
         # self.widgetVideoContainer.setAttribute(
@@ -74,6 +84,11 @@ class EyeMainWindow(Ui_MainWindow):
     def _playing_update_progress_callback(self, progress: int):
         if not self.horizontalSliderSeek.isSliderDown():
             self.horizontalSliderSeek.setSliderPosition(progress)
+        if not self.player.pause:
+            self.plainTextEditStats.setPlainText(
+                f'Timestamp     : {self.player.time_pos:.2f}\n'
+                f'Duration      : {self.player.duration:.2f}'
+            )
 
     def _playing_complete_callback(self):
         print('playing stopped')
@@ -83,6 +98,7 @@ class EyeMainWindow(Ui_MainWindow):
         self.actionPlay.setEnabled(True)
         self.actionPause.setEnabled(False)
         self.actionStop.setEnabled(False)
+        self._reset_stats_text()
 
     def _seekbar_moved(self):
         time_to_seek = self.horizontalSliderSeek.sliderPosition() * \
@@ -117,3 +133,91 @@ class EyeMainWindow(Ui_MainWindow):
             self.toolBar.setVisible(True)
         elif self.tabWidgetMain.currentIndex() == 0:
             self.toolBar.setVisible(False)
+
+    def _reset_stats_text(self):
+        self.plainTextEditStats.setPlainText(
+            f'Timestamp     : \n'
+            f'Duration      : '
+        )
+
+    def _populate_runs_tables(self):
+        self.tableWidgetRuns.setHorizontalHeaderLabels(
+            ['Date', 'Processed', 'Tags'])
+        sample_dates = ['2022-01-05', '2022-01-08', '2022-01-12']
+        sample_processed = ['2022-01-07', '2022-01-13', '2022-01-13']
+        sample_tags = [['jim', 'pilot'], ['jim'], ['jane', 'pilot']]
+        for i in range(3):
+            self.tableWidgetRuns.insertRow(i)
+            self.tableWidgetRuns.setItem(
+                i, 0, QtWidgets.QTableWidgetItem(sample_dates[i]))
+            self.tableWidgetRuns.setItem(
+                i, 1, QtWidgets.QTableWidgetItem(sample_processed[i]))
+            self.tableWidgetRuns.setItem(
+                i, 2, QtWidgets.QTableWidgetItem(', '.join(sample_tags[i])))
+        if self.tableWidgetRuns.rowCount() > 0:
+            self.tableWidgetRuns.setSortingEnabled(True)
+            self.tableWidgetRuns.sortByColumn(
+                1, QtCore.Qt.SortOrder.AscendingOrder)
+
+    def _init_input_file_chooser(self):
+        self.input_file_chooser = QtWidgets.QFileDialog(self.main_window)
+        self.input_file_chooser.setDirectory(os.path.expanduser('~'))
+        self.input_file_chooser.setFileMode(
+            QtWidgets.QFileDialog.FileMode.ExistingFiles)
+        self.input_file_chooser.setViewMode(
+            QtWidgets.QFileDialog.ViewMode.List)
+        self.input_file_chooser.setNameFilter('zip (*.zip)')
+        self.input_file_chooser.finished.connect(self._user_chosen_zip)
+
+    def _init_output_file_chooser(self):
+        self.output_file_chooser = QtWidgets.QFileDialog(self.main_window)
+        self.output_file_chooser.setDirectory(os.path.expanduser('~'))
+        self.output_file_chooser.setFileMode(
+            QtWidgets.QFileDialog.FileMode.AnyFile)
+        self.output_file_chooser.setViewMode(
+            QtWidgets.QFileDialog.ViewMode.List)
+        self.output_file_chooser.setAcceptMode(
+            QtWidgets.QFileDialog.AcceptMode.AcceptSave)
+        self.output_file_chooser.setNameFilter('csv (*.csv)')
+        self.output_file_chooser.finished.connect(self._user_chosen_csv)
+
+    def _init_output_dir_chooser(self):
+        self.output_dir_chooser = QtWidgets.QFileDialog(self.main_window)
+        self.output_dir_chooser.setFileMode(
+            QtWidgets.QFileDialog.FileMode.Directory)
+        self.output_dir_chooser.setOption(
+            QtWidgets.QFileDialog.Option.ShowDirsOnly, True)
+        self.output_dir_chooser.setDirectory(os.path.expanduser('~'))
+        self.output_dir_chooser.setViewMode(
+            QtWidgets.QFileDialog.ViewMode.List)
+        self.output_dir_chooser.setAcceptMode(
+            QtWidgets.QFileDialog.AcceptMode.AcceptOpen)
+        self.output_dir_chooser.finished.connect(self._user_chosen_dir)
+
+    def _export_single_clicked(self):
+        self.output_file_chooser.exec()
+
+    def _import_zip_clicked(self):
+        self.input_file_chooser.exec()
+
+    def _export_all_clicked(self):
+        self.output_dir_chooser.exec()
+
+    def _user_chosen_csv(self):
+        user_selected_file = self.output_file_chooser.selectedFiles()
+        if len(user_selected_file) > 0 and user_selected_file[0] != '':
+            self._csv_to_save = Path(user_selected_file[0])
+            print(self._csv_to_save)
+
+    def _user_chosen_dir(self):
+        user_selected_dir = self.output_dir_chooser.selectedFiles()
+        if len(user_selected_dir) > 0 and user_selected_dir[0] != '':
+            self._dir_to_save = Path(user_selected_dir[0])
+            print(self._dir_to_save)
+
+    def _user_chosen_zip(self):
+        user_selected_zips = self.input_file_chooser.selectedFiles()
+        if len(user_selected_zips) > 0:
+            self._zips_to_import = [Path(x)
+                                    for x in user_selected_zips if x != '']
+            print(self._zips_to_import)
