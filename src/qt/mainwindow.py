@@ -29,11 +29,14 @@ class EyeMainWindow(Ui_MainWindow):
         self.actionPause.setEnabled(False)
         self.actionStop.setEnabled(False)
         self.toolBar.setVisible(False)
+        self.actionMute.setEnabled(False)
+        self.actionMute.setEnabled(False)
         self._reset_stats_text()
         self._populate_runs_tables()
         self._init_input_file_chooser()
         self._init_output_file_chooser()
         self._init_output_dir_chooser()
+        self._init_status_bar()
 
     def _connect_events(self):
         self.horizontalSliderSeek.sliderMoved.connect(self._seekbar_moved)
@@ -48,6 +51,9 @@ class EyeMainWindow(Ui_MainWindow):
             self._export_single_clicked)
         self.actionImport_Zip.triggered.connect(self._import_zip_clicked)
         self.actionExport_All_Data.triggered.connect(self._export_all_clicked)
+        self.pushButtonExportAll.clicked.connect(self._export_all_clicked)
+        self.horizontalSliderVolume.sliderReleased.connect(self._change_volume)
+        self.actionMute.triggered.connect(self._mute_clicked)
 
     def _init_player(self):
         # self.widgetVideoContainer.setAttribute(
@@ -74,12 +80,17 @@ class EyeMainWindow(Ui_MainWindow):
     def _playing_started_callback(self):
         print(f'playing started\nduration: {self.player.duration}')
         self.player.command('set', 'pause', 'yes')
+        if self.actionMute.isChecked():
+            self.player.command('set', 'mute', 'yes')
         self.actionPause.setChecked(True)
         self.playback_worker.timer.start()
         self.horizontalSliderSeek.setEnabled(True)
         self.actionPlay.setEnabled(False)
         self.actionPause.setEnabled(True)
         self.actionStop.setEnabled(True)
+        self.actionMute.setEnabled(True)
+        self.horizontalSliderVolume.setEnabled(True)
+        self.actionMute.setEnabled(True)
 
     def _playing_update_progress_callback(self, progress: int):
         if not self.horizontalSliderSeek.isSliderDown():
@@ -87,7 +98,8 @@ class EyeMainWindow(Ui_MainWindow):
         if not self.player.pause:
             self.plainTextEditStats.setPlainText(
                 f'Timestamp     : {self.player.time_pos:.2f}\n'
-                f'Duration      : {self.player.duration:.2f}'
+                f'Duration      : {self.player.duration:.2f}\n'
+                f'Additional Information...'
             )
 
     def _playing_complete_callback(self):
@@ -98,6 +110,9 @@ class EyeMainWindow(Ui_MainWindow):
         self.actionPlay.setEnabled(True)
         self.actionPause.setEnabled(False)
         self.actionStop.setEnabled(False)
+        self.actionMute.setEnabled(False)
+        self.horizontalSliderVolume.setEnabled(False)
+        self.actionMute.setEnabled(False)
         self._reset_stats_text()
 
     def _seekbar_moved(self):
@@ -133,11 +148,14 @@ class EyeMainWindow(Ui_MainWindow):
             self.toolBar.setVisible(True)
         elif self.tabWidgetMain.currentIndex() == 0:
             self.toolBar.setVisible(False)
+        elif self.tabWidgetMain.currentIndex() == 2:
+            self.toolBar.setVisible(False)
 
     def _reset_stats_text(self):
         self.plainTextEditStats.setPlainText(
             f'Timestamp     : \n'
-            f'Duration      : '
+            f'Duration      : \n'
+            f'Additional Information...'
         )
 
     def _populate_runs_tables(self):
@@ -221,3 +239,37 @@ class EyeMainWindow(Ui_MainWindow):
             self._zips_to_import = [Path(x)
                                     for x in user_selected_zips if x != '']
             print(self._zips_to_import)
+
+    def _init_status_bar(self) -> None:
+        """Initializes status bar widgets, since Qt Creator doesn't allow
+            this
+        """
+        self.labelPermStatusBar = QtWidgets.QLabel()
+        self.labelPermStatusBar.setObjectName('labelPermStatusBar')
+        self.horizontalSliderVolume = QtWidgets.QSlider(self.centralwidget)
+        self.horizontalSliderVolume.setOrientation(
+            QtCore.Qt.Orientation.Horizontal)
+        self.horizontalSliderVolume.setObjectName('horizontalSliderVolume')
+        self.horizontalSliderVolume.setToolTip('Volume')
+        self.horizontalSliderVolume.setFixedWidth(100)
+        self.horizontalSliderVolume.setRange(0, 100)
+        self.statusbar.addPermanentWidget(self.labelPermStatusBar)
+        self.statusbar.addPermanentWidget(self.horizontalSliderVolume)
+        self.labelPermStatusBar.setText('Volume')
+        self.horizontalSliderVolume.setValue(100)
+        self.horizontalSliderVolume.setEnabled(False)
+
+    def _change_volume(self):
+        volume_to_set = self.horizontalSliderVolume.value()
+        self.player.command(
+            'set', 'volume', volume_to_set)
+        if volume_to_set > 0:
+            if self.player.mute:
+                self.actionMute.setChecked(False)
+                self.player.command('set', 'mute', 'no')
+
+    def _mute_clicked(self):
+        if self.player.mute:
+            self.player.command('set', 'mute', 'no')
+        else:
+            self.player.command('set', 'mute', 'yes')
