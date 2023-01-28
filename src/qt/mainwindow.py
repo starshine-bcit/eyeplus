@@ -175,7 +175,7 @@ class EyeMainWindow(Ui_MainWindow):
         if self.tableWidgetRuns.rowCount() > 0:
             self.tableWidgetRuns.setSortingEnabled(True)
             self.tableWidgetRuns.sortByColumn(
-                1, QtCore.Qt.SortOrder.AscendingOrder)
+                0, QtCore.Qt.SortOrder.AscendingOrder)
 
     def _init_input_file_chooser(self):
         self.input_file_chooser = QtWidgets.QFileDialog(self.main_window)
