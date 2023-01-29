@@ -10,6 +10,14 @@ from hashlib import file_digest
 
 class EyeDB():
     def __init__(self, db_path: Path) -> None:
+        """EyeDB provides various methods, including the import of data from zip files 
+        or folders, to work with the sqlite database at that specified path. If the 
+        database does exist, it is automatically created, along with the requisite 
+        folders to store it and other data.
+
+        Args:
+            db_path (Path): Path to the (non)existant database to work with.
+        """
         self._data_dir = db_path.parent
         self._temp_dir = self._data_dir / '~temp'
         self._video_dir = self._data_dir / 'videos'
@@ -25,7 +33,19 @@ class EyeDB():
         else:
             self._init_db()
 
-    def ingest_data(self, files: list[Path], type: str = 'zip') -> None:
+    def ingest_data(self, paths: list[Path], type: str = 'zip') -> None:
+        """Takes a list of paths with with the type of 'zip' or 'dir' and imports them 
+        into the database
+
+        Args:
+            paths (list[Path]): List of path objects to process
+            type (str, optional): Either 'zip' or 'dir'. Defaults to 'zip'.
+
+        Raises:
+            FileExistsError: If the data that the user is attempting to import already 
+            exists in the database
+        """
+
         # Create backup here
 
         cur = self._con.cursor()
@@ -42,7 +62,7 @@ class EyeDB():
         (runid, timestamp, gaze2d0, gaze2d1, gaze3d0, gaze3d1, gaze3d2, leftorigin0, leftorigin1, leftorigin2, leftdirection0, leftdirection1, leftdirection2,  leftdiameter, rightorigin0, rightorigin1, rightorigin2, rightdirection0, rightdirection1, rightdirection2, rightdiameter) 
         VALUES(:runid, :timestamp, :gaze2d0, :gaze2d1, :gaze3d0, :gaze3d1, :gaze3d2, :leftorigin0, :leftorigin1, :leftorigin2, :leftdirection0, :leftdirection1, :leftdirection2, :leftdiameter, :rightorigin0, :rightorigin1, :rightorigin2, :rightdirection0, :rightdirection1, :rightdirection2, :rightdiameter);'''
 
-        for item in files:
+        for item in paths:
             now = datetime.now().timestamp()
             mod_time = date.fromtimestamp(item.stat().st_mtime)
 
@@ -170,6 +190,8 @@ class EyeDB():
         self._con.commit()
 
     def _init_db(self) -> None:
+        """Creates the database and tables if it does not exist.
+        """
         self._con = sqlite3.connect(self._db_path)
         cur = self._con.cursor()
         cur.execute('''CREATE TABLE IF NOT EXISTS run(
@@ -225,9 +247,16 @@ class EyeDB():
         self._con.commit()
 
     def disconnect_db(self) -> None:
+        """Closes the connection with database, allowing for a safe program exit.
+        """
         self._con.close()
 
     def get_all_runs(self) -> list[dict]:
+        """Queries the database to find base data on all runs, including id.
+
+        Returns:
+            list[dict]: Information from the 'run' table that is deemed relevant.
+        """
         cur = self._con.cursor()
         cur.execute('''SELECT id, importdate, processdate, video, tags
         FROM run;''')
