@@ -10,9 +10,9 @@ from hashlib import file_digest
 
 class EyeDB():
     def __init__(self, db_path: Path) -> None:
-        """EyeDB provides various methods, including the import of data from zip files 
-        or folders, to work with the sqlite database at that specified path. If the 
-        database does exist, it is automatically created, along with the requisite 
+        """EyeDB provides various methods, including the import of data from zip files
+        or folders, to work with the sqlite database at that specified path. If the
+        database does exist, it is automatically created, along with the requisite
         folders to store it and other data.
 
         Args:
@@ -34,7 +34,7 @@ class EyeDB():
             self._init_db()
 
     def ingest_data(self, paths: list[Path], type: str = 'zip') -> None:
-        """Takes a list of paths with with the type of 'zip' or 'dir' and imports them 
+        """Takes a list of paths with with the type of 'zip' or 'dir' and imports them
         into the database
 
         Args:
@@ -42,7 +42,7 @@ class EyeDB():
             type (str, optional): Either 'zip' or 'dir'. Defaults to 'zip'.
 
         Raises:
-            FileExistsError: If the data that the user is attempting to import already 
+            FileExistsError: If the data that the user is attempting to import already
             exists in the database
         """
 
@@ -55,11 +55,13 @@ class EyeDB():
         VALUES(:importdate, :tags, :video, :hash);'''
 
         imu_query = '''INSERT INTO imu
-        (runid, timestamp, accelerometer0, accelerometer1, accelerometer2, gyroscope0, gyroscope1, gyroscope2) 
+        (runid, timestamp, accelerometer0, accelerometer1,
+         accelerometer2, gyroscope0, gyroscope1, gyroscope2)
         VALUES(:runid, :timestamp, :accelerometer0, :accelerometer1, :accelerometer2,:gyroscope0, :gyroscope1, :gyroscope2);'''
 
         gaze_query = '''INSERT INTO gaze
-        (runid, timestamp, gaze2d0, gaze2d1, gaze3d0, gaze3d1, gaze3d2, leftorigin0, leftorigin1, leftorigin2, leftdirection0, leftdirection1, leftdirection2,  leftdiameter, rightorigin0, rightorigin1, rightorigin2, rightdirection0, rightdirection1, rightdirection2, rightdiameter) 
+        (runid, timestamp, gaze2d0, gaze2d1, gaze3d0, gaze3d1, gaze3d2, leftorigin0, leftorigin1, leftorigin2, leftdirection0, leftdirection1,
+         leftdirection2,  leftdiameter, rightorigin0, rightorigin1, rightorigin2, rightdirection0, rightdirection1, rightdirection2, rightdiameter)
         VALUES(:runid, :timestamp, :gaze2d0, :gaze2d1, :gaze3d0, :gaze3d1, :gaze3d2, :leftorigin0, :leftorigin1, :leftorigin2, :leftdirection0, :leftdirection1, :leftdirection2, :leftdiameter, :rightorigin0, :rightorigin1, :rightorigin2, :rightdirection0, :rightdirection1, :rightdirection2, :rightdiameter);'''
 
         for item in paths:
@@ -188,6 +190,7 @@ class EyeDB():
             cur.executemany(gaze_query, gaze_data_list)
 
         self._con.commit()
+        cur.close()
 
     def _init_db(self) -> None:
         """Creates the database and tables if it does not exist.
@@ -245,6 +248,7 @@ class EyeDB():
                 FOREIGN KEY(runid) REFERENCES run(id));''')
 
         self._con.commit()
+        cur.close()
 
     def disconnect_db(self) -> None:
         """Closes the connection with database, allowing for a safe program exit.
@@ -271,6 +275,54 @@ class EyeDB():
                 'tags': run[4]
             })
         return ret_runs
+
+    def get_gaze_data(self, runid: int) -> dict:
+        gaze_dict = {}
+        cur = self._con.cursor()
+        cur.execute('''SELECT id FROM run WHERE id=(?);''', (runid,))
+        res = cur.fetchall()
+        if res:
+            cur.execute('''SELECT * FROM gaze WHERE runid=(?);''', (runid,))
+            imu_data = cur.fetchall()
+            for line in imu_data:
+                gaze_dict[line[2]] = {
+                    'gaze2d': [line[3], line[4]],
+                    'gaze3d': [line[5], line[6], line[7]],
+                    'left': {
+                        'origin': [line[8], line[9], line[10]],
+                        'direction': [line[11], line[12], line[13]],
+                        'diameter': line[14]
+                    },
+                    'right': {
+                        'origin': [line[15], line[16], line[17]],
+                        'direction': [line[18], line[19], line[20]],
+                        'diameter': line[21]
+                    }
+                }
+            cur.close()
+            return gaze_dict
+        else:
+            cur.close()
+            raise RuntimeError(f'Trying to select a non-existant ID: {runid}')
+
+    def get_imu_data(self, runid: int) -> dict:
+        imu_dict = {}
+        cur = self._con.cursor()
+        cur.execute('''SELECT id FROM run WHERE id=(?);''', (runid,))
+        res = cur.fetchall()
+        if res:
+            cur.execute('''SELECT * FROM imu WHERE runid=(?);''', (runid,))
+            imu_data = cur.fetchall()
+            for line in imu_data:
+                imu_dict[line[2]] = {
+                    'accelerometer': [line[3], line[4], line[5]],
+                    'gyroscope': [line[6], line[7], line[8]]
+                }
+            cur.close()
+            return imu_dict
+        else:
+            cur.close()
+            raise RuntimeError(f'Trying to select a non-existant ID: {runid}')
 
 
 if __name__ == '__main__':

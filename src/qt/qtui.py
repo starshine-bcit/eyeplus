@@ -36,10 +36,10 @@ class Ui_MainWindow(object):
         self.tableWidgetRuns.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
         self.tableWidgetRuns.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
         self.tableWidgetRuns.setRowCount(0)
-        self.tableWidgetRuns.setColumnCount(3)
+        self.tableWidgetRuns.setColumnCount(4)
         self.tableWidgetRuns.setObjectName("tableWidgetRuns")
         self.tableWidgetRuns.horizontalHeader().setDefaultSectionSize(80)
-        self.tableWidgetRuns.horizontalHeader().setMinimumSectionSize(80)
+        self.tableWidgetRuns.horizontalHeader().setMinimumSectionSize(20)
         self.tableWidgetRuns.horizontalHeader().setStretchLastSection(True)
         self.tableWidgetRuns.verticalHeader().setDefaultSectionSize(20)
         self.verticalLayout_6.addWidget(self.tableWidgetRuns)
@@ -252,8 +252,16 @@ class Ui_MainWindow(object):
         icon10.addPixmap(QtGui.QPixmap(":/icons/volume-x.svg"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
         self.actionMute.setIcon(icon10)
         self.actionMute.setObjectName("actionMute")
+        self.actionImport_Folder = QtGui.QAction(MainWindow)
+        icon11 = QtGui.QIcon()
+        icon11.addPixmap(QtGui.QPixmap(":/icons/folder-up.svg"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
+        self.actionImport_Folder.setIcon(icon11)
+        self.actionImport_Folder.setObjectName("actionImport_Folder")
         self.menuFile.addAction(self.actionImport_Zip)
+        self.menuFile.addAction(self.actionImport_Folder)
+        self.menuFile.addSeparator()
         self.menuFile.addAction(self.actionExport_All_Data)
+        self.menuFile.addSeparator()
         self.menuFile.addAction(self.actionExit)
         self.menuHelp.addAction(self.actionIndex)
         self.menuHelp.addAction(self.actionAbout)
@@ -265,7 +273,7 @@ class Ui_MainWindow(object):
         self.toolBar.addAction(self.actionPlay)
 
         self.retranslateUi(MainWindow)
-        self.tabWidgetMain.setCurrentIndex(1)
+        self.tabWidgetMain.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -295,6 +303,7 @@ class Ui_MainWindow(object):
         self.actionIndex.setText(_translate("MainWindow", "Index"))
         self.actionAbout.setText(_translate("MainWindow", "About"))
         self.actionMute.setText(_translate("MainWindow", "Mute"))
+        self.actionImport_Folder.setText(_translate("MainWindow", "Import Folder(s)..."))
 
 
 if __name__ == "__main__":

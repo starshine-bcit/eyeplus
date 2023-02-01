@@ -18,7 +18,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidgetMain">
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="tabDataList">
        <attribute name="title">
@@ -55,10 +55,10 @@
               <number>0</number>
              </property>
              <property name="columnCount">
-              <number>3</number>
+              <number>4</number>
              </property>
              <attribute name="horizontalHeaderMinimumSectionSize">
-              <number>80</number>
+              <number>25</number>
              </attribute>
              <attribute name="horizontalHeaderDefaultSectionSize">
               <number>80</number>
@@ -69,6 +69,7 @@
              <attribute name="verticalHeaderDefaultSectionSize">
               <number>20</number>
              </attribute>
+             <column/>
              <column/>
              <column/>
              <column/>
@@ -397,7 +398,10 @@
      <string>File</string>
     </property>
     <addaction name="actionImport_Zip"/>
+    <addaction name="actionImport_Folder"/>
+    <addaction name="separator"/>
     <addaction name="actionExport_All_Data"/>
+    <addaction name="separator"/>
     <addaction name="actionExit"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
@@ -526,6 +530,15 @@
    </property>
    <property name="text">
     <string>Mute</string>
+   </property>
+  </action>
+  <action name="actionImport_Folder">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/folder-up.svg</normaloff>:/icons/folder-up.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Import Folder(s)...</string>
    </property>
   </action>
  </widget>
