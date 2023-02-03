@@ -198,6 +198,17 @@
                </property>
               </widget>
              </item>
+             <item>
+              <widget class="QPushButton" name="pushButtonOpenReview">
+               <property name="text">
+                <string>Open For Review</string>
+               </property>
+               <property name="icon">
+                <iconset resource="icons.qrc">
+                 <normaloff>:/icons/sidebar-open.svg</normaloff>:/icons/sidebar-open.svg</iconset>
+               </property>
+              </widget>
+             </item>
             </layout>
            </item>
           </layout>

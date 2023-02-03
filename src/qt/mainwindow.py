@@ -3,6 +3,7 @@ import sys
 import os
 
 from PyQt6 import QtCore, QtGui, QtWidgets
+from PIL import Image, ImageDraw
 
 from qt.qtui import Ui_MainWindow
 from modules import mpv
@@ -10,6 +11,7 @@ from qt.playbackworker import PlaybackWorker
 import qt.resources
 from modules.eyedb import EyeDB
 from utils.fileutils import validate_import_folder
+from modules.regressor import Regression2dGazeModel
 
 
 class EyeMainWindow(Ui_MainWindow):
@@ -21,7 +23,6 @@ class EyeMainWindow(Ui_MainWindow):
         self.setupUi(self.main_window)
         self._setup_custom_ui()
         self._connect_events()
-        self._init_player()
 
     def _setup_custom_ui(self):
         self.main_window.setWindowTitle('eyeplus')
@@ -69,12 +70,6 @@ class EyeMainWindow(Ui_MainWindow):
         self.tableWidgetRuns.itemDoubleClicked.connect(
             self._table_item_double_clicked)
 
-    def _init_player(self):
-        # self.widgetVideoContainer.setAttribute(
-        #     QtCore.Qt.WA_DontCreateNativeAncestors)
-        # self.widgetVideoContainer.setAttribute(QtCore.Qt.WA_NativeWindow)
-        pass
-
     def _setup_video(self):
         if 'playback_worker' in self.__dict__:
             self._stop_clicked()
@@ -107,20 +102,29 @@ class EyeMainWindow(Ui_MainWindow):
         self.actionMute.setEnabled(True)
         self.horizontalSliderVolume.setEnabled(True)
         self.actionMute.setEnabled(True)
+        self._overlay = self.player.create_image_overlay()
 
     def _playing_update_progress_callback(self, progress: int):
         if not self.horizontalSliderSeek.isSliderDown():
             self.horizontalSliderSeek.setSliderPosition(progress)
         if not self.player.pause:
-            # closest_gaze = self._gaze_timestamps[min(range(len(self._gaze_timestamps)), key=lambda x: abs(
-            #     self._gaze_timestamps[x] - self.player.time_pos))]
+            curr_timestamp = round(self.player.time_pos, 1)
+            if self._overlay.overlay_id:
+                self._overlay.remove()
+            img = Image.new('RGBA', [10, 10], (0, 0, 0, 0))
+            draw = ImageDraw.Draw(img)
+            draw.ellipse((0, 0, 10, 10), fill=(0, 255, 0), outline=(255, 0, 0))
+            dims = self.player.osd_dimensions
+            pos_x = int(
+                (dims['w'] - dims['ml'] - dims['mr']) * self._tree_predicted[curr_timestamp][0] + dims['ml'] - 5)
+            pos_y = int(
+                (dims['h'] - dims['mt'] - dims['mb']) * self._tree_predicted[curr_timestamp][1] + dims['mt'] - 5)
+            self._overlay.update(img, pos=(pos_x, pos_y))
             self.plainTextEditStats.setPlainText(
                 f'RunID      : {self._selected_run}\n'
-                f'Title      : {self._all_runs_list[self._selected_run]["tags"]}\n'
+                f'Title      : {self._all_runs_list[self._selected_run -1]["tags"]}\n'
                 f'Timestamp  : {self.player.time_pos:.2f}\n'
                 f'Duration   : {self.player.duration:.2f}\n\n'
-                # f'Gaze Information\n'
-                # f'Gaze2D x   : {self._gaze[closest_gaze]}'
             )
 
     def _playing_complete_callback(self):
@@ -142,6 +146,8 @@ class EyeMainWindow(Ui_MainWindow):
         self.player.seek(max(time_to_seek, 1), reference='absolute')
 
     def _play_clicked(self):
+        self._tree = Regression2dGazeModel(self._gaze)
+        self._tree_predicted = self._tree.get_predicted_2d()
         self._thread_pool.start(self.playback_worker)
 
     def _safe_quit_x(self, event):
@@ -212,7 +218,6 @@ class EyeMainWindow(Ui_MainWindow):
     def _table_item_single_clicked(self, item: QtWidgets.QTableWidgetItem) -> None:
         self._selected_run = int(self.tableWidgetRuns.item(
             self.tableWidgetRuns.row(item), 0).text())
-        # self._gaze = self._db.get_gaze_data(self._selected_run)
         # self._gaze_timestamps = list(self._gaze.keys())
         self._imu = self._db.get_imu_data(self._selected_run)
         self.tabWidgetMain.tabBar().setHidden(False)
@@ -222,6 +227,7 @@ class EyeMainWindow(Ui_MainWindow):
     def _table_item_double_clicked(self, item: QtWidgets.QTableWidgetItem) -> None:
         self._selected_run = int(self.tableWidgetRuns.item(
             self.tableWidgetRuns.row(item), 0).text())
+        self._gaze = self._db.get_gaze_data(self._selected_run)
         self._setup_video()
         self.actionPlay.setEnabled(True)
         self.tabWidgetMain.tabBar().setHidden(False)
