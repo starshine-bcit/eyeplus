@@ -247,6 +247,12 @@ class EyeDB():
                 runid INTEGER NOT NULL,
                 FOREIGN KEY(runid) REFERENCES run(id));''')
 
+        cur.execute('''CREATE INDEX idx_imu_id
+                ON imu (id, runid);''')
+
+        cur.execute('''CREATE INDEX id_gaze_id
+                ON gaze (id, runid);''')
+
         self._con.commit()
         cur.close()
 
@@ -282,7 +288,8 @@ class EyeDB():
         cur.execute('''SELECT id FROM run WHERE id=(?);''', (runid,))
         res = cur.fetchall()
         if res:
-            cur.execute('''SELECT * FROM gaze WHERE runid=(?);''', (runid,))
+            cur.execute(
+                '''SELECT * FROM gaze WHERE runid=(?) ORDER BY runid ASC;''', (runid,))
             imu_data = cur.fetchall()
             for line in imu_data:
                 gaze_dict[line[2]] = {
@@ -311,7 +318,8 @@ class EyeDB():
         cur.execute('''SELECT id FROM run WHERE id=(?);''', (runid,))
         res = cur.fetchall()
         if res:
-            cur.execute('''SELECT * FROM imu WHERE runid=(?);''', (runid,))
+            cur.execute(
+                '''SELECT * FROM imu WHERE runid=(?) ORDER BY runid ASC;''', (runid,))
             imu_data = cur.fetchall()
             for line in imu_data:
                 imu_dict[line[2]] = {

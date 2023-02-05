@@ -132,7 +132,7 @@ class EyeMainWindow(Ui_MainWindow):
         self.playback_worker.timer.stop()
         self.horizontalSliderSeek.setEnabled(False)
         self.horizontalSliderSeek.setSliderPosition(0)
-        self.actionPlay.setEnabled(True)
+        self.actionPlay.setEnabled(False)
         self.actionPause.setEnabled(False)
         self.actionStop.setEnabled(False)
         self.actionMute.setEnabled(False)
@@ -242,7 +242,7 @@ class EyeMainWindow(Ui_MainWindow):
         self.input_file_chooser.setViewMode(
             QtWidgets.QFileDialog.ViewMode.List)
         self.input_file_chooser.setNameFilter('zip (*.zip)')
-        self.input_file_chooser.finished.connect(self._user_chosen_zip)
+        self.input_file_chooser.accepted.connect(self._user_chosen_zip)
 
     def _init_input_dir_chooser(self):
         self.input_dir_chooser = QtWidgets.QFileDialog(self.main_window)
@@ -255,7 +255,7 @@ class EyeMainWindow(Ui_MainWindow):
             QtWidgets.QFileDialog.ViewMode.List)
         self.input_dir_chooser.setAcceptMode(
             QtWidgets.QFileDialog.AcceptMode.AcceptOpen)
-        self.input_dir_chooser.finished.connect(self._user_chosen_input_dir)
+        self.input_dir_chooser.accepted.connect(self._user_chosen_input_dir)
 
     def _init_output_file_chooser(self):
         self.output_file_chooser = QtWidgets.QFileDialog(self.main_window)
@@ -267,7 +267,7 @@ class EyeMainWindow(Ui_MainWindow):
         self.output_file_chooser.setAcceptMode(
             QtWidgets.QFileDialog.AcceptMode.AcceptSave)
         self.output_file_chooser.setNameFilter('csv (*.csv)')
-        self.output_file_chooser.finished.connect(self._user_chosen_csv)
+        self.output_file_chooser.accepted.connect(self._user_chosen_csv)
 
     def _init_output_dir_chooser(self):
         self.output_dir_chooser = QtWidgets.QFileDialog(self.main_window)
@@ -280,7 +280,7 @@ class EyeMainWindow(Ui_MainWindow):
             QtWidgets.QFileDialog.ViewMode.List)
         self.output_dir_chooser.setAcceptMode(
             QtWidgets.QFileDialog.AcceptMode.AcceptOpen)
-        self.output_dir_chooser.finished.connect(self._user_chosen_output_dir)
+        self.output_dir_chooser.accepted.connect(self._user_chosen_output_dir)
 
     def _export_single_clicked(self):
         self.output_file_chooser.exec()
@@ -301,6 +301,7 @@ class EyeMainWindow(Ui_MainWindow):
             print(csv_to_save)
 
     def _user_chosen_output_dir(self):
+
         user_selected_dir = self.output_dir_chooser.selectedFiles()
         if len(user_selected_dir) > 0 and user_selected_dir[0] != '':
             dir_to_save = Path(user_selected_dir[0])
