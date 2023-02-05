@@ -289,7 +289,7 @@ class EyeDB():
         res = cur.fetchall()
         if res:
             cur.execute(
-                '''SELECT * FROM gaze WHERE runid=(?) ORDER BY runid ASC;''', (runid,))
+                '''SELECT * FROM gaze WHERE runid=(?) ORDER BY id ASC;''', (runid,))
             imu_data = cur.fetchall()
             for line in imu_data:
                 gaze_dict[line[2]] = {
@@ -319,7 +319,7 @@ class EyeDB():
         res = cur.fetchall()
         if res:
             cur.execute(
-                '''SELECT * FROM imu WHERE runid=(?) ORDER BY runid ASC;''', (runid,))
+                '''SELECT * FROM imu WHERE runid=(?) ORDER BY id ASC;''', (runid,))
             imu_data = cur.fetchall()
             for line in imu_data:
                 imu_dict[line[2]] = {
