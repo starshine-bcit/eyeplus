@@ -31,5 +31,29 @@ class Regression2dGazeModel():
         return predicted_dict
 
 
+class RegressionMagnetometerModel():
+    def __init__(self, mag_data: dict, predict_timestamps: list[float]) -> None:
+        y = []
+        x = []
+        self._p = np.array(predict_timestamps)
+        self._p = self._p.reshape(-1, 1)
+        for key, val in mag_data.items():
+            x.append(float(key))
+            y.append(val['magnetometer'])
+        self._x = np.array(x)
+        self._x = self._x.reshape(-1, 1)
+        self._y = np.array(y)
+        self._trees = RandomForestRegressor(n_jobs=-1)
+        self._trees.fit(self._x, self._y)
+
+    def get_predicted_mag(self) -> dict:
+        predicted_mag = self._trees.predict(self._p)
+        predicted_dict = {}
+        for i in range(len(self._p)):
+            predicted_dict[self._p[i][0]] = [
+                predicted_mag[i][0], predicted_mag[i][1], predicted_mag[i][2]]
+        return predicted_dict
+
+
 if __name__ == '__main__':
     pass

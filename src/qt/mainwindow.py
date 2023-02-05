@@ -29,6 +29,10 @@ class EyeMainWindow(Ui_MainWindow):
         self.main_window.setWindowIcon(
             QtGui.QIcon(QtGui.QPixmap(':/icons/eye.svg')))
         self._thread_pool = QtCore.QThreadPool()
+        self._error_box = QtWidgets.QErrorMessage(self.main_window)
+        self._error_box.setWindowIcon(QtGui.QIcon(
+            QtGui.QPixmap(':/icons/alert-triangle.svg')))
+        self._error_box.setWindowTitle('ERROR: eyeplus')
         self.tabWidgetMain.setCurrentIndex(0)
         self.actionPause.setEnabled(False)
         self.actionStop.setEnabled(False)
@@ -36,8 +40,6 @@ class EyeMainWindow(Ui_MainWindow):
         self.toolBar.setVisible(False)
         self.actionMute.setEnabled(False)
         self.actionMute.setEnabled(False)
-        self.tabWidgetMain.tabBar().setEnabled(False)
-        self.tabWidgetMain.tabBar().setHidden(True)
         self._videos = {}
         self._selected_run = 0
         self._reset_stats_text()
@@ -67,8 +69,7 @@ class EyeMainWindow(Ui_MainWindow):
         self.actionImport_Folder.triggered.connect(self._import_dir_clicked)
         self.tableWidgetRuns.itemClicked.connect(
             self._table_item_single_clicked)
-        self.tableWidgetRuns.itemDoubleClicked.connect(
-            self._table_item_double_clicked)
+        self.pushButtonOpenReview.clicked.connect(self._open_review_clicked)
 
     def _setup_video(self):
         if 'playback_worker' in self.__dict__:
@@ -103,6 +104,7 @@ class EyeMainWindow(Ui_MainWindow):
         self.horizontalSliderVolume.setEnabled(True)
         self.actionMute.setEnabled(True)
         self._overlay = self.player.create_image_overlay()
+        self._update_status('Playback started')
 
     def _playing_update_progress_callback(self, progress: int):
         if not self.horizontalSliderSeek.isSliderDown():
@@ -139,6 +141,7 @@ class EyeMainWindow(Ui_MainWindow):
         self.horizontalSliderVolume.setEnabled(False)
         self.actionMute.setEnabled(False)
         self._reset_stats_text()
+        self._update_status('Playback stopped')
 
     def _seekbar_moved(self):
         time_to_seek = self.horizontalSliderSeek.sliderPosition() * \
@@ -212,27 +215,38 @@ class EyeMainWindow(Ui_MainWindow):
                 self.tableWidgetRuns.selectColumn(0)
                 self._table_item_single_clicked(
                     self.tableWidgetRuns.selectedItems()[0])
-                # self._setup_video()
+            self.tabWidgetMain.setEnabled(True)
+        else:
+            self.tabWidgetMain.setEnabled(False)
+            QtWidgets.QMessageBox
+            message_box = QtWidgets.QMessageBox(
+                text='It looks like this is your first time using eyeplus. Head over to File > Import... to get started, or check the documentation under Help.', parent=self.main_window)
+            message_box.setWindowIcon(QtGui.QIcon(
+                QtGui.QPixmap(':/icons/info.svg')))
+            message_box.setWindowTitle('Welcome to eyeplus!')
+            message_box.exec()
         self.tableWidgetRuns.resizeColumnsToContents()
 
     def _table_item_single_clicked(self, item: QtWidgets.QTableWidgetItem) -> None:
         self._selected_run = int(self.tableWidgetRuns.item(
             self.tableWidgetRuns.row(item), 0).text())
         # self._gaze_timestamps = list(self._gaze.keys())
-        self._imu = self._db.get_imu_data(self._selected_run)
+        # self._imu = self._db.get_imu_data(self._selected_run)
         self.tabWidgetMain.tabBar().setHidden(False)
         self.tabWidgetMain.tabBar().setEnabled(True)
+        self._update_status(
+            f'Successfully loaded summary for runid {self._selected_run}')
         # code to show summary here
 
-    def _table_item_double_clicked(self, item: QtWidgets.QTableWidgetItem) -> None:
-        self._selected_run = int(self.tableWidgetRuns.item(
-            self.tableWidgetRuns.row(item), 0).text())
+    def _open_review_clicked(self) -> None:
         self._gaze = self._db.get_gaze_data(self._selected_run)
         self._setup_video()
         self.actionPlay.setEnabled(True)
         self.tabWidgetMain.tabBar().setHidden(False)
         self.tabWidgetMain.tabBar().setEnabled(True)
         self.tabWidgetMain.setCurrentIndex(1)
+        self._update_status(
+            f'Successfully opened review for runid {self._selected_run}')
 
     def _init_input_file_chooser(self):
         self.input_file_chooser = QtWidgets.QFileDialog(self.main_window)
@@ -315,13 +329,17 @@ class EyeMainWindow(Ui_MainWindow):
         else:
             found_items = []
         if len(found_items) <= 0:
-            pass  # raise error window here
+            self._error_box.showMessage(
+                'Error: You selected no directory to import.')
         else:
             try:
                 self._db.ingest_data(found_items, type='dir')
                 self._populate_runs_tables()
-            except FileExistsError as err:
-                pass  # raise existing data error here
+                self._update_status(
+                    f'Successfully imported data from {len(found_items)} run(s)')
+            except FileExistsError:
+                self._error_box.showMessage(
+                    'Error: You have attempted to import one or more runs which already have been imported.')
 
     def _user_chosen_zip(self):
         user_selected_zips = self.input_file_chooser.selectedFiles()
@@ -331,10 +349,14 @@ class EyeMainWindow(Ui_MainWindow):
             try:
                 self._db.ingest_data(zips_to_import, type='zip')
                 self._populate_runs_tables()
+                self._update_status(
+                    f'Successfully imported data from {len(zips_to_import)} run(s)')
             except FileExistsError as err:
-                pass  # raise existing data error here
+                self._error_box.showMessage(
+                    'Error: You have attempted to import one or more runs which already have been imported.')
         else:
-            pass  # raise error window here
+            self._error_box.showMessage(
+                'Error: You selected no zip file to import.')
 
     def _init_status_bar(self) -> None:
         """Initializes status bar widgets, since Qt Creator doesn't allow
@@ -369,3 +391,6 @@ class EyeMainWindow(Ui_MainWindow):
             self.player.command('set', 'mute', 'no')
         else:
             self.player.command('set', 'mute', 'yes')
+
+    def _update_status(self, message: str) -> None:
+        self.statusbar.showMessage(message, 2500)
