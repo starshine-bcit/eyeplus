@@ -1,7 +1,6 @@
 from pathlib import Path
 from eyedb import EyeDB
 
-import asyncio
 from math import sqrt, atan2, asin, degrees, radians
 
 
