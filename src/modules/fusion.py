@@ -20,14 +20,11 @@ class DeltaT():
 
 
 class Fusion(object):
-    '''
-    Class provides sensor fusion allowing heading, pitch and roll to be extracted. This uses the Madgwick algorithm.
-    The update method runs as a coroutine. Its calculations take 1.6mS on the Pyboard.
-    '''
-    declination = 0                         # Optional offset for true north. A +ve value adds to heading
+    # Optional offset for true north. A +ve value adds to heading
+    declination = 0
 
-    def __init__(self, read_coro, first_timestamp: float, imu_data):
-        self.read_coro = read_coro(imu_data)
+    def __init__(self, first_timestamp: float, all_data: dict):
+        self._all_data = all_data
         # local magnetic bias factors: set from calibration
         self.magbias = (0, 0, 0)
         self.expect_ts = True
@@ -40,110 +37,28 @@ class Fusion(object):
         self.pitch = 0
         self.heading = 0
         self.roll = 0
-        self.imu_data = imu_data
+        self.results = {}
 
-    async def calibrate(self, stopfunc):
-        res = await self.read_coro()
-        mag = res[2]
-        # Initialise max and min lists with current values
-        magmax = list(mag)
-        magmin = magmax[:]
-        while not stopfunc():
-            res = await self.read_coro()
-            magxyz = res[2]
-            for x in range(3):
-                magmax[x] = max(magmax[x], magxyz[x])
-                magmin[x] = min(magmin[x], magxyz[x])
-        self.magbias = tuple(map(lambda a, b: (a + b)/2, magmin, magmax))
+    # async def calibrate(self, stopfunc):
+    #     res = await self.read_coro()
+    #     mag = res[2]
+    #     # Initialise max and min lists with current values
+    #     magmax = list(mag)
+    #     magmin = magmax[:]
+    #     while not stopfunc():
+    #         res = await self.read_coro()
+    #         magxyz = res[2]
+    #         for x in range(3):
+    #             magmax[x] = max(magmax[x], magxyz[x])
+    #             magmin[x] = min(magmin[x], magxyz[x])
+    #     self.magbias = tuple(map(lambda a, b: (a + b)/2, magmin, magmax))
 
-    async def start(self, slow_platform=False):
-        data = await self.read_coro.__anext__()
-        if len(data) == 2 or (self.expect_ts and len(data) == 3):
-            asyncio.create_task(self._update_nomag(slow_platform))
-        else:
-            asyncio.create_task(self._update_mag(slow_platform))
-
-    async def _update_nomag(self, slow_platform):
-        async for data in self.read_coro:
-            if self.expect_ts:
-                accel, gyro, ts = data
-            else:
-                accel, gyro = await self.read_coro()
-                ts = None
-            # Units G (but later normalised)
-            ax, ay, az = accel
-            gx, gy, gz = (radians(x) for x in gyro)  # Units deg/s
-            # short name local variable for readability
-            q1, q2, q3, q4 = (self.q[x] for x in range(4))
-            # Auxiliary variables to avoid repeated arithmetic
-            _2q1 = 2 * q1
-            _2q2 = 2 * q2
-            _2q3 = 2 * q3
-            _2q4 = 2 * q4
-            _4q1 = 4 * q1
-            _4q2 = 4 * q2
-            _4q3 = 4 * q3
-            _8q2 = 8 * q2
-            _8q3 = 8 * q3
-            q1q1 = q1 * q1
-            q2q2 = q2 * q2
-            q3q3 = q3 * q3
-            q4q4 = q4 * q4
-
-            # Normalise accelerometer measurement
-            norm = sqrt(ax * ax + ay * ay + az * az)
-            if (norm == 0):
-                return  # handle NaN
-            norm = 1 / norm        # use reciprocal for division
-            ax *= norm
-            ay *= norm
-            az *= norm
-
-            # Gradient decent algorithm corrective step
-            s1 = _4q1 * q3q3 + _2q3 * ax + _4q1 * q2q2 - _2q2 * ay
-            s2 = _4q2 * q4q4 - _2q4 * ax + 4 * q1q1 * q2 - _2q1 * \
-                ay - _4q2 + _8q2 * q2q2 + _8q2 * q3q3 + _4q2 * az
-            s3 = 4 * q1q1 * q3 + _2q1 * ax + _4q3 * q4q4 - _2q4 * \
-                ay - _4q3 + _8q3 * q2q2 + _8q3 * q3q3 + _4q3 * az
-            s4 = 4 * q2q2 * q4 - _2q2 * ax + 4 * q3q3 * q4 - _2q3 * ay
-            # normalise step magnitude
-            norm = 1 / sqrt(s1 * s1 + s2 * s2 + s3 * s3 + s4 * s4)
-            s1 *= norm
-            s2 *= norm
-            s3 *= norm
-            s4 *= norm
-
-            # Compute rate of change of quaternion
-            qDot1 = 0.5 * (-q2 * gx - q3 * gy - q4 * gz) - self.beta * s1
-            qDot2 = 0.5 * (q1 * gx + q3 * gz - q4 * gy) - self.beta * s2
-            qDot3 = 0.5 * (q1 * gy - q2 * gz + q4 * gx) - self.beta * s3
-            qDot4 = 0.5 * (q1 * gz + q2 * gy - q3 * gx) - self.beta * s4
-
-            if slow_platform:
-                await asyncio.sleep_ms(0)
-
-            # Integrate to yield quaternion
-            deltat = self.deltat(ts)
-            q1 += qDot1 * deltat
-            q2 += qDot2 * deltat
-            q3 += qDot3 * deltat
-            q4 += qDot4 * deltat
-            norm = 1 / sqrt(q1 * q1 + q2 * q2 + q3 * q3 +
-                            q4 * q4)    # normalise quaternion
-            self.q = q1 * norm, q2 * norm, q3 * norm, q4 * norm
-            self.heading = 0  # Meaningless without a magnetometer
-            self.pitch = degrees(-asin(2.0 *
-                                 (self.q[1] * self.q[3] - self.q[0] * self.q[2])))
-            self.roll = degrees(atan2(2.0 * (self.q[0] * self.q[1] + self.q[2] * self.q[3]),
-                                      self.q[0] * self.q[0] - self.q[1] * self.q[1] - self.q[2] * self.q[2] + self.q[3] * self.q[3]))
-
-    async def _update_mag(self, slow_platform):
-        async for data in self.read_coro:
-            if self.expect_ts:
-                accel, gyro, mag, ts = data
-            else:
-                accel, gyro, mag = await self.read_coro()
-                ts = None
+    def go(self):
+        for k, v in self._all_data.items():
+            accel = v['accelerometer']
+            gyro = v['gyroscope']
+            mag = v['magnetometer']
+            ts = k
             mx, my, mz = (mag[x] - self.magbias[x]
                           for x in range(3))  # Units irrelevant (normalised)
             ax, ay, az = accel                  # Units irrelevant (normalised)
@@ -210,9 +125,6 @@ class Fusion(object):
                   + _2bz * q4 * (_2bx * (0.5 - q3q3 - q4q4) + _2bz * (q2q4 - q1q3) - mx) + (_2bx * q3 + _2bz * q1) * (_2bx * (q2q3 - q1q4)
                                                                                                                       + _2bz * (q1q2 + q3q4) - my) + (_2bx * q4 - _4bz * q2) * (_2bx * (q1q3 + q2q4) + _2bz * (0.5 - q2q2 - q3q3) - mz))
 
-            if slow_platform:
-                await asyncio.sleep_ms(0)
-
             s3 = (-_2q1 * (2 * q2q4 - _2q1q3 - ax) + _2q4 * (2 * q1q2 + _2q3q4 - ay) - 4 * q3 * (1 - 2 * q2q2 - 2 * q3q3 - az)
                   + (-_4bx * q3 - _2bz * q1) *
                   (_2bx * (0.5 - q3q3 - q4q4) + _2bz * (q2q4 - q1q3) - mx)
@@ -252,6 +164,12 @@ class Fusion(object):
                                  (self.q[1] * self.q[3] - self.q[0] * self.q[2])))
             self.roll = degrees(atan2(2.0 * (self.q[0] * self.q[1] + self.q[2] * self.q[3]),
                                       self.q[0] * self.q[0] - self.q[1] * self.q[1] - self.q[2] * self.q[2] + self.q[3] * self.q[3]))
+            self.results[ts] = {
+                'heading': self.heading,
+                'pitch': self.pitch,
+                'roll': self.roll,
+                'q': self.q
+            }
 
 
 def main():
@@ -270,29 +188,22 @@ def main():
             'magnetometer': predicted_mag[k]
         }
 
-    async def read_coro(imu_data):
-        for k, v in imu_data.items():
-            await asyncio.sleep(0.02)
-            yield v['accelerometer'], v['gyroscope'], v['magnetometer'], k
-
     first_timestamp = list(imu_data.keys())[0]
 
-    fuse = Fusion(read_coro, first_timestamp=first_timestamp,
-                  imu_data=all_data)
+    fuse = Fusion(first_timestamp=first_timestamp,
+                  all_data=all_data)
 
-    async def printer(fuse):
-        while True:
-            await asyncio.sleep(0.02)
+    fuse.go()
+
+    print(f'{"Timestamp":>9}{"Heading":>8}{"Pitch":>8}{"Roll":>8}')
+    for k, v in fuse.results.items():
+        if k < 2:
+            pass
+        elif k > 3:
+            break
+        else:
             print(
-                f'Heading: {fuse.heading:4.1f} Pitch: {fuse.pitch:4.1f} Roll: {fuse.roll+90:4.1f}')
-            # print(f'q: {fuse.q}')
-
-    async def do_stuff():
-        await fuse.start()
-        loop = asyncio.get_event_loop()
-        await printer(fuse)
-
-    asyncio.run(do_stuff())
+                f'{k:>9.2f}{v["heading"]:>8.2f}{v["pitch"]:>8.2f}{v["roll"]+90:>8.2f}')
 
 
 if __name__ == '__main__':

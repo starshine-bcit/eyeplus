@@ -48,6 +48,7 @@ class RegressionMagnetometerModel():
 
     def get_predicted_mag(self) -> dict:
         predicted_mag = self._trees.predict(self._p)
+        # explained_variance_score on sparse input: 0.9968204315587093
         predicted_dict = {}
         for i in range(len(self._p)):
             predicted_dict[self._p[i][0]] = [
