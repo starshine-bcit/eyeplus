@@ -8,10 +8,10 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 from qt.qtui import Ui_MainWindow
 from modules import mpv
 from qt.playbackworker import PlaybackWorker
+from qt.ingestworker import IngestWorker
 import qt.resources
 from modules.eyedb import EyeDB
 from utils.fileutils import validate_import_folder
-from modules.regressor import Regression2dGazeModel
 from utils.imageutils import create_eye_overlay
 
 
@@ -154,8 +154,8 @@ class EyeMainWindow(Ui_MainWindow):
         self.player.seek(max(time_to_seek, 1), reference='absolute')
 
     def _play_clicked(self):
-        self._tree = Regression2dGazeModel(self._gaze)
-        self._tree_predicted = self._tree.get_predicted_2d()
+        self._tree_predicted = self._db.get_pgazed2d_data(self._selected_run)
+        self._fusion_data = self._db.get_fusion_data(self._selected_run)
         self._thread_pool.start(self.playback_worker)
 
     def _safe_quit_x(self, event):
@@ -320,7 +320,6 @@ class EyeMainWindow(Ui_MainWindow):
             print(csv_to_save)
 
     def _user_chosen_output_dir(self):
-
         user_selected_dir = self.output_dir_chooser.selectedFiles()
         if len(user_selected_dir) > 0 and user_selected_dir[0] != '':
             dir_to_save = Path(user_selected_dir[0])
@@ -338,7 +337,10 @@ class EyeMainWindow(Ui_MainWindow):
                 'Error: You selected no directory to import.')
         else:
             try:
-                self._db.ingest_data(found_items, type='dir')
+                ingest_worker = IngestWorker(self._db, found_items, type='dir')
+                # create progress bar window
+                # create slots for worker
+                # connect signals here
                 self._populate_runs_tables()
                 self._update_status(
                     f'Successfully imported data from {len(found_items)} run(s)')

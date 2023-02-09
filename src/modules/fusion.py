@@ -17,7 +17,7 @@ class DeltaT():
         return delta
 
 
-class Fusion(object):
+class Fusion():
     # Optional offset for true north. A +ve value adds to heading
     declination = 0
 
