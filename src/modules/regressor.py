@@ -18,10 +18,10 @@ class Regression2dGazeModel():
         self._trees = RandomForestRegressor(
             n_estimators=200, max_depth=35, n_jobs=-1, max_features=8, random_state=20, max_samples=None, bootstrap=True)
         self._trees.fit(self._x, self._y)
-        self._length = int(round(x[-1] + 0.1, 1) * 10)
+        self._length = int(round(x[-1] + 0.05, 2) * 20)
 
     def get_predicted_2d(self) -> dict:
-        vals = [round(x / 10, 1) for x in range(self._length)]
+        vals = [round(x / 20, 1) for x in range(self._length)]
         predicted_pos = self._trees.predict(
             np.array(vals).reshape(-1, 1))
         predicted_dict = {}

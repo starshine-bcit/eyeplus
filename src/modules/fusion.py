@@ -1,7 +1,8 @@
 from pathlib import Path
-from eyedb import EyeDB
-
 from math import sqrt, atan2, asin, degrees, radians
+
+from regressor import RegressionMagnetometerModel
+from eyedb import EyeDB
 
 
 class DeltaT():
@@ -22,14 +23,11 @@ class Fusion(object):
     # Optional offset for true north. A +ve value adds to heading
     declination = 0
 
-    def __init__(self, first_timestamp: float, all_data: dict):
-        self._all_data = all_data
+    def __init__(self, imu_data: dict, mag_data: dict) -> None:
         # local magnetic bias factors: set from calibration
         self.magbias = (0, 0, 0)
         self.expect_ts = True
-        self.deltat = DeltaT(first_timestamp)      # Time between updates
-        self.q = [1.0, 0.0, 0.0, 0.0]       # vector to hold quaternion
-        # Original code indicates this leads to a 2 sec response time
+        self.q = [1.0, 0.0, 0.0, 0.0]
         GyroMeasError = radians(40)
         # compute beta (see README)
         self.beta = sqrt(3.0 / 4.0) * GyroMeasError
@@ -37,7 +35,19 @@ class Fusion(object):
         self.heading = 0
         self.roll = 0
         self.results = {}
+        self.deltat = DeltaT(list(imu_data.keys())[0])
+        mag_model = RegressionMagnetometerModel(
+            mag_data, list(imu_data.keys()))
+        predicted_mag = mag_model.get_predicted_mag()
+        self.all_data = {}
+        for k, v in imu_data.items():
+            self.all_data[k] = {
+                'accelerometer': v['accelerometer'],
+                'gyroscope': v['gyroscope'],
+                'magnetometer': predicted_mag[k]
+            }
 
+    # Maybe use this in future???
     # async def calibrate(self, stopfunc):
     #     res = await self.read_coro()
     #     mag = res[2]
@@ -52,8 +62,8 @@ class Fusion(object):
     #             magmin[x] = min(magmin[x], magxyz[x])
     #     self.magbias = tuple(map(lambda a, b: (a + b)/2, magmin, magmax))
 
-    def go(self):
-        for k, v in self._all_data.items():
+    def run(self):
+        for k, v in self.all_data.items():
             accel = v['accelerometer']
             gyro = v['gyroscope']
             mag = v['magnetometer']
@@ -170,40 +180,8 @@ class Fusion(object):
                 'q': self.q
             }
 
+        return self.results
+
 
 def main():
-    from regressor import RegressionMagnetometerModel
-    db = EyeDB(Path(__file__).parent.parent.parent / 'data' / 'eye.db')
-    imu_data = db.get_imu_data(4)
-    mag_data = db.get_mag_data(4)
-    mag_model = RegressionMagnetometerModel(mag_data, list(imu_data.keys()))
-    predicted_mag = mag_model.get_predicted_mag()
-
-    all_data = {}
-    for k, v in imu_data.items():
-        all_data[k] = {
-            'accelerometer': v['accelerometer'],
-            'gyroscope': v['gyroscope'],
-            'magnetometer': predicted_mag[k]
-        }
-
-    first_timestamp = list(imu_data.keys())[0]
-
-    fuse = Fusion(first_timestamp=first_timestamp,
-                  all_data=all_data)
-
-    fuse.go()
-
-    print(f'{"Timestamp":>9}{"Heading":>8}{"Pitch":>8}{"Roll":>8}')
-    for k, v in fuse.results.items():
-        if k < 2:
-            pass
-        elif k > 3:
-            break
-        else:
-            print(
-                f'{k:>9.2f}{v["heading"]:>8.2f}{v["pitch"]:>8.2f}{v["roll"]+90:>8.2f}')
-
-
-if __name__ == '__main__':
-    main()
+    pass

@@ -3,7 +3,7 @@ import sys
 import os
 
 from PyQt6 import QtCore, QtGui, QtWidgets
-from PIL import Image, ImageDraw
+
 
 from qt.qtui import Ui_MainWindow
 from modules import mpv
@@ -12,6 +12,7 @@ import qt.resources
 from modules.eyedb import EyeDB
 from utils.fileutils import validate_import_folder
 from modules.regressor import Regression2dGazeModel
+from utils.imageutils import create_eye_overlay
 
 
 class EyeMainWindow(Ui_MainWindow):
@@ -42,6 +43,8 @@ class EyeMainWindow(Ui_MainWindow):
         self.actionMute.setEnabled(False)
         self._videos = {}
         self._selected_run = 0
+        self._prev_x_eye = 0
+        self._prev_y_eye = 0
         self._reset_stats_text()
         self._populate_runs_tables()
         self._init_input_file_chooser()
@@ -113,24 +116,26 @@ class EyeMainWindow(Ui_MainWindow):
             curr_timestamp = round(self.player.time_pos, 1)
             if self._overlay.overlay_id:
                 self._overlay.remove()
-            img = Image.new('RGBA', [10, 10], (0, 0, 0, 0))
-            draw = ImageDraw.Draw(img)
-            draw.ellipse((0, 0, 10, 10), fill=(0, 255, 0), outline=(255, 0, 0))
-            dims = self.player.osd_dimensions
-            pos_x = int(
-                (dims['w'] - dims['ml'] - dims['mr']) * self._tree_predicted[curr_timestamp][0] + dims['ml'] - 5)
-            pos_y = int(
-                (dims['h'] - dims['mt'] - dims['mb']) * self._tree_predicted[curr_timestamp][1] + dims['mt'] - 5)
+            gaze_x = self._tree_predicted[curr_timestamp][0]
+            gaze_y = self._tree_predicted[curr_timestamp][1]
+            img, pos_x, pos_y = create_eye_overlay(
+                self.player.osd_dimensions, gaze_x, gaze_y, self._prev_x_eye, self._prev_y_eye)
             self._overlay.update(img, pos=(pos_x, pos_y))
+            self._prev_x_eye = pos_x
+            self._prev_y_eye = pos_y
             self.plainTextEditStats.setPlainText(
                 f'RunID      : {self._selected_run}\n'
                 f'Title      : {self._all_runs_list[self._selected_run -1]["tags"]}\n'
                 f'Timestamp  : {self.player.time_pos:.2f}\n'
                 f'Duration   : {self.player.duration:.2f}\n\n'
+                f'Gaze X     : {gaze_x:.4f}\n'
+                f'Gaze Y     : {gaze_y:.4f}\n'
             )
 
     def _playing_complete_callback(self):
         print('playing stopped')
+        if self._overlay.overlay_id:
+            self._overlay.remove()
         self.playback_worker.timer.stop()
         self.horizontalSliderSeek.setEnabled(False)
         self.horizontalSliderSeek.setSliderPosition(0)
