@@ -1,8 +1,6 @@
-from pathlib import Path
 from math import sqrt, atan2, asin, degrees, radians
 
 from regressor import RegressionMagnetometerModel
-from eyedb import EyeDB
 
 
 class DeltaT():
@@ -46,21 +44,6 @@ class Fusion(object):
                 'gyroscope': v['gyroscope'],
                 'magnetometer': predicted_mag[k]
             }
-
-    # Maybe use this in future???
-    # async def calibrate(self, stopfunc):
-    #     res = await self.read_coro()
-    #     mag = res[2]
-    #     # Initialise max and min lists with current values
-    #     magmax = list(mag)
-    #     magmin = magmax[:]
-    #     while not stopfunc():
-    #         res = await self.read_coro()
-    #         magxyz = res[2]
-    #         for x in range(3):
-    #             magmax[x] = max(magmax[x], magxyz[x])
-    #             magmin[x] = min(magmin[x], magxyz[x])
-    #     self.magbias = tuple(map(lambda a, b: (a + b)/2, magmin, magmax))
 
     def run(self):
         for k, v in self.all_data.items():
