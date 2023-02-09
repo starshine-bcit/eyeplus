@@ -1,7 +1,6 @@
 from pathlib import Path
 import sys
 import os
-import heapq
 
 from PyQt6 import QtCore, QtGui, QtWidgets
 
@@ -122,8 +121,11 @@ class EyeMainWindow(Ui_MainWindow):
             self.horizontalSliderSeek.setSliderPosition(progress)
         if not self.player.pause:
             curr_timestamp = round(self.player.time_pos, 1)
-            closest_fusion = heapq.nsmallest(
-                1, self._fusion_timestamps, key=lambda x: abs(x-self.player.time_pos))[0]
+            closest_fusion = self._fusion_timestamps[-1]
+            for time in self._fusion_timestamps:
+                if time >= curr_timestamp:
+                    closest_fusion = time
+                    break
             if self._overlay.overlay_id:
                 self._overlay.remove()
             gaze_x = self._tree_predicted[curr_timestamp][0]
