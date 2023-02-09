@@ -28,10 +28,11 @@ class EyeDB():
             self._temp_dir.mkdir()
         if not self._video_dir.is_dir():
             self._video_dir.mkdir()
-        self._con = sqlite3.connect(self._db_path)
-        self._cur = self._con.cursor()
         if not self._db_path.is_file():
             self._init_db()
+        else:
+            self._con = sqlite3.connect(self._db_path)
+            self._cur = self._con.cursor()
 
     def ingest_data(self, paths: list[Path], type: str = 'zip') -> list[int]:
         """Takes a list of paths with with the type of 'zip' or 'dir' and imports them
@@ -209,10 +210,15 @@ class EyeDB():
             self._cur.executemany(mag_query, mag_data_list)
 
         self._con.commit()
+        return runs_ingested
 
     def _init_db(self) -> None:
         """Creates the database and tables if it does not exist.
         """
+
+        self._con = sqlite3.connect(self._db_path)
+        self._cur = self._con.cursor()
+
         self._cur.execute('''CREATE TABLE IF NOT EXISTS run(
                 id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
                 importdate TEXT NOT NULL,
@@ -365,10 +371,8 @@ class EyeDB():
                         'diameter': line[21]
                     }
                 }
-            self._cur.close()
             return gaze_dict
         else:
-            self._cur.close()
             raise RuntimeError(f'Trying to select a non-existant ID: {runid}')
 
     def get_imu_data(self, runid: int) -> dict:
@@ -437,7 +441,7 @@ class EyeDB():
                        'pgaze2dx': v[0], 'pgaze2dy': v[1]} for k, v in pgaze.items()]
         pgaze_insert_query = '''INSERT INTO pgaze2d
             (runid, timestamp, pgaze2dx, pgaze2dy)
-            VALUES(:runid, :timestamp, :pgaze2x, :pgaze2dy);'''
+            VALUES(:runid, :timestamp, :pgaze2dx, :pgaze2dy);'''
         self._cur.executemany(pgaze_insert_query, pgaze_data)
         self._con.commit()
 

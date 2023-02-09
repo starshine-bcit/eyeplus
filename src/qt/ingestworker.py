@@ -13,19 +13,20 @@ class IngestWorkerSignals(QtCore.QObject):
 
 
 class IngestWorker(QtCore.QRunnable):
-    def __init__(self, eyedb: EyeDB, paths: list[Path], type: str = 'zip') -> None:
+    def __init__(self, db_path: Path, paths: list[Path], type: str = 'zip') -> None:
         super().__init__()
         self.signals = IngestWorkerSignals()
-        self.eyedb = eyedb
+        self.db_path = db_path
         self.paths = paths
         self.type = type
         self.setAutoDelete(True)
 
-    @QtCore.pyqtslot()
+    @QtCore.pyqtSlot()
     def run(self):
         self.signals.started.emit()
-        ingest_and_process(self.cb_progress, self.eyedb, self.paths, self.type)
+        eyedb = EyeDB(self.db_path)
+        ingest_and_process(self.cb_progress, eyedb, self.paths, self.type)
         self.signals.finished.emit()
 
     def cb_progress(self, message: str, progress: float) -> None:
-        self.signals.progress.emit((message, progress))
+        self.signals.progress.emit(message, progress)

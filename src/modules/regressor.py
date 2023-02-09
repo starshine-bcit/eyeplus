@@ -21,7 +21,7 @@ class Regression2dGazeModel():
         self._length = int(round(x[-1] + 0.05, 2) * 20)
 
     def get_predicted_2d(self) -> dict:
-        vals = [round(x / 20, 1) for x in range(self._length)]
+        vals = [round(x / 20, 2) for x in range(self._length)]
         predicted_pos = self._trees.predict(
             np.array(vals).reshape(-1, 1))
         predicted_dict = {}

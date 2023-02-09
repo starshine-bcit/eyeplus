@@ -11,7 +11,7 @@ def ingest_and_process(cb_progress, eyedb: EyeDB, paths: list[Path], type: str =
     runs_to_process = eyedb.ingest_data(paths, type)
     progress += 0.25
     cb_progress('Data ingested!', progress)
-    max_run = len(runid)
+    max_run = len(runs_to_process)
     for index, runid in enumerate(runs_to_process):
         current_run = index + 1
         gaze_data = eyedb.get_gaze_data(runid)

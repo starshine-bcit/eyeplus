@@ -1,6 +1,7 @@
 from pathlib import Path
 import sys
 import os
+import heapq
 
 from PyQt6 import QtCore, QtGui, QtWidgets
 
@@ -11,6 +12,7 @@ from qt.playbackworker import PlaybackWorker
 from qt.ingestworker import IngestWorker
 import qt.resources
 from modules.eyedb import EyeDB
+from qt.processui import Ui_dialogProcessing
 from utils.fileutils import validate_import_folder
 from utils.imageutils import create_eye_overlay
 
@@ -19,8 +21,8 @@ class EyeMainWindow(Ui_MainWindow):
     def __init__(self, main_window: QtWidgets.QMainWindow, app: QtWidgets.QApplication) -> None:
         self.app = app
         self.main_window = main_window
-        self._db = EyeDB(
-            Path(__file__).parent.parent.parent / 'data' / 'eye.db')
+        self._db_path = Path(__file__).parent.parent.parent / 'data' / 'eye.db'
+        self._db = EyeDB(self._db_path)
         self.setupUi(self.main_window)
         self._setup_custom_ui()
         self._connect_events()
@@ -52,6 +54,7 @@ class EyeMainWindow(Ui_MainWindow):
         self._init_output_dir_chooser()
         self._init_input_dir_chooser()
         self._init_status_bar()
+        self._setup_loading_dialog()
 
     def _connect_events(self):
         self.horizontalSliderSeek.sliderMoved.connect(self._seekbar_moved)
@@ -93,6 +96,11 @@ class EyeMainWindow(Ui_MainWindow):
             self._playing_complete_callback)
         print('player setup')
 
+    def _setup_loading_dialog(self):
+        self.processing_dialog = QtWidgets.QDialog(parent=self.main_window)
+        self.process_ui = Ui_dialogProcessing()
+        self.process_ui.setupUi(self.processing_dialog)
+
     def _playing_started_callback(self):
         print(f'playing started\nduration: {self.player.duration}')
         if self.actionMute.isChecked():
@@ -114,6 +122,8 @@ class EyeMainWindow(Ui_MainWindow):
             self.horizontalSliderSeek.setSliderPosition(progress)
         if not self.player.pause:
             curr_timestamp = round(self.player.time_pos, 1)
+            closest_fusion = heapq.nsmallest(
+                1, self._fusion_timestamps, key=lambda x: abs(x-self.player.time_pos))[0]
             if self._overlay.overlay_id:
                 self._overlay.remove()
             gaze_x = self._tree_predicted[curr_timestamp][0]
@@ -129,7 +139,10 @@ class EyeMainWindow(Ui_MainWindow):
                 f'Timestamp  : {self.player.time_pos:.2f}\n'
                 f'Duration   : {self.player.duration:.2f}\n\n'
                 f'Gaze X     : {gaze_x:.4f}\n'
-                f'Gaze Y     : {gaze_y:.4f}\n'
+                f'Gaze Y     : {gaze_y:.4f}\n\n'
+                f'Heading    : {self._fusion_data[closest_fusion]["heading"]:.4f}\n'
+                f'Roll       : {self._fusion_data[closest_fusion]["roll"]:.4f}\n'
+                f'Pitch      : {self._fusion_data[closest_fusion]["pitch"]:.4f}\n'
             )
 
     def _playing_complete_callback(self):
@@ -156,6 +169,7 @@ class EyeMainWindow(Ui_MainWindow):
     def _play_clicked(self):
         self._tree_predicted = self._db.get_pgazed2d_data(self._selected_run)
         self._fusion_data = self._db.get_fusion_data(self._selected_run)
+        self._fusion_timestamps = list(self._fusion_data.keys())
         self._thread_pool.start(self.playback_worker)
 
     def _safe_quit_x(self, event):
@@ -336,34 +350,31 @@ class EyeMainWindow(Ui_MainWindow):
             self._error_box.showMessage(
                 'Error: You selected no directory to import.')
         else:
-            try:
-                ingest_worker = IngestWorker(self._db, found_items, type='dir')
-                # create progress bar window
-                # create slots for worker
-                # connect signals here
-                self._populate_runs_tables()
-                self._update_status(
-                    f'Successfully imported data from {len(found_items)} run(s)')
-            except FileExistsError:
-                self._error_box.showMessage(
-                    'Error: You have attempted to import one or more runs which already have been imported.')
+            self._ingest_data(found_items, 'dir')
 
     def _user_chosen_zip(self):
         user_selected_zips = self.input_file_chooser.selectedFiles()
         if len(user_selected_zips) > 0:
             zips_to_import = [Path(x)
                               for x in user_selected_zips if x != '']
-            try:
-                self._db.ingest_data(zips_to_import, type='zip')
-                self._populate_runs_tables()
-                self._update_status(
-                    f'Successfully imported data from {len(zips_to_import)} run(s)')
-            except FileExistsError as err:
-                self._error_box.showMessage(
-                    'Error: You have attempted to import one or more runs which already have been imported.')
+            self._ingest_data(zips_to_import, 'zip')
         else:
             self._error_box.showMessage(
                 'Error: You selected no zip file to import.')
+
+    def _ingest_data(self, found_items: list[Path], ftype: str):
+        try:
+            ingest_worker = IngestWorker(self._db_path, found_items, ftype)
+            ingest_worker.signals.started.connect(
+                self._progress_dialog_start)
+            ingest_worker.signals.progress.connect(
+                self._progress_dialog_update)
+            ingest_worker.signals.finished.connect(
+                self._progress_dialog_finish)
+            self._thread_pool.start(ingest_worker)
+        except FileExistsError:
+            self._error_box.showMessage(
+                'Error: You have attempted to import one or more runs which already have been imported.')
 
     def _init_status_bar(self) -> None:
         """Initializes status bar widgets, since Qt Creator doesn't allow
@@ -401,3 +412,20 @@ class EyeMainWindow(Ui_MainWindow):
 
     def _update_status(self, message: str) -> None:
         self.statusbar.showMessage(message, 2500)
+
+    def _progress_dialog_start(self) -> None:
+        self._update_status('Beginning import and processing...')
+        self.process_ui.labelProcessing.setText('Warming up...')
+        self.process_ui.progressBarProcessing.setValue(0)
+        self.main_window.hide()
+        self.processing_dialog.show()
+
+    def _progress_dialog_update(self, message: str, progress: float) -> None:
+        self.process_ui.labelProcessing.setText(message)
+        self.process_ui.progressBarProcessing.setValue(int(progress * 100))
+
+    def _progress_dialog_finish(self) -> None:
+        self.processing_dialog.hide()
+        self.main_window.show()
+        self._populate_runs_tables()
+        self._update_status(f'Successfully imported data')

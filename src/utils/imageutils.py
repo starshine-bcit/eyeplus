@@ -3,14 +3,9 @@ from PIL import Image, ImageDraw
 
 
 def create_eye_overlay(dims: tuple, predict_x: float, predict_y: float, prev_x: int, prev_y: int) -> Tuple:
-    if dims['w'] >= 960 or dims['h'] >= 540:
-        height = 35
-        width = 35
-        line = 3
-    else:
-        height = 20
-        width = 20
-        line = 2
+    height = 20
+    width = 20
+    line = 2
     img = Image.new('RGBA', [30, 30], (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
     draw.ellipse(((0, 0), (height, width)), fill=None,

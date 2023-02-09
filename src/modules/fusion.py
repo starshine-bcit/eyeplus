@@ -1,6 +1,6 @@
 from math import sqrt, atan2, asin, degrees, radians
 
-from regressor import RegressionMagnetometerModel
+from modules.regressor import RegressionMagnetometerModel
 
 
 class DeltaT():
