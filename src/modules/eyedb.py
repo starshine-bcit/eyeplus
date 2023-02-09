@@ -64,6 +64,10 @@ class EyeDB():
          leftdirection2,  leftdiameter, rightorigin0, rightorigin1, rightorigin2, rightdirection0, rightdirection1, rightdirection2, rightdiameter)
         VALUES(:runid, :timestamp, :gaze2d0, :gaze2d1, :gaze3d0, :gaze3d1, :gaze3d2, :leftorigin0, :leftorigin1, :leftorigin2, :leftdirection0, :leftdirection1, :leftdirection2, :leftdiameter, :rightorigin0, :rightorigin1, :rightorigin2, :rightdirection0, :rightdirection1, :rightdirection2, :rightdiameter);'''
 
+        mag_query = '''INSERT INTO mag
+        (runid, timestamp, mag0, mag1, mag2)
+        VALUES(:runid, :timestamp, :mag0, :mag1, :mag2);'''
+
         for item in paths:
             now = datetime.now().timestamp()
             mod_time = date.fromtimestamp(item.stat().st_mtime)
@@ -125,6 +129,7 @@ class EyeDB():
 
             imu_data_list = []
             gaze_data_list = []
+            mag_data_list = []
 
             for line in imu_data.splitlines():
                 decoded = json.loads(line)
@@ -138,6 +143,14 @@ class EyeDB():
                         'gyroscope0': decoded['data']['gyroscope'][0],
                         'gyroscope1': decoded['data']['gyroscope'][1],
                         'gyroscope2': decoded['data']['gyroscope'][2],
+                    })
+                elif 'magnetometer' in decoded['data']:
+                    mag_data_list.append({
+                        'runid': runid,
+                        'timestamp': decoded['timestamp'],
+                        'mag0': decoded['data']['magnetometer'][0],
+                        'mag1': decoded['data']['magnetometer'][1],
+                        'mag2': decoded['data']['magnetometer'][2],
                     })
 
             for line in gaze_data.splitlines():
@@ -188,6 +201,7 @@ class EyeDB():
 
             cur.executemany(imu_query, imu_data_list)
             cur.executemany(gaze_query, gaze_data_list)
+            cur.executemany(mag_query, mag_data_list)
 
         self._con.commit()
         cur.close()
@@ -242,10 +256,28 @@ class EyeDB():
                 gyroscope2 REAL NOT NULL,
                 FOREIGN KEY(runid) REFERENCES run(id));''')
 
+        cur.execute('''CREATE TABLE IF NOT EXISTS mag(
+                id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                runid INTEGER NOT NULL,
+                timestamp REAL NOT NULL,
+                mag0 REAL NOT NULL,
+                mag1 REAL NOT NULL,
+                mag2 REAL NOT NULL,
+                FOREIGN KEY(runid) REFERENCES run(id));''')
+
         cur.execute('''CREATE TABLE IF NOT EXISTS processed(
                 id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
                 runid INTEGER NOT NULL,
                 FOREIGN KEY(runid) REFERENCES run(id));''')
+
+        cur.execute('''CREATE INDEX idx_imu_id
+                ON imu (id, runid);''')
+
+        cur.execute('''CREATE INDEX idx_gaze_id
+                ON gaze (id, runid);''')
+
+        cur.execute('''CREATE INDEX idx_mag_id
+                ON mag (id, runid);''')
 
         self._con.commit()
         cur.close()
@@ -282,7 +314,8 @@ class EyeDB():
         cur.execute('''SELECT id FROM run WHERE id=(?);''', (runid,))
         res = cur.fetchall()
         if res:
-            cur.execute('''SELECT * FROM gaze WHERE runid=(?);''', (runid,))
+            cur.execute(
+                '''SELECT * FROM gaze WHERE runid=(?) ORDER BY id ASC;''', (runid,))
             imu_data = cur.fetchall()
             for line in imu_data:
                 gaze_dict[line[2]] = {
@@ -311,7 +344,8 @@ class EyeDB():
         cur.execute('''SELECT id FROM run WHERE id=(?);''', (runid,))
         res = cur.fetchall()
         if res:
-            cur.execute('''SELECT * FROM imu WHERE runid=(?);''', (runid,))
+            cur.execute(
+                '''SELECT * FROM imu WHERE runid=(?) ORDER BY id ASC;''', (runid,))
             imu_data = cur.fetchall()
             for line in imu_data:
                 imu_dict[line[2]] = {
@@ -320,6 +354,25 @@ class EyeDB():
                 }
             cur.close()
             return imu_dict
+        else:
+            cur.close()
+            raise RuntimeError(f'Trying to select a non-existant ID: {runid}')
+
+    def get_mag_data(self, runid: int) -> dict:
+        mag_dict = {}
+        cur = self._con.cursor()
+        cur.execute('''SELECT id FROM run WHERE id=(?);''', (runid,))
+        res = cur.fetchall()
+        if res:
+            cur.execute(
+                '''SELECT * FROM imu where runid=(?) ORDER BY id ASC;''', (runid,))
+            mag_data = cur.fetchall()
+            for line in mag_data:
+                mag_dict[line[2]] = {
+                    'magnetometer': [line[3], line[4], line[5]]
+                }
+            cur.close()
+            return mag_dict
         else:
             cur.close()
             raise RuntimeError(f'Trying to select a non-existant ID: {runid}')
