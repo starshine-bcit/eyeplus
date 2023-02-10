@@ -169,12 +169,14 @@ class Fusion():
 
             #calculate intercepts as percentage of screen based off head pitch and slope
             theta = self.pitch
-            if theta > 0:
-                self.y_intercept = .25/tan(radians(theta))
+
+            fov_constant = 0.25 #determined so that looking up 45 degrees would move the slope down 25 percent of the screen, and vice versa
+
+            if theta >= 0:
+                self.y_intercept = 0.5 - tan(radians(theta))*fov_constant
             elif theta < 0:
-                self.y_intercept = 1 - (-.25)/tan(radians(theta))
-            else:
-                self.y_intercept = 0
+                theta = -theta
+                self.y_intercept = 0.5 + tan(radians(theta))*fov_constant
 
             self.x_intercept = -self.y_intercept/self.slope
 
