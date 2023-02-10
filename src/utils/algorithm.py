@@ -16,4 +16,12 @@ def calculate_horizon_line(accelerometer, gyroscope):
 
 def compare_gaze_coordinates(gaze_coordinates):
     """Uses horizon line angle and position and gaze coordinates to determine if the user is looking above or below the horizon at the timestamp."""
-    pass
+    # Rotates the gaze coordinates to match the horizon line angle and position
+    x = gaze_coordinates[0] * math.cos(pitch) + gaze_coordinates[2] * math.sin(pitch)
+    y = gaze_coordinates[1] * math.cos(roll) -  gaze_coordinates[2] * math.sin(roll)
+
+    #Determines if the gaze is above or below the horizon line
+    if y > 0:
+        return "above"
+    else:
+        return "below
