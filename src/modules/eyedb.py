@@ -28,12 +28,13 @@ class EyeDB():
             self._temp_dir.mkdir()
         if not self._video_dir.is_dir():
             self._video_dir.mkdir()
-        if self._db_path.is_file():
-            self._con = sqlite3.connect(self._db_path)
-        else:
+        if not self._db_path.is_file():
             self._init_db()
+        else:
+            self._con = sqlite3.connect(self._db_path)
+            self._cur = self._con.cursor()
 
-    def ingest_data(self, paths: list[Path], type: str = 'zip') -> None:
+    def ingest_data(self, paths: list[Path], type: str = 'zip') -> list[int]:
         """Takes a list of paths with with the type of 'zip' or 'dir' and imports them
         into the database
 
@@ -44,11 +45,12 @@ class EyeDB():
         Raises:
             FileExistsError: If the data that the user is attempting to import already
             exists in the database
+
+        Returns:
+            list[int]: List of all the runids imported at once
         """
 
         # Create backup here
-
-        cur = self._con.cursor()
 
         run_query = '''INSERT INTO run
         (importdate, tags, video, hash)
@@ -67,6 +69,8 @@ class EyeDB():
         mag_query = '''INSERT INTO mag
         (runid, timestamp, mag0, mag1, mag2)
         VALUES(:runid, :timestamp, :mag0, :mag1, :mag2);'''
+
+        runs_ingested = []
 
         for item in paths:
             now = datetime.now().timestamp()
@@ -89,8 +93,8 @@ class EyeDB():
 
             with imu_path.open('rb') as fo:
                 hash = file_digest(fo, 'sha256').hexdigest()
-            cur.execute('''SELECT hash FROM run''')
-            hashes = cur.fetchall()
+            self._cur.execute('''SELECT hash FROM run''')
+            hashes = self._cur.fetchall()
             for db_hash in hashes:
                 if db_hash[0] == hash:
                     if type == 'zip':
@@ -121,11 +125,13 @@ class EyeDB():
                 'hash': hash
             }
 
-            cur.execute(run_query, run_data_to_import)
+            self._cur.execute(run_query, run_data_to_import)
             self._con.commit()
-            cur.execute('''SELECT seq FROM sqlite_sequence WHERE name="run"''')
-            res = cur.fetchone()
+            self._cur.execute(
+                '''SELECT seq FROM sqlite_sequence WHERE name="run"''')
+            res = self._cur.fetchone()
             runid = res[0]
+            runs_ingested.append(runid)
 
             imu_data_list = []
             gaze_data_list = []
@@ -199,19 +205,21 @@ class EyeDB():
                     'rightdiameter': decoded['data']['eyeright']['pupildiameter']
                 })
 
-            cur.executemany(imu_query, imu_data_list)
-            cur.executemany(gaze_query, gaze_data_list)
-            cur.executemany(mag_query, mag_data_list)
+            self._cur.executemany(imu_query, imu_data_list)
+            self._cur.executemany(gaze_query, gaze_data_list)
+            self._cur.executemany(mag_query, mag_data_list)
 
         self._con.commit()
-        cur.close()
+        return runs_ingested
 
     def _init_db(self) -> None:
         """Creates the database and tables if it does not exist.
         """
+
         self._con = sqlite3.connect(self._db_path)
-        cur = self._con.cursor()
-        cur.execute('''CREATE TABLE IF NOT EXISTS run(
+        self._cur = self._con.cursor()
+
+        self._cur.execute('''CREATE TABLE IF NOT EXISTS run(
                 id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
                 importdate TEXT NOT NULL,
                 processdate TEXT,
@@ -219,7 +227,7 @@ class EyeDB():
                 hash TEXT NOT NULL,
                 tags TEXT);''')
 
-        cur.execute('''CREATE TABLE IF NOT EXISTS gaze(
+        self._cur.execute('''CREATE TABLE IF NOT EXISTS gaze(
                 id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
                 runid INTEGER NOT NULL,
                 timestamp REAL NOT NULL,
@@ -244,7 +252,7 @@ class EyeDB():
                 rightdiameter REAL,
                 FOREIGN KEY(runid) REFERENCES run(id));''')
 
-        cur.execute('''CREATE TABLE IF NOT EXISTS imu(
+        self._cur.execute('''CREATE TABLE IF NOT EXISTS imu(
                 id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
                 runid INTEGER NOT NULL,
                 timestamp REAL NOT NULL,
@@ -256,7 +264,7 @@ class EyeDB():
                 gyroscope2 REAL NOT NULL,
                 FOREIGN KEY(runid) REFERENCES run(id));''')
 
-        cur.execute('''CREATE TABLE IF NOT EXISTS mag(
+        self._cur.execute('''CREATE TABLE IF NOT EXISTS mag(
                 id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
                 runid INTEGER NOT NULL,
                 timestamp REAL NOT NULL,
@@ -265,26 +273,48 @@ class EyeDB():
                 mag2 REAL NOT NULL,
                 FOREIGN KEY(runid) REFERENCES run(id));''')
 
-        cur.execute('''CREATE TABLE IF NOT EXISTS processed(
+        self._cur.execute('''CREATE TABLE IF NOT EXISTS pgaze2d(
                 id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
                 runid INTEGER NOT NULL,
+                timestamp REAL NOT NULL,
+                pgaze2dx REAL NOT NULL,
+                pgaze2dy REAL NOT NULL,
                 FOREIGN KEY(runid) REFERENCES run(id));''')
 
-        cur.execute('''CREATE INDEX idx_imu_id
+        self._cur.execute('''CREATE TABLE IF NOT EXISTS fusion(
+                id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                runid INTEGER NOT NULL,
+                timestamp REAL NOT NULL,
+                heading REAL NOT NULL,
+                pitch REAL NOT NULL,
+                roll REAL NOT NULL,
+                q0 REAL NOT NULL,
+                q1 REAL NOT NULL,
+                q2 REAL NOT NULL,
+                q3 REAL NOT NULL,
+                FOREIGN KEY(runid) REFERENCES run(id));''')
+
+        self._cur.execute('''CREATE INDEX idx_imu_id
                 ON imu (id, runid);''')
 
-        cur.execute('''CREATE INDEX idx_gaze_id
+        self._cur.execute('''CREATE INDEX idx_gaze_id
                 ON gaze (id, runid);''')
 
-        cur.execute('''CREATE INDEX idx_mag_id
+        self._cur.execute('''CREATE INDEX idx_mag_id
                 ON mag (id, runid);''')
 
+        self._cur.execute('''CREATE INDEX idx_pgaze2d_id
+                ON pgaze2d (id, runid);''')
+
+        self._cur.execute('''CREATE INDEX idx_fusion_id
+                ON fusion (id, runid);''')
+
         self._con.commit()
-        cur.close()
 
     def disconnect_db(self) -> None:
         """Closes the connection with database, allowing for a safe program exit.
         """
+        self._cur.close()
         self._con.close()
 
     def get_all_runs(self) -> list[dict]:
@@ -293,10 +323,9 @@ class EyeDB():
         Returns:
             list[dict]: Information from the 'run' table that is deemed relevant.
         """
-        cur = self._con.cursor()
-        cur.execute('''SELECT id, importdate, processdate, video, tags
+        self._cur.execute('''SELECT id, importdate, processdate, video, tags
         FROM run;''')
-        all_runs = cur.fetchall()
+        all_runs = self._cur.fetchall()
         ret_runs = []
         for run in all_runs:
             ret_runs.append({
@@ -309,14 +338,24 @@ class EyeDB():
         return ret_runs
 
     def get_gaze_data(self, runid: int) -> dict:
+        """Gets all relevant gaze data matching the runid
+
+        Args:
+            runid (int): id of the run from which we need data
+
+        Raises:
+            RuntimeError: If we are trying to select a non-existant id
+
+        Returns:
+            dict: Data loaded in a dict and ready for the other components
+        """
         gaze_dict = {}
-        cur = self._con.cursor()
-        cur.execute('''SELECT id FROM run WHERE id=(?);''', (runid,))
-        res = cur.fetchall()
+        self._cur.execute('''SELECT id FROM run WHERE id=(?);''', (runid,))
+        res = self._cur.fetchall()
         if res:
-            cur.execute(
+            self._cur.execute(
                 '''SELECT * FROM gaze WHERE runid=(?) ORDER BY id ASC;''', (runid,))
-            imu_data = cur.fetchall()
+            imu_data = self._cur.fetchall()
             for line in imu_data:
                 gaze_dict[line[2]] = {
                     'gaze2d': [line[3], line[4]],
@@ -332,49 +371,145 @@ class EyeDB():
                         'diameter': line[21]
                     }
                 }
-            cur.close()
             return gaze_dict
         else:
-            cur.close()
             raise RuntimeError(f'Trying to select a non-existant ID: {runid}')
 
     def get_imu_data(self, runid: int) -> dict:
+        """Gets all relevant imu data from the runid
+
+        Args:
+            runid (int): The run we wish to grab data from
+
+        Raises:
+            RuntimeError: If we are trying to select a nonexistant runid
+
+        Returns:
+            dict: imu data ready for the other components
+        """
         imu_dict = {}
-        cur = self._con.cursor()
-        cur.execute('''SELECT id FROM run WHERE id=(?);''', (runid,))
-        res = cur.fetchall()
+        self._cur.execute('''SELECT id FROM run WHERE id=(?);''', (runid,))
+        res = self._cur.fetchall()
         if res:
-            cur.execute(
+            self._cur.execute(
                 '''SELECT * FROM imu WHERE runid=(?) ORDER BY id ASC;''', (runid,))
-            imu_data = cur.fetchall()
+            imu_data = self._cur.fetchall()
             for line in imu_data:
                 imu_dict[line[2]] = {
                     'accelerometer': [line[3], line[4], line[5]],
                     'gyroscope': [line[6], line[7], line[8]]
                 }
-            cur.close()
             return imu_dict
         else:
-            cur.close()
             raise RuntimeError(f'Trying to select a non-existant ID: {runid}')
 
     def get_mag_data(self, runid: int) -> dict:
+        """Gets relevant mag data for the runid
+
+        Args:
+            runid (int): The runid of the data we wish to grab
+
+        Raises:
+            RuntimeError: If the runid does not exist
+
+        Returns:
+            dict: mag data formatted and ready for the other components
+        """
         mag_dict = {}
-        cur = self._con.cursor()
-        cur.execute('''SELECT id FROM run WHERE id=(?);''', (runid,))
-        res = cur.fetchall()
+        self._cur.execute('''SELECT id FROM run WHERE id=(?);''', (runid,))
+        res = self._cur.fetchall()
         if res:
-            cur.execute(
+            self._cur.execute(
                 '''SELECT * FROM imu where runid=(?) ORDER BY id ASC;''', (runid,))
-            mag_data = cur.fetchall()
+            mag_data = self._cur.fetchall()
             for line in mag_data:
                 mag_dict[line[2]] = {
                     'magnetometer': [line[3], line[4], line[5]]
                 }
-            cur.close()
             return mag_dict
         else:
-            cur.close()
+            raise RuntimeError(f'Trying to select a non-existant ID: {runid}')
+
+    def write_pgaze2d_data(self, runid: int, pgaze: dict) -> None:
+        """Writes out all predicted 2d gaze data to the database
+
+        Args:
+            runid (int): The runid of the data
+            pgaze (dict): The data to ingest
+        """
+        pgaze_data = [{'runid': runid, 'timestamp': k,
+                       'pgaze2dx': v[0], 'pgaze2dy': v[1]} for k, v in pgaze.items()]
+        pgaze_insert_query = '''INSERT INTO pgaze2d
+            (runid, timestamp, pgaze2dx, pgaze2dy)
+            VALUES(:runid, :timestamp, :pgaze2dx, :pgaze2dy);'''
+        self._cur.executemany(pgaze_insert_query, pgaze_data)
+        self._con.commit()
+
+    def get_pgazed2d_data(self, runid: int) -> None:
+        """Gets all relevant predicted 2d gaze data for the runid
+
+        Args:
+            runid (int): The runid of the data we wish to grab
+
+        Raises:
+            RuntimeError: If the runid does not exist
+        """
+        pgaze_dict = {}
+        self._cur.execute('''SELECT id FROM run WHERE id=(?);''', (runid,))
+        res = self._cur.fetchall()
+        if res:
+            self._cur.execute(
+                '''SELECT * FROM pgaze2d WHERE runid=(?) ORDER BY id ASC;''', (runid,))
+            pgaze_data = self._cur.fetchall()
+            for line in pgaze_data:
+                pgaze_dict[line[2]] = [line[3], line[4]]
+            return pgaze_dict
+        else:
+            raise RuntimeError(f'Trying to select a non-existant ID: {runid}')
+
+    def write_fusion_data(self, runid: int, fusion: dict) -> None:
+        """Writes out all fusion data to the database for the runid
+
+        Args:
+            runid (int): runid of the processed data
+            fusion (dict): The data to ingest
+        """
+        fusion_data = [{'runid': runid, 'timestamp': k, 'heading': v['heading'], 'pitch': v['pitch'], 'roll': v['roll'],
+                        'q0': v['q'][0], 'q1': v['q'][1], 'q2': v['q'][2], 'q3': v['q'][3]} for k, v in fusion.items()]
+        fusion_insert_query = '''INSERT INTO fusion
+            (runid, timestamp, heading, pitch, roll, q0, q1, q2, q3)
+            VALUES(:runid, :timestamp, :heading, :pitch, :roll, :q0, :q1, :q2, :q3);'''
+        self._cur.executemany(fusion_insert_query, fusion_data)
+        self._con.commit()
+
+    def get_fusion_data(self, runid: int) -> dict:
+        """Gets all relevant fusion data for the runid
+
+        Args:
+            runid (int): runid of the data we want to grab
+
+        Raises:
+            RuntimeError: If the runid does not exist
+
+        Returns:
+            dict: fusion data ready for other components
+        """
+        fusion_dict = {}
+        self._cur.execute('''SELECT id FROM run WHERE id=(?);''', (runid,))
+        res = self._cur.fetchall()
+        if res:
+            self._cur.execute(
+                '''SELECT * FROM fusion WHERE runid=(?) ORDER BY id ASC;''', (runid,))
+            fusion_data = self._cur.fetchall()
+            for line in fusion_data:
+                fusion_dict[line[2]] = {
+                    'heading': line[3],
+                    'pitch': line[4],
+                    'roll': line[5],
+                    'q': (line[6], line[7], line[8], line[9])
+                }
+            return fusion_dict
+        else:
             raise RuntimeError(f'Trying to select a non-existant ID: {runid}')
 
 

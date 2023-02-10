@@ -1,6 +1,6 @@
 from math import sqrt, atan2, asin, degrees, radians
 
-from regressor import RegressionMagnetometerModel
+from modules.regressor import RegressionMagnetometerModel
 
 
 class DeltaT():
@@ -17,7 +17,7 @@ class DeltaT():
         return delta
 
 
-class Fusion(object):
+class Fusion():
     # Optional offset for true north. A +ve value adds to heading
     declination = 0
 
