@@ -1,4 +1,4 @@
-from math import sqrt, atan2, asin, degrees, radians
+from math import sqrt, atan2, asin, degrees, radians, tan
 
 from modules.regressor import RegressionMagnetometerModel
 
@@ -32,6 +32,9 @@ class Fusion():
         self.pitch = 0
         self.heading = 0
         self.roll = 0
+        self.y_intercept = 0
+        self.x_intercept = 0
+        self.slope = 0
         self.results = {}
         self.deltat = DeltaT(list(imu_data.keys())[0])
         mag_model = RegressionMagnetometerModel(
@@ -156,11 +159,35 @@ class Fusion():
                                  (self.q[1] * self.q[3] - self.q[0] * self.q[2])))
             self.roll = degrees(atan2(2.0 * (self.q[0] * self.q[1] + self.q[2] * self.q[3]),
                                       self.q[0] * self.q[0] - self.q[1] * self.q[1] - self.q[2] * self.q[2] + self.q[3] * self.q[3]))
+
+            #calculate slope based off head tilt
+            theta = self.roll + 90
+            if theta != 90 or theta != -90:
+                self.slope = tan(radians(theta))
+            else:
+                self.slope = float('inf')
+
+            #calculate intercepts as percentage of screen based off head pitch and slope
+            theta = self.pitch
+
+            fov_constant = 0.25 #determined so that looking up 45 degrees would move the slope down 25 percent of the screen, and vice versa
+
+            if theta >= 0:
+                self.y_intercept = 0.5 - tan(radians(theta))*fov_constant
+            elif theta < 0:
+                theta = -theta
+                self.y_intercept = 0.5 + tan(radians(theta))*fov_constant
+
+            self.x_intercept = -self.y_intercept/self.slope
+
             self.results[ts] = {
                 'heading': self.heading,
                 'pitch': self.pitch,
                 'roll': self.roll,
-                'q': self.q
+                'q': self.q,
+                'y_intercept': self.y_intercept,
+                'x_intercept': self.x_intercept,
+                'slope': self.slope
             }
 
         return self.results
