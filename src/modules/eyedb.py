@@ -292,6 +292,9 @@ class EyeDB():
                 q1 REAL NOT NULL,
                 q2 REAL NOT NULL,
                 q3 REAL NOT NULL,
+                yinter REAL NOT NULL,
+                xinter REAL NOT NULL,
+                slope REAL NOT NULL,
                 FOREIGN KEY(runid) REFERENCES run(id));''')
 
         self._cur.execute('''CREATE INDEX idx_imu_id
@@ -475,10 +478,10 @@ class EyeDB():
             fusion (dict): The data to ingest
         """
         fusion_data = [{'runid': runid, 'timestamp': k, 'heading': v['heading'], 'pitch': v['pitch'], 'roll': v['roll'],
-                        'q0': v['q'][0], 'q1': v['q'][1], 'q2': v['q'][2], 'q3': v['q'][3]} for k, v in fusion.items()]
+                        'q0': v['q'][0], 'q1': v['q'][1], 'q2': v['q'][2], 'q3': v['q'][3], 'yinter': v['y_intercept'], 'xinter': v['x_intercept'], 'slope': v['slope']} for k, v in fusion.items()]
         fusion_insert_query = '''INSERT INTO fusion
-            (runid, timestamp, heading, pitch, roll, q0, q1, q2, q3)
-            VALUES(:runid, :timestamp, :heading, :pitch, :roll, :q0, :q1, :q2, :q3);'''
+            (runid, timestamp, heading, pitch, roll, q0, q1, q2, q3, yinter, xinter, slope)
+            VALUES(:runid, :timestamp, :heading, :pitch, :roll, :q0, :q1, :q2, :q3, :yinter, :xinter, :slope);'''
         self._cur.executemany(fusion_insert_query, fusion_data)
         self._con.commit()
 
@@ -506,7 +509,10 @@ class EyeDB():
                     'heading': line[3],
                     'pitch': line[4],
                     'roll': line[5],
-                    'q': (line[6], line[7], line[8], line[9])
+                    'q': (line[6], line[7], line[8], line[9]),
+                    'y_intercept': line[10],
+                    'x_intercept': line[11],
+                    'slope': line[12]
                 }
             return fusion_dict
         else:

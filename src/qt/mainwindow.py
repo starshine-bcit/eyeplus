@@ -154,9 +154,12 @@ class EyeMainWindow(Ui_MainWindow):
                 f'Duration   : {self.player.duration:.2f}\n\n'
                 f'Gaze X     : {gaze_x:.4f}\n'
                 f'Gaze Y     : {gaze_y:.4f}\n\n'
-                f'Heading    : {self._fusion_data[closest_fusion]["heading"]:.4f}\n'
+                # f'Heading    : {self._fusion_data[closest_fusion]["heading"]:.4f}\n'
                 f'Roll       : {self._fusion_data[closest_fusion]["roll"]:.4f}\n'
-                f'Pitch      : {self._fusion_data[closest_fusion]["pitch"]:.4f}\n'
+                f'Pitch      : {self._fusion_data[closest_fusion]["pitch"]:.4f}\n\n'
+                f'x_intercept: {self._fusion_data[closest_fusion]["x_intercept"]:.4f}\n'
+                f'y_intercept: {self._fusion_data[closest_fusion]["y_intercept"]:.4f}\n'
+                f'slope      : {self._fusion_data[closest_fusion]["slope"]:.4f}\n'
             )
 
     def _playing_complete_callback(self):

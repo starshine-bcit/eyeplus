@@ -18,3 +18,9 @@ def create_eye_overlay(dims: tuple, predict_x: float, predict_y: float, prev_x: 
         pos_x = prev_x
         pos_y = prev_y
     return img, pos_x, pos_y
+
+
+def create_horizon_overlay(dims: tuple, x_intercept: float, y_intercept: float, slope: float) -> Tuple:
+    true_width = int(dims['w'] - dims['ml'] - dims['mr'])
+    true_height = int(dims['h'] - dims['mt'] - dims['mb'])
+    img = Image.new('RGBA', [true_width, true_height], (0, 0, 0, 0))
