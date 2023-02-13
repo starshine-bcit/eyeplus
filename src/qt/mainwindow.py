@@ -14,7 +14,7 @@ from modules.eyedb import EyeDB
 from qt.processui import Ui_dialogProcessing
 from qt.helpwindow import Ui_helpDialog
 from utils.fileutils import validate_import_folder
-from utils.imageutils import create_eye_overlay
+from utils.imageutils import create_video_overlay
 
 
 class EyeMainWindow(Ui_MainWindow):
@@ -45,8 +45,6 @@ class EyeMainWindow(Ui_MainWindow):
         self.actionMute.setEnabled(False)
         self._videos = {}
         self._selected_run = 0
-        self._prev_x_eye = 0
-        self._prev_y_eye = 0
         self._reset_stats_text()
         self._populate_runs_tables()
         self._init_input_file_chooser()
@@ -142,11 +140,13 @@ class EyeMainWindow(Ui_MainWindow):
                 self._overlay.remove()
             gaze_x = self._tree_predicted[curr_timestamp][0]
             gaze_y = self._tree_predicted[curr_timestamp][1]
-            img, pos_x, pos_y = create_eye_overlay(
-                self.player.osd_dimensions, gaze_x, gaze_y, self._prev_x_eye, self._prev_y_eye)
+            y_intercept = self._fusion_data[closest_fusion]['y_intercept']
+            x_intercept = self._fusion_data[closest_fusion]['x_intercept']
+            slope = self._fusion_data[closest_fusion]['slope']
+
+            img, pos_x, pos_y = create_video_overlay(
+                self.player.osd_dimensions, gaze_x, gaze_y, y_intercept, x_intercept, slope)
             self._overlay.update(img, pos=(pos_x, pos_y))
-            self._prev_x_eye = pos_x
-            self._prev_y_eye = pos_y
             self.plainTextEditStats.setPlainText(
                 f'RunID      : {self._selected_run}\n'
                 f'Title      : {self._all_runs_list[self._selected_run -1]["tags"]}\n'
