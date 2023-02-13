@@ -12,6 +12,7 @@ from qt.ingestworker import IngestWorker
 import qt.resources
 from modules.eyedb import EyeDB
 from qt.processui import Ui_dialogProcessing
+from qt.helpwindow import Ui_helpDialog
 from utils.fileutils import validate_import_folder
 from utils.imageutils import create_eye_overlay
 
@@ -54,6 +55,7 @@ class EyeMainWindow(Ui_MainWindow):
         self._init_input_dir_chooser()
         self._init_status_bar()
         self._setup_loading_dialog()
+        self._setup_help_window()
 
     def _connect_events(self):
         self.horizontalSliderSeek.sliderMoved.connect(self._seekbar_moved)
@@ -75,6 +77,9 @@ class EyeMainWindow(Ui_MainWindow):
         self.tableWidgetRuns.itemClicked.connect(
             self._table_item_single_clicked)
         self.pushButtonOpenReview.clicked.connect(self._open_review_clicked)
+        self.actionAbout.triggered.connect(self._about_clicked)
+        self.actionUsage.triggered.connect(self._usage_clicked)
+        self.actionReadme.triggered.connect(self._readme_clicked)
 
     def _setup_video(self):
         if 'playback_worker' in self.__dict__:
@@ -99,6 +104,13 @@ class EyeMainWindow(Ui_MainWindow):
         self.processing_dialog = QtWidgets.QDialog(parent=self.main_window)
         self.process_ui = Ui_dialogProcessing()
         self.process_ui.setupUi(self.processing_dialog)
+
+    def _setup_help_window(self):
+        self.help_window = QtWidgets.QDialog(parent=self.main_window)
+        self.help_display = Ui_helpDialog()
+        self.help_display.setupUi(self.help_window)
+        self.help_window.setWindowIcon(
+            QtGui.QIcon(QtGui.QPixmap(':/icons/life-buoy.svg')))
 
     def _playing_started_callback(self):
         print(f'playing started\nduration: {self.player.duration}')
@@ -181,8 +193,9 @@ class EyeMainWindow(Ui_MainWindow):
         event.accept()
 
     def _safe_quit_menu(self):
-        self.player.terminate()
-        self.player.wait_for_shutdown()
+        if 'player' in self.__dict__:
+            self.player.terminate()
+            self.player.wait_for_shutdown()
         sys.exit(0)
 
     def _pause_clicked(self):
@@ -431,3 +444,24 @@ class EyeMainWindow(Ui_MainWindow):
         self.main_window.show()
         self._populate_runs_tables()
         self._update_status(f'Successfully imported data')
+
+    def _readme_clicked(self) -> None:
+        self.help_window.setWindowTitle('README')
+        readme = Path(__file__).parent.parent.parent / 'README.md'
+        self.help_display.textBrowserDisplay.setMarkdown(readme.read_text())
+        self.help_window.resize(600, 700)
+        self.help_window.show()
+
+    def _usage_clicked(self) -> None:
+        self.help_window.setWindowTitle('Usage')
+        usage = Path(__file__).parent.parent.parent / 'docs' / 'usage.md'
+        self.help_display.textBrowserDisplay.setMarkdown(usage.read_text())
+        self.help_window.resize(600, 700)
+        self.help_window.show()
+
+    def _about_clicked(self) -> None:
+        self.help_window.setWindowTitle('About')
+        about = Path(__file__).parent.parent.parent / 'docs' / 'about.md'
+        self.help_display.textBrowserDisplay.setMarkdown(about.read_text())
+        self.help_window.resize(400, 300)
+        self.help_window.show()

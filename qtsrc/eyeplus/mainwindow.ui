@@ -419,7 +419,9 @@
     <property name="title">
      <string>Help</string>
     </property>
-    <addaction name="actionIndex"/>
+    <addaction name="actionReadme"/>
+    <addaction name="actionUsage"/>
+    <addaction name="separator"/>
     <addaction name="actionAbout"/>
    </widget>
    <addaction name="menuFile"/>
@@ -513,13 +515,13 @@
     <string>Export all data in csv format</string>
    </property>
   </action>
-  <action name="actionIndex">
+  <action name="actionReadme">
    <property name="icon">
     <iconset resource="icons.qrc">
      <normaloff>:/icons/help-circle.svg</normaloff>:/icons/help-circle.svg</iconset>
    </property>
    <property name="text">
-    <string>Index</string>
+    <string>Readme</string>
    </property>
   </action>
   <action name="actionAbout">
@@ -550,6 +552,15 @@
    </property>
    <property name="text">
     <string>Import Folder(s)...</string>
+   </property>
+  </action>
+  <action name="actionUsage">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/life-buoy.svg</normaloff>:/icons/life-buoy.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Usage</string>
    </property>
   </action>
  </widget>
