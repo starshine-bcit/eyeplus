@@ -138,14 +138,17 @@ class EyeMainWindow(Ui_MainWindow):
                     break
             if self._overlay.overlay_id:
                 self._overlay.remove()
+
             gaze_x = self._tree_predicted[curr_timestamp][0]
             gaze_y = self._tree_predicted[curr_timestamp][1]
             y_intercept = self._fusion_data[closest_fusion]['y_intercept']
             x_intercept = self._fusion_data[closest_fusion]['x_intercept']
             slope = self._fusion_data[closest_fusion]['slope']
+            roll = self._fusion_data[closest_fusion]['roll']
+            pitch = self._fusion_data[closest_fusion]['pitch']
 
             img, pos_x, pos_y = create_video_overlay(
-                self.player.osd_dimensions, gaze_x, gaze_y, y_intercept, x_intercept, slope)
+                self.player.osd_dimensions, gaze_x, gaze_y, y_intercept, x_intercept, slope, roll, pitch)
             self._overlay.update(img, pos=(pos_x, pos_y))
             self.plainTextEditStats.setPlainText(
                 f'RunID      : {self._selected_run}\n'
