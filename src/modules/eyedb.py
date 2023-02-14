@@ -522,6 +522,14 @@ class EyeDB():
             raise RuntimeError(f'Trying to select a non-existant ID: {runid}')
 
     def update_fusion_data(self, new_data: dict) -> None:
+        """Updates already existing fusion data
+
+        Args:
+            new_data (dict): The data to update
+
+        Raises:
+            RuntimeError: If we try to update a non-existing runid
+        """
         update_query = ('''UPDATE fusion
                         SET (heading, pitch, roll, q0, q1, q2, q3, yinter, xinter, slope) = (:heading, :pitch, :roll, :q0, :q1, :q2, :q3, :yinter, :xinter, :slope)
                         WHERE runid = (:runid) AND timestamp = (:timestamp);''')
