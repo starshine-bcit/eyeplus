@@ -5,11 +5,22 @@ import numpy as np
 
 class Visual():
     def __init__(self, runid):
+        """
+        Database is initialized based on the path, and self.run id is set to the provided value for access 
+        throughout the instance
+        Args:
+            runid (int): run id must be provided by the user in order to choose the instance visuals will be provided for
+        """
         self.path = 'data\eye.db'
         self.db = EyeDB(db_path=Path(self.path))
         self.runid = runid
     
     def twodgaze_scatterplot(self):
+        """Thie function creates a scatter plot for x,y coordinates of 2dgaze data and returns the plot
+
+        Returns:
+            plt: scatter plot created based on 2d gaze
+        """
         gaze_data = self.db.get_gaze_data(runid=self.runid)
         gaze_keys = gaze_data.keys()
 
