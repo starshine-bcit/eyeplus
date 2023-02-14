@@ -312,6 +312,9 @@ class EyeDB():
         self._cur.execute('''CREATE INDEX idx_fusion_id
                 ON fusion (id, runid);''')
 
+        self._cur.execute('''CREATE INDEX idx_fusion_timestamp
+                ON fusion (runid, timestamp);''')
+
         self._con.commit()
 
     def disconnect_db(self) -> None:
@@ -517,6 +520,38 @@ class EyeDB():
             return fusion_dict
         else:
             raise RuntimeError(f'Trying to select a non-existant ID: {runid}')
+
+    def update_fusion_data(self, new_data: dict) -> None:
+        update_query = ('''UPDATE fusion
+                        SET (heading, pitch, roll, q0, q1, q2, q3, yinter, xinter, slope) = (:heading, :pitch, :roll, :q0, :q1, :q2, :q3, :yinter, :xinter, :slope)
+                        WHERE runid = (:runid) AND timestamp = (:timestamp);''')
+        update_list = []
+        for runid in new_data.keys():
+            self._cur.execute('''SELECT id FROM run WHERE id=(?);''', (runid,))
+            res = self._cur.fetchall()
+            if not res:
+                raise RuntimeError(
+                    f'Trying to select a non-existant ID: {runid}')
+
+        for k, v in new_data.items():
+            for k2, v2 in v.items():
+                update_list.append({
+                    'heading': v2['heading'],
+                    'pitch': v2['pitch'],
+                    'roll': v2['roll'],
+                    'q0': v2['q'][0],
+                    'q1': v2['q'][1],
+                    'q2': v2['q'][2],
+                    'q3': v2['q'][3],
+                    'yinter': v2['y_intercept'],
+                    'xinter': v2['x_intercept'],
+                    'slope': v2['slope'],
+                    'runid': k,
+                    'timestamp': k2
+                })
+
+        self._cur.executemany(update_query, update_list)
+        self._con.commit()
 
 
 if __name__ == '__main__':

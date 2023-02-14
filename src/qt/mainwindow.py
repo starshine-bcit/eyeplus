@@ -8,7 +8,7 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 from qt.qtui import Ui_MainWindow
 from modules import mpv
 from qt.playbackworker import PlaybackWorker
-from qt.ingestworker import IngestWorker
+from qt.ingestworker import IngestWorker, ReprocessWorker
 import qt.resources
 from modules.eyedb import EyeDB
 from qt.processui import Ui_dialogProcessing
@@ -78,6 +78,8 @@ class EyeMainWindow(Ui_MainWindow):
         self.actionAbout.triggered.connect(self._about_clicked)
         self.actionUsage.triggered.connect(self._usage_clicked)
         self.actionReadme.triggered.connect(self._readme_clicked)
+        self.pushButtonRecalculateOne.clicked.connect(
+            self._redo_single_calc_clicked)
 
     def _setup_video(self):
         if 'playback_worker' in self.__dict__:
@@ -471,3 +473,31 @@ class EyeMainWindow(Ui_MainWindow):
         self.help_display.textBrowserDisplay.setMarkdown(about.read_text())
         self.help_window.resize(400, 300)
         self.help_window.show()
+
+    def _redo_single_calc_clicked(self) -> None:
+        runs_to_redo = [self._selected_run]
+        ingest_worker = ReprocessWorker(self._db_path, runs_to_redo)
+        ingest_worker.signals.started.connect(
+            self._reprocess_started)
+        ingest_worker.signals.progress.connect(
+            self._reprocess_dialog_update)
+        ingest_worker.signals.finished.connect(
+            self._reprocess_finished)
+        self._thread_pool.start(ingest_worker)
+
+    def _reprocess_started(self) -> None:
+        self._update_status('Beginning to reprocess data')
+        self.process_ui.labelProcessing.setText('Warming up...')
+        self.process_ui.progressBarProcessing.setValue(0)
+        self.main_window.hide()
+        self.processing_dialog.show()
+
+    def _reprocess_dialog_update(self, message: str, progress: float) -> None:
+        self.process_ui.labelProcessing.setText(message)
+        self.process_ui.progressBarProcessing.setValue(int(progress * 100))
+
+    def _reprocess_finished(self) -> None:
+        self.processing_dialog.hide()
+        self.main_window.show()
+        self._populate_runs_tables()
+        self._update_status(f'Successfully imported data')

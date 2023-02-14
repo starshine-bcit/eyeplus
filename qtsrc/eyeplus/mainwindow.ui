@@ -182,6 +182,17 @@
               </spacer>
              </item>
              <item>
+              <widget class="QPushButton" name="pushButtonRecalculateOne">
+               <property name="text">
+                <string>Redo Calculations</string>
+               </property>
+               <property name="icon">
+                <iconset resource="icons.qrc">
+                 <normaloff>:/icons/function-square.svg</normaloff>:/icons/function-square.svg</iconset>
+               </property>
+              </widget>
+             </item>
+             <item>
               <widget class="QPushButton" name="pushButtonExportDisplayed">
                <property name="minimumSize">
                 <size>
@@ -411,8 +422,6 @@
     <addaction name="actionImport_Zip"/>
     <addaction name="actionImport_Folder"/>
     <addaction name="separator"/>
-    <addaction name="actionExport_All_Data"/>
-    <addaction name="separator"/>
     <addaction name="actionExit"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
@@ -424,7 +433,14 @@
     <addaction name="separator"/>
     <addaction name="actionAbout"/>
    </widget>
+   <widget class="QMenu" name="menuActions">
+    <property name="title">
+     <string>Actions</string>
+    </property>
+    <addaction name="actionExport_All_Data"/>
+   </widget>
    <addaction name="menuFile"/>
+   <addaction name="menuActions"/>
    <addaction name="menuHelp"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
