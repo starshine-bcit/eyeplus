@@ -18,12 +18,12 @@ def create_video_overlay(dims: tuple, predict_x: float, predict_y: float,  y_int
     horizon_line_point_one = (3, int((0 * slope + y_intercept)*true_height))
     horizon_line_point_two = (
         true_width, (int((true_width * slope + y_intercept))))
-    roll_line_point_one = (half_width, 1)
-    roll_length = int((roll+90) / 90 * half_width)
-    roll_line_point_two = (half_width + roll_length, 1)
-    pitch_line_point_one = (1, half_height)
+    roll_line_point_one = (half_width, 3)
+    roll_length = int((roll) / 90 * half_width)
+    roll_line_point_two = (half_width + roll_length, 3)
+    pitch_line_point_one = (3, half_height)
     pitch_length = ((-pitch) / 90 * half_height)
-    pitch_line_point_two = (1, half_height + pitch_length)
+    pitch_line_point_two = (3, half_height + pitch_length)
     draw = ImageDraw.Draw(img)
     draw.ellipse((eye_pos_x, eye_pos_y, eye_pos_x + eye_width, eye_pos_y + eye_height),
                  fill=None, outline=(255, 155, 0), width=eye_line)

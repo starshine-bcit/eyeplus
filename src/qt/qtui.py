@@ -276,6 +276,14 @@ class Ui_MainWindow(object):
         icon14.addPixmap(QtGui.QPixmap(":/icons/life-buoy.svg"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
         self.actionUsage.setIcon(icon14)
         self.actionUsage.setObjectName("actionUsage")
+        self.actionAdjust = QtGui.QAction(MainWindow)
+        icon15 = QtGui.QIcon()
+        icon15.addPixmap(QtGui.QPixmap(":/icons/sliders.svg"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
+        self.actionAdjust.setIcon(icon15)
+        self.actionAdjust.setObjectName("actionAdjust")
+        self.actionRecalculate = QtGui.QAction(MainWindow)
+        self.actionRecalculate.setIcon(icon1)
+        self.actionRecalculate.setObjectName("actionRecalculate")
         self.menuFile.addAction(self.actionImport_Zip)
         self.menuFile.addAction(self.actionImport_Folder)
         self.menuFile.addSeparator()
@@ -292,9 +300,12 @@ class Ui_MainWindow(object):
         self.toolBar.addAction(self.actionStop)
         self.toolBar.addAction(self.actionPause)
         self.toolBar.addAction(self.actionPlay)
+        self.toolBar.addSeparator()
+        self.toolBar.addAction(self.actionAdjust)
+        self.toolBar.addAction(self.actionRecalculate)
 
         self.retranslateUi(MainWindow)
-        self.tabWidgetMain.setCurrentIndex(0)
+        self.tabWidgetMain.setCurrentIndex(1)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -329,6 +340,10 @@ class Ui_MainWindow(object):
         self.actionMute.setText(_translate("MainWindow", "Mute"))
         self.actionImport_Folder.setText(_translate("MainWindow", "Import Folder(s)..."))
         self.actionUsage.setText(_translate("MainWindow", "Usage"))
+        self.actionAdjust.setText(_translate("MainWindow", "Adjust"))
+        self.actionAdjust.setToolTip(_translate("MainWindow", "Adjust Parameters"))
+        self.actionRecalculate.setText(_translate("MainWindow", "Recalculate"))
+        self.actionRecalculate.setToolTip(_translate("MainWindow", "Recalculate and Store Data"))
 
 
 if __name__ == "__main__":
