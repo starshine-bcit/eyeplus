@@ -1,75 +1,88 @@
-from eyedb import EyeDB
-from pathlib import Path
+import sqlite3
 import csv
+import os
+from pathlib import Path
 
-path = 'data\eye.db'
-db = EyeDB(db_path=Path(path))
+class DataExporter:
+    def __init__(self, db_path: str = 'data/eye.db'):
+        self.conn = sqlite3.connect(db_path)
+        self.cursor = self.conn.cursor()
 
-field_names = ['timestamp', 'heading', 'pitch', 'roll', 'q0', 'q1', 'q2', 'q3']
-rows = []
+    def export_data_to_csv(self, output_path: str, runid: int = None, prefix: str = ""):
+        # If runid is specified, export only data for that runid.
+        # Otherwise, export data for all runids in the database.
+        if runid is not None:
+            runids = [runid]
+        else:
+            # Get all distinct runids from the "fusion" table.
+            query = "SELECT DISTINCT runid FROM fusion;"
+            rows = self.cursor.execute(query).fetchall()
+            runids = [row[0] for row in rows]
 
-run_id = 1
-fusion_data = db.get_fusion_data(runid=1)
-fusion_keys = fusion_data.keys()
+        for runid in runids:
+            # Export fusion data
+            field_names = ['timestamp', 'heading', 'pitch', 'roll', 'q0', 'q1', 'q2', 'q3']
+            rows = []
 
-# print(fusion_data[0.003754]['heading'])
-# print(fusion_data[0.003754]['q'][0])
-# print(list(fusion_keys)[0])
-for key in fusion_keys:
-    my_dict = {}
-    # my_dict['runid'] = run_id
-    if fusion_data[key]:
-        my_dict['timestamp'] = key
-        my_dict['heading'] = fusion_data[key]['heading']
-        my_dict['pitch'] = fusion_data[key]['pitch']
-        my_dict['roll'] = fusion_data[key]['roll']
-        my_dict['q0'] = fusion_data[key]['q'][0]
-        my_dict['q1'] = fusion_data[key]['q'][1]
-        my_dict['q2'] = fusion_data[key]['q'][2]
-        my_dict['q3'] = fusion_data[key]['q'][3]
-        rows.append(my_dict)
+            query = f"SELECT * FROM fusion WHERE runid={runid};"
+            fusion_rows = self.cursor.execute(query).fetchall()
+            for row in fusion_rows:
+                my_dict = {}
+                my_dict['timestamp'] = row[1]
+                my_dict['heading'] = row[2]
+                my_dict['pitch'] = row[3]
+                my_dict['roll'] = row[4]
+                my_dict['q0'] = row[5]
+                my_dict['q1'] = row[6]
+                my_dict['q2'] = row[7]
+                my_dict['q3'] = row[8]
+                rows.append(my_dict)
 
-with open('fusion.csv', 'w', newline='') as csvfile:
-    writer = csv.DictWriter(csvfile, fieldnames = field_names)
-    writer.writeheader()
-    for row in rows:
-        writer.writerow(row)
+            # Write fusion data to CSV file.
+            fusion_filename = f'{prefix}fusion_data_runid_{runid}.csv'
+            fusion_path = os.path.join(output_path, fusion_filename)
+            os.makedirs(os.path.dirname(fusion_path), exist_ok=True)
+            with open(fusion_path, 'w', newline='') as csvfile:
+                writer = csv.DictWriter(csvfile, fieldnames=field_names)
+                writer.writeheader()
+                for row in rows:
+                    writer.writerow(row)
 
-pygaze_field_names = ['timestamps', 'pygaze2dx', 'pygaze2dy']
-pygaze_rows = []
+            # Export pygaze data
+            pygaze_field_names = ['timestamps', 'pygaze2dx', 'pygaze2dy']
+            pygaze_rows = []
 
-run_id = 1
-pgaze_data = db.get_gaze_data(runid=1)
-pgaze_keys = pgaze_data.keys()
-for key in pgaze_keys:
-    my_dict = {}
-    if pgaze_data[key]:
-        my_dict['timestamps'] = key
-        my_dict['pygaze2dx'] = pgaze_data[key]['gaze2d'][0]
-        my_dict['pygaze2dy'] = pgaze_data[key]['gaze2d'][1]
-        pygaze_rows.append(my_dict)
+            query = f"SELECT * FROM pgaze2d WHERE runid={runid};"
+            pgaze_rows = self.cursor.execute(query).fetchall()
+            for row in pgaze_rows:
+                my_dict = {}
+                my_dict['timestamps'] = row[1]
+                my_dict['pygaze2dx'] = row[2]
+                my_dict['pygaze2dy'] = row[3]
+                pygaze_rows.append(my_dict)
 
-with open('pygaze.csv', 'w', newline='') as csvfile:
-    writer = csv.DictWriter(csvfile, fieldnames = pygaze_field_names)
-    writer.writeheader()
-    for row in pygaze_rows:
-        writer.writerow(row)
+            # Write pygaze data to CSV file.
+            pygaze_filename = f'{prefix}pygaze_data_runid_{runid}.csv'
+            pygaze_path = os.path.join(output_path, pygaze_filename)
+            os.makedirs(os.path.dirname(pygaze_path), exist_ok=True)
+            with open(pygaze_path, 'w', newline='') as csvfile:
+                writer = csv.DictWriter(csvfile, fieldnames=pygaze_field_names)
+                writer.writeheader()
+                for row in pygaze_rows:
+                    writer.writerow(row)
 
+    def close(self):
+        self.cursor.close()
+        self.conn.close()
+    def __del__(self):
+        self.close()
 
+#Test
+exporter = DataExporter()
 
-# for key in pgaze_keys:
-#     my_dict = {}
-#     if pgaze_data[key]:
-#         my_dict['timestamp'] = key
-#         my_dict['pgaze2dx'] = pgaze_data[key]['pgaze2dx'][0]
-#         my_dict['pgaze2dy'] = pgaze_data[key]['pgaze2dy'][0]
-#         pgaze_rows.append(my_dict)
+# Export data for a specific runid
+exporter.export_data_to_csv('path/to/file', runid=1, prefix="data_")
 
-# with open('pygaze.csv', 'w', newline='') as csvfile:
-#     writer = csv.DictWriter(csvfile, fieldnames = pgaze_field_names)
-#     writer.writeheader()
-#     for row in pgaze_rows:
-#         writer.writerow(row)
-
-
+# Export data for all runids
+exporter.export_data_to_csv('path/to/file', prefix="data_")
 
