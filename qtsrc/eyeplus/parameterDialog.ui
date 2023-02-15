@@ -15,7 +15,7 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout" stretch="1,0,1,0,1,0,0,0">
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="1,1,1">
+    <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="0,1,0">
      <item>
       <widget class="QLabel" name="labelPitchMulti">
        <property name="text">
@@ -68,7 +68,7 @@
     </widget>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="1,1,1">
+    <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="0,1,0">
      <item>
       <widget class="QLabel" name="labelRollOffset">
        <property name="text">
@@ -124,7 +124,7 @@
     </widget>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="1,1,1">
+    <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="0,1,0">
      <item>
       <widget class="QLabel" name="labelHorizonFuzzy">
        <property name="text">
@@ -178,7 +178,7 @@
     </widget>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout">
+    <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,1,0">
      <item>
       <widget class="QPushButton" name="pushButtonReset">
        <property name="text">
