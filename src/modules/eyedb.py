@@ -292,6 +292,9 @@ class EyeDB():
                 q1 REAL NOT NULL,
                 q2 REAL NOT NULL,
                 q3 REAL NOT NULL,
+                yinter REAL NOT NULL,
+                xinter REAL NOT NULL,
+                slope REAL NOT NULL,
                 FOREIGN KEY(runid) REFERENCES run(id));''')
 
         self._cur.execute('''CREATE INDEX idx_imu_id
@@ -308,6 +311,9 @@ class EyeDB():
 
         self._cur.execute('''CREATE INDEX idx_fusion_id
                 ON fusion (id, runid);''')
+
+        self._cur.execute('''CREATE INDEX idx_fusion_timestamp
+                ON fusion (runid, timestamp);''')
 
         self._con.commit()
 
@@ -475,10 +481,10 @@ class EyeDB():
             fusion (dict): The data to ingest
         """
         fusion_data = [{'runid': runid, 'timestamp': k, 'heading': v['heading'], 'pitch': v['pitch'], 'roll': v['roll'],
-                        'q0': v['q'][0], 'q1': v['q'][1], 'q2': v['q'][2], 'q3': v['q'][3]} for k, v in fusion.items()]
+                        'q0': v['q'][0], 'q1': v['q'][1], 'q2': v['q'][2], 'q3': v['q'][3], 'yinter': v['y_intercept'], 'xinter': v['x_intercept'], 'slope': v['slope']} for k, v in fusion.items()]
         fusion_insert_query = '''INSERT INTO fusion
-            (runid, timestamp, heading, pitch, roll, q0, q1, q2, q3)
-            VALUES(:runid, :timestamp, :heading, :pitch, :roll, :q0, :q1, :q2, :q3);'''
+            (runid, timestamp, heading, pitch, roll, q0, q1, q2, q3, yinter, xinter, slope)
+            VALUES(:runid, :timestamp, :heading, :pitch, :roll, :q0, :q1, :q2, :q3, :yinter, :xinter, :slope);'''
         self._cur.executemany(fusion_insert_query, fusion_data)
         self._con.commit()
 
@@ -506,11 +512,54 @@ class EyeDB():
                     'heading': line[3],
                     'pitch': line[4],
                     'roll': line[5],
-                    'q': (line[6], line[7], line[8], line[9])
+                    'q': (line[6], line[7], line[8], line[9]),
+                    'y_intercept': line[10],
+                    'x_intercept': line[11],
+                    'slope': line[12]
                 }
             return fusion_dict
         else:
             raise RuntimeError(f'Trying to select a non-existant ID: {runid}')
+
+    def update_fusion_data(self, new_data: dict) -> None:
+        """Updates already existing fusion data
+
+        Args:
+            new_data (dict): The data to update
+
+        Raises:
+            RuntimeError: If we try to update a non-existing runid
+        """
+        update_query = ('''UPDATE fusion
+                        SET (heading, pitch, roll, q0, q1, q2, q3, yinter, xinter, slope) = (:heading, :pitch, :roll, :q0, :q1, :q2, :q3, :yinter, :xinter, :slope)
+                        WHERE runid = (:runid) AND timestamp = (:timestamp);''')
+        update_list = []
+        for runid in new_data.keys():
+            self._cur.execute('''SELECT id FROM run WHERE id=(?);''', (runid,))
+            res = self._cur.fetchall()
+            if not res:
+                raise RuntimeError(
+                    f'Trying to select a non-existant ID: {runid}')
+
+        for k, v in new_data.items():
+            for k2, v2 in v.items():
+                update_list.append({
+                    'heading': v2['heading'],
+                    'pitch': v2['pitch'],
+                    'roll': v2['roll'],
+                    'q0': v2['q'][0],
+                    'q1': v2['q'][1],
+                    'q2': v2['q'][2],
+                    'q3': v2['q'][3],
+                    'yinter': v2['y_intercept'],
+                    'xinter': v2['x_intercept'],
+                    'slope': v2['slope'],
+                    'runid': k,
+                    'timestamp': k2
+                })
+
+        self._cur.executemany(update_query, update_list)
+        self._con.commit()
 
 
 if __name__ == '__main__':

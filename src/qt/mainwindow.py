@@ -8,12 +8,14 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 from qt.qtui import Ui_MainWindow
 from modules import mpv
 from qt.playbackworker import PlaybackWorker
-from qt.ingestworker import IngestWorker
+from qt.ingestworker import IngestWorker, ReprocessWorker
 import qt.resources
 from modules.eyedb import EyeDB
 from qt.processui import Ui_dialogProcessing
+from qt.helpwindow import Ui_helpDialog
+from qt.parameterwindow import ParameterWindow
 from utils.fileutils import validate_import_folder
-from utils.imageutils import create_eye_overlay
+from utils.imageutils import create_video_overlay
 
 
 class EyeMainWindow(Ui_MainWindow):
@@ -35,6 +37,7 @@ class EyeMainWindow(Ui_MainWindow):
         self._error_box.setWindowIcon(QtGui.QIcon(
             QtGui.QPixmap(':/icons/alert-triangle.svg')))
         self._error_box.setWindowTitle('ERROR: eyeplus')
+        self.parameter_window = ParameterWindow(self.main_window)
         self.tabWidgetMain.setCurrentIndex(0)
         self.actionPause.setEnabled(False)
         self.actionStop.setEnabled(False)
@@ -42,10 +45,12 @@ class EyeMainWindow(Ui_MainWindow):
         self.toolBar.setVisible(False)
         self.actionMute.setEnabled(False)
         self.actionMute.setEnabled(False)
+        self.actionAdjust.setEnabled(False)
+        self.actionRecalculate.setEnabled(False)
         self._videos = {}
         self._selected_run = 0
-        self._prev_x_eye = 0
-        self._prev_y_eye = 0
+        self._roll_offset = 90
+        self._pitch_multi = 1.0
         self._reset_stats_text()
         self._populate_runs_tables()
         self._init_input_file_chooser()
@@ -54,6 +59,7 @@ class EyeMainWindow(Ui_MainWindow):
         self._init_input_dir_chooser()
         self._init_status_bar()
         self._setup_loading_dialog()
+        self._setup_help_window()
 
     def _connect_events(self):
         self.horizontalSliderSeek.sliderMoved.connect(self._seekbar_moved)
@@ -75,6 +81,17 @@ class EyeMainWindow(Ui_MainWindow):
         self.tableWidgetRuns.itemClicked.connect(
             self._table_item_single_clicked)
         self.pushButtonOpenReview.clicked.connect(self._open_review_clicked)
+        self.actionAbout.triggered.connect(self._about_clicked)
+        self.actionUsage.triggered.connect(self._usage_clicked)
+        self.actionReadme.triggered.connect(self._readme_clicked)
+        self.pushButtonRecalculateOne.clicked.connect(
+            self._redo_single_calc_clicked)
+        self.actionAdjust.triggered.connect(self._show_parameter_window)
+        self.parameter_window.ui.pushButtonApply.clicked.connect(
+            self._update_parameters)
+        # create dialog box here confirming, and stop playback
+        # self.actionRecalculate.triggered.connect(
+        #     self._redo_single_calc_clicked)
 
     def _setup_video(self):
         if 'playback_worker' in self.__dict__:
@@ -100,6 +117,13 @@ class EyeMainWindow(Ui_MainWindow):
         self.process_ui = Ui_dialogProcessing()
         self.process_ui.setupUi(self.processing_dialog)
 
+    def _setup_help_window(self):
+        self.help_window = QtWidgets.QDialog(parent=self.main_window)
+        self.help_display = Ui_helpDialog()
+        self.help_display.setupUi(self.help_window)
+        self.help_window.setWindowIcon(
+            QtGui.QIcon(QtGui.QPixmap(':/icons/life-buoy.svg')))
+
     def _playing_started_callback(self):
         print(f'playing started\nduration: {self.player.duration}')
         if self.actionMute.isChecked():
@@ -111,6 +135,8 @@ class EyeMainWindow(Ui_MainWindow):
         self.actionPause.setEnabled(True)
         self.actionStop.setEnabled(True)
         self.actionMute.setEnabled(True)
+        self.actionAdjust.setEnabled(True)
+        self.actionRecalculate.setEnabled(True)
         self.horizontalSliderVolume.setEnabled(True)
         self.actionMute.setEnabled(True)
         self._overlay = self.player.create_image_overlay()
@@ -128,13 +154,21 @@ class EyeMainWindow(Ui_MainWindow):
                     break
             if self._overlay.overlay_id:
                 self._overlay.remove()
+
             gaze_x = self._tree_predicted[curr_timestamp][0]
             gaze_y = self._tree_predicted[curr_timestamp][1]
-            img, pos_x, pos_y = create_eye_overlay(
-                self.player.osd_dimensions, gaze_x, gaze_y, self._prev_x_eye, self._prev_y_eye)
+            y_intercept = self._fusion_data[closest_fusion]['y_intercept']
+            x_intercept = self._fusion_data[closest_fusion]['x_intercept']
+            slope = self._fusion_data[closest_fusion]['slope']
+            roll = self._fusion_data[closest_fusion]['roll']
+            pitch = self._fusion_data[closest_fusion]['pitch']
+
+            roll += self._roll_offset
+            pitch *= self._pitch_multi
+
+            img, pos_x, pos_y = create_video_overlay(
+                self.player.osd_dimensions, gaze_x, gaze_y, y_intercept, x_intercept, slope, roll, pitch)
             self._overlay.update(img, pos=(pos_x, pos_y))
-            self._prev_x_eye = pos_x
-            self._prev_y_eye = pos_y
             self.plainTextEditStats.setPlainText(
                 f'RunID      : {self._selected_run}\n'
                 f'Title      : {self._all_runs_list[self._selected_run -1]["tags"]}\n'
@@ -142,9 +176,12 @@ class EyeMainWindow(Ui_MainWindow):
                 f'Duration   : {self.player.duration:.2f}\n\n'
                 f'Gaze X     : {gaze_x:.4f}\n'
                 f'Gaze Y     : {gaze_y:.4f}\n\n'
-                f'Heading    : {self._fusion_data[closest_fusion]["heading"]:.4f}\n'
-                f'Roll       : {self._fusion_data[closest_fusion]["roll"]:.4f}\n'
-                f'Pitch      : {self._fusion_data[closest_fusion]["pitch"]:.4f}\n'
+                # f'Heading    : {self._fusion_data[closest_fusion]["heading"]:.4f}\n'
+                f'Roll       : {roll:.4f}\n'
+                f'Pitch      : {pitch:.4f}\n\n'
+                f'x_intercept: {x_intercept:.4f}\n'
+                f'y_intercept: {y_intercept:.4f}\n'
+                f'slope      : {slope:.4f}\n'
             )
 
     def _playing_complete_callback(self):
@@ -158,6 +195,8 @@ class EyeMainWindow(Ui_MainWindow):
         self.actionPause.setEnabled(False)
         self.actionStop.setEnabled(False)
         self.actionMute.setEnabled(False)
+        self.actionAdjust.setEnabled(False)
+        self.actionRecalculate.setEnabled(False)
         self.horizontalSliderVolume.setEnabled(False)
         self.actionMute.setEnabled(False)
         self._reset_stats_text()
@@ -169,6 +208,9 @@ class EyeMainWindow(Ui_MainWindow):
         self.player.seek(max(time_to_seek, 1), reference='absolute')
 
     def _play_clicked(self):
+        self._pitch_multi = 1.0
+        self._roll_offset = 90
+        self.parameter_window.reset()
         self._tree_predicted = self._db.get_pgazed2d_data(self._selected_run)
         self._fusion_data = self._db.get_fusion_data(self._selected_run)
         self._fusion_timestamps = list(self._fusion_data.keys())
@@ -181,8 +223,9 @@ class EyeMainWindow(Ui_MainWindow):
         event.accept()
 
     def _safe_quit_menu(self):
-        self.player.terminate()
-        self.player.wait_for_shutdown()
+        if 'player' in self.__dict__:
+            self.player.terminate()
+            self.player.wait_for_shutdown()
         sys.exit(0)
 
     def _pause_clicked(self):
@@ -203,6 +246,10 @@ class EyeMainWindow(Ui_MainWindow):
             self.toolBar.setVisible(False)
         elif self.tabWidgetMain.currentIndex() == 2:
             self.toolBar.setVisible(False)
+
+        if self.parameter_window.isVisible():
+            self.parameter_window.hide()
+            self.parameter_window.reset()
 
     def _reset_stats_text(self):
         self.plainTextEditStats.setPlainText('Start playback to see info.')
@@ -431,3 +478,62 @@ class EyeMainWindow(Ui_MainWindow):
         self.main_window.show()
         self._populate_runs_tables()
         self._update_status(f'Successfully imported data')
+
+    def _readme_clicked(self) -> None:
+        self.help_window.setWindowTitle('README')
+        readme = Path(__file__).parent.parent.parent / 'README.md'
+        self.help_display.textBrowserDisplay.setMarkdown(readme.read_text())
+        self.help_window.resize(600, 700)
+        self.help_window.show()
+
+    def _usage_clicked(self) -> None:
+        self.help_window.setWindowTitle('Usage')
+        usage = Path(__file__).parent.parent.parent / 'docs' / 'usage.md'
+        self.help_display.textBrowserDisplay.setMarkdown(usage.read_text())
+        self.help_window.resize(600, 700)
+        self.help_window.show()
+
+    def _about_clicked(self) -> None:
+        self.help_window.setWindowTitle('About')
+        about = Path(__file__).parent.parent.parent / 'docs' / 'about.md'
+        self.help_display.textBrowserDisplay.setMarkdown(about.read_text())
+        self.help_window.resize(400, 300)
+        self.help_window.show()
+
+    def _redo_single_calc_clicked(self) -> None:
+        runs_to_redo = [self._selected_run]
+        ingest_worker = ReprocessWorker(self._db_path, runs_to_redo)
+        ingest_worker.signals.started.connect(
+            self._reprocess_started)
+        ingest_worker.signals.progress.connect(
+            self._reprocess_dialog_update)
+        ingest_worker.signals.finished.connect(
+            self._reprocess_finished)
+        self._thread_pool.start(ingest_worker)
+
+    def _reprocess_started(self) -> None:
+        self._update_status('Beginning to reprocess data')
+        self.process_ui.labelProcessing.setText('Warming up...')
+        self.process_ui.progressBarProcessing.setValue(0)
+        self.main_window.hide()
+        self.processing_dialog.show()
+
+    def _reprocess_dialog_update(self, message: str, progress: float) -> None:
+        self.process_ui.labelProcessing.setText(message)
+        self.process_ui.progressBarProcessing.setValue(int(progress * 100))
+
+    def _reprocess_finished(self) -> None:
+        self.processing_dialog.hide()
+        self.main_window.show()
+        self._populate_runs_tables()
+        self._update_status(f'Successfully imported data')
+
+    def _show_parameter_window(self) -> None:
+        self.parameter_window.show()
+        self.parameter_window.setFocus()
+        self.parameter_window.move(250, 600)
+
+    def _update_parameters(self) -> None:
+        self._roll_offset = self.parameter_window.ui.horizontalSliderRollOffset.value()
+        self._pitch_multi = float(
+            self.parameter_window.ui.horizontalSliderPitchMulti.value() / 1000)

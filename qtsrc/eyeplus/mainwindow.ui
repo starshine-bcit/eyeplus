@@ -18,7 +18,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidgetMain">
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="tabDataList">
        <attribute name="title">
@@ -180,6 +180,17 @@
                 </size>
                </property>
               </spacer>
+             </item>
+             <item>
+              <widget class="QPushButton" name="pushButtonRecalculateOne">
+               <property name="text">
+                <string>Redo Calculations</string>
+               </property>
+               <property name="icon">
+                <iconset resource="icons.qrc">
+                 <normaloff>:/icons/function-square.svg</normaloff>:/icons/function-square.svg</iconset>
+               </property>
+              </widget>
              </item>
              <item>
               <widget class="QPushButton" name="pushButtonExportDisplayed">
@@ -411,18 +422,25 @@
     <addaction name="actionImport_Zip"/>
     <addaction name="actionImport_Folder"/>
     <addaction name="separator"/>
-    <addaction name="actionExport_All_Data"/>
-    <addaction name="separator"/>
     <addaction name="actionExit"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
      <string>Help</string>
     </property>
-    <addaction name="actionIndex"/>
+    <addaction name="actionReadme"/>
+    <addaction name="actionUsage"/>
+    <addaction name="separator"/>
     <addaction name="actionAbout"/>
    </widget>
+   <widget class="QMenu" name="menuActions">
+    <property name="title">
+     <string>Actions</string>
+    </property>
+    <addaction name="actionExport_All_Data"/>
+   </widget>
    <addaction name="menuFile"/>
+   <addaction name="menuActions"/>
    <addaction name="menuHelp"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
@@ -449,6 +467,9 @@
    <addaction name="actionStop"/>
    <addaction name="actionPause"/>
    <addaction name="actionPlay"/>
+   <addaction name="separator"/>
+   <addaction name="actionAdjust"/>
+   <addaction name="actionRecalculate"/>
   </widget>
   <action name="actionImport_Zip">
    <property name="icon">
@@ -513,13 +534,13 @@
     <string>Export all data in csv format</string>
    </property>
   </action>
-  <action name="actionIndex">
+  <action name="actionReadme">
    <property name="icon">
     <iconset resource="icons.qrc">
      <normaloff>:/icons/help-circle.svg</normaloff>:/icons/help-circle.svg</iconset>
    </property>
    <property name="text">
-    <string>Index</string>
+    <string>Readme</string>
    </property>
   </action>
   <action name="actionAbout">
@@ -550,6 +571,39 @@
    </property>
    <property name="text">
     <string>Import Folder(s)...</string>
+   </property>
+  </action>
+  <action name="actionUsage">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/life-buoy.svg</normaloff>:/icons/life-buoy.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Usage</string>
+   </property>
+  </action>
+  <action name="actionAdjust">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/sliders.svg</normaloff>:/icons/sliders.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Adjust</string>
+   </property>
+   <property name="toolTip">
+    <string>Adjust Parameters</string>
+   </property>
+  </action>
+  <action name="actionRecalculate">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/function-square.svg</normaloff>:/icons/function-square.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Recalculate</string>
+   </property>
+   <property name="toolTip">
+    <string>Recalculate and Store Data</string>
    </property>
   </action>
  </widget>
