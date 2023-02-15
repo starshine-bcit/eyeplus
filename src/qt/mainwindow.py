@@ -14,6 +14,7 @@ from modules.eyedb import EyeDB
 from qt.processui import Ui_dialogProcessing
 from qt.helpwindow import Ui_helpDialog
 from qt.parameterwindow import ParameterWindow
+from modules.export import DataExporter
 from utils.fileutils import validate_import_folder
 from utils.imageutils import create_video_overlay
 
@@ -24,6 +25,7 @@ class EyeMainWindow(Ui_MainWindow):
         self.main_window = main_window
         self._db_path = Path(__file__).parent.parent.parent / 'data' / 'eye.db'
         self._db = EyeDB(self._db_path)
+        self._csv = DataExporter(self._db)
         self.setupUi(self.main_window)
         self._setup_custom_ui()
         self._connect_events()
@@ -380,13 +382,13 @@ class EyeMainWindow(Ui_MainWindow):
         user_selected_file = self.output_file_chooser.selectedFiles()
         if len(user_selected_file) > 0 and user_selected_file[0] != '':
             csv_to_save = Path(user_selected_file[0])
-            print(csv_to_save)
+            self._csv.export_single(csv_to_save, self._selected_run)
 
     def _user_chosen_output_dir(self):
         user_selected_dir = self.output_dir_chooser.selectedFiles()
         if len(user_selected_dir) > 0 and user_selected_dir[0] != '':
             dir_to_save = Path(user_selected_dir[0])
-            print(dir_to_save)
+            self._csv.export_all(dir_to_save)
 
     def _user_chosen_input_dir(self):
         user_selected_dir = self.input_dir_chooser.selectedFiles()
