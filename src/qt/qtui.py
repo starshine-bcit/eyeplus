@@ -294,7 +294,7 @@ class Ui_MainWindow(object):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
         self.labelFilter.setText(_translate("MainWindow", "Filter:"))
-        self.lineEditFilter.setPlaceholderText(_translate("MainWindow", "Enter Import Date or Title"))
+        self.lineEditFilter.setPlaceholderText(_translate("MainWindow", "Enter Title To Filter Results"))
         self.labelSummaryExample.setText(_translate("MainWindow", "Summary Information / Graphics Displayed Here"))
         self.pushButtonRecalculateOne.setText(_translate("MainWindow", "Redo Calculations"))
         self.pushButtonExportDisplayed.setText(_translate("MainWindow", "Export as CSV"))

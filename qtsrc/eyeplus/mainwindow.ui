@@ -68,7 +68,7 @@
                 <string/>
                </property>
                <property name="placeholderText">
-                <string>Enter Import Date or Title</string>
+                <string>Enter Title To Filter Results</string>
                </property>
                <property name="clearButtonEnabled">
                 <bool>true</bool>

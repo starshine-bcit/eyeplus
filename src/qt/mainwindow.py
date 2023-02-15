@@ -91,7 +91,8 @@ class EyeMainWindow(Ui_MainWindow):
         self.actionAdjust.triggered.connect(self._show_parameter_window)
         self.parameter_window.ui.pushButtonApply.clicked.connect(
             self._update_parameters)
-        self.lineEditFilter.editingFinished.connect(self._filter_runs)
+        self.lineEditFilter.textChanged.connect(
+            self._filter_runs)
         # create dialog box here confirming, and stop playback
         # self.actionRecalculate.triggered.connect(
         #     self._redo_single_calc_clicked)
@@ -276,14 +277,19 @@ class EyeMainWindow(Ui_MainWindow):
                 self._runs_model.setItem(index, 1, new_import_date)
                 self._runs_model.setItem(index, 2, new_process_date)
                 self._runs_model.setItem(index, 3, new_title)
-            self.tableViewRuns.setModel(self._runs_model)
+            self._title_filter_model = QtCore.QSortFilterProxyModel()
+            self._title_filter_model.setSourceModel(self._runs_model)
+            self._title_filter_model.setFilterKeyColumn(3)
+            self._title_filter_model.setFilterCaseSensitivity(
+                QtCore.Qt.CaseSensitivity.CaseInsensitive)
+            self.tableViewRuns.setModel(self._title_filter_model)
             self.tableViewRuns.resizeColumnsToContents()
             self.tableViewRuns.resizeRowsToContents()
             self.tableViewRuns.setSortingEnabled(True)
             self.tableViewRuns.sortByColumn(
                 0, QtCore.Qt.SortOrder.AscendingOrder)
             self.tableViewRuns.selectRow(0)
-            self._table_item_single_clicked(self._runs_model.item(0, 0))
+            self._selected_run = 1
         else:
             self.tabWidgetMain.setEnabled(False)
             QtWidgets.QMessageBox
@@ -294,8 +300,10 @@ class EyeMainWindow(Ui_MainWindow):
             message_box.setWindowTitle('Welcome to eyeplus!')
             message_box.exec()
 
-    def _table_item_single_clicked(self, item: QtGui.QStandardItem) -> None:
-        self._selected_run = item.row() + 1
+    def _table_item_single_clicked(self, index: QtCore.QModelIndex) -> None:
+        original_index = self._title_filter_model.mapToSource(index)
+        print(original_index.row() + 1)
+        self._selected_run = original_index.row() + 1
         self._update_status(
             f'Successfully loaded summary for runid {self._selected_run}')
         # code to show summary here
@@ -532,5 +540,7 @@ class EyeMainWindow(Ui_MainWindow):
         self._pitch_multi = float(
             self.parameter_window.ui.horizontalSliderPitchMulti.value() / 1000)
 
-    def _filter_runs(self) -> None:
-        pass
+    def _filter_runs(self, text: str) -> None:
+        self._title_filter_model.setFilterRegularExpression(text)
+        self.tableViewRuns.resizeColumnsToContents()
+        self.tableViewRuns.resizeRowsToContents()
