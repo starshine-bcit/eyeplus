@@ -1,9 +1,9 @@
 from pathlib import Path
 import sys
 import os
+import re
 
 from PyQt6 import QtCore, QtGui, QtWidgets
-
 
 from qt.qtui import Ui_MainWindow
 from modules import mpv
@@ -80,7 +80,7 @@ class EyeMainWindow(Ui_MainWindow):
         self.horizontalSliderVolume.sliderReleased.connect(self._change_volume)
         self.actionMute.triggered.connect(self._mute_clicked)
         self.actionImport_Folder.triggered.connect(self._import_dir_clicked)
-        self.tableWidgetRuns.itemClicked.connect(
+        self.tableViewRuns.clicked.connect(
             self._table_item_single_clicked)
         self.pushButtonOpenReview.clicked.connect(self._open_review_clicked)
         self.actionAbout.triggered.connect(self._about_clicked)
@@ -91,6 +91,7 @@ class EyeMainWindow(Ui_MainWindow):
         self.actionAdjust.triggered.connect(self._show_parameter_window)
         self.parameter_window.ui.pushButtonApply.clicked.connect(
             self._update_parameters)
+        self.lineEditFilter.editingFinished.connect(self._filter_runs)
         # create dialog box here confirming, and stop playback
         # self.actionRecalculate.triggered.connect(
         #     self._redo_single_calc_clicked)
@@ -257,35 +258,32 @@ class EyeMainWindow(Ui_MainWindow):
         self.plainTextEditStats.setPlainText('Start playback to see info.')
 
     def _populate_runs_tables(self):
-        self.tableWidgetRuns.clearContents()
-        self.tableWidgetRuns.setHorizontalHeaderLabels(
-            ['ID', 'Date', 'Processed', 'Title'])
+        self.tableViewRuns.setSortingEnabled(False)
         self._all_runs_list = self._db.get_all_runs()
         run_count = len(self._all_runs_list)
-        row_count = self.tableWidgetRuns.rowCount()
-        if run_count > row_count:
-            for _ in range(run_count - row_count):
-                self.tableWidgetRuns.insertRow(0)
         if run_count > 0:
-            for ind, item in enumerate(self._all_runs_list):
-                self.tableWidgetRuns.setItem(
-                    ind, 0, QtWidgets.QTableWidgetItem(str(item['id'])))
-                self.tableWidgetRuns.setItem(
-                    ind, 1, QtWidgets.QTableWidgetItem(str(item['importdate'])))
-                self.tableWidgetRuns.setItem(
-                    ind, 2, QtWidgets.QTableWidgetItem(str(item['processdate'])))
-                self.tableWidgetRuns.setItem(
-                    ind, 3, QtWidgets.QTableWidgetItem(str(item['tags'])))
-                self._videos[item['id']] = item['video']
-            if self.tableWidgetRuns.rowCount() > 0:
-                self.tableWidgetRuns.setSortingEnabled(True)
-                self.tableWidgetRuns.sortByColumn(
-                    0, QtCore.Qt.SortOrder.AscendingOrder)
-                self.tableWidgetRuns.selectRow(0)
-                self.tableWidgetRuns.selectColumn(0)
-                self._table_item_single_clicked(
-                    self.tableWidgetRuns.selectedItems()[0])
             self.tabWidgetMain.setEnabled(True)
+            self._runs_model = QtGui.QStandardItemModel(run_count, 4)
+            self._runs_model.setHorizontalHeaderLabels(
+                ['ID', 'Date', 'Processed', 'Title'])
+            for index, run in enumerate(self._all_runs_list):
+                self._videos[run['id']] = run['video']
+                new_id = QtGui.QStandardItem(str(run['id']))
+                new_import_date = QtGui.QStandardItem(str(run['importdate']))
+                new_process_date = QtGui.QStandardItem(str(run['processdate']))
+                new_title = QtGui.QStandardItem(str(run['tags']))
+                self._runs_model.setItem(index, 0, new_id)
+                self._runs_model.setItem(index, 1, new_import_date)
+                self._runs_model.setItem(index, 2, new_process_date)
+                self._runs_model.setItem(index, 3, new_title)
+            self.tableViewRuns.setModel(self._runs_model)
+            self.tableViewRuns.resizeColumnsToContents()
+            self.tableViewRuns.resizeRowsToContents()
+            self.tableViewRuns.setSortingEnabled(True)
+            self.tableViewRuns.sortByColumn(
+                0, QtCore.Qt.SortOrder.AscendingOrder)
+            self.tableViewRuns.selectRow(0)
+            self._table_item_single_clicked(self._runs_model.item(0, 0))
         else:
             self.tabWidgetMain.setEnabled(False)
             QtWidgets.QMessageBox
@@ -295,15 +293,9 @@ class EyeMainWindow(Ui_MainWindow):
                 QtGui.QPixmap(':/icons/info.svg')))
             message_box.setWindowTitle('Welcome to eyeplus!')
             message_box.exec()
-        self.tableWidgetRuns.resizeColumnsToContents()
 
-    def _table_item_single_clicked(self, item: QtWidgets.QTableWidgetItem) -> None:
-        self._selected_run = int(self.tableWidgetRuns.item(
-            self.tableWidgetRuns.row(item), 0).text())
-        # self._gaze_timestamps = list(self._gaze.keys())
-        # self._imu = self._db.get_imu_data(self._selected_run)
-        self.tabWidgetMain.tabBar().setHidden(False)
-        self.tabWidgetMain.tabBar().setEnabled(True)
+    def _table_item_single_clicked(self, item: QtGui.QStandardItem) -> None:
+        self._selected_run = item.row() + 1
         self._update_status(
             f'Successfully loaded summary for runid {self._selected_run}')
         # code to show summary here
@@ -539,3 +531,6 @@ class EyeMainWindow(Ui_MainWindow):
         self._roll_offset = self.parameter_window.ui.horizontalSliderRollOffset.value()
         self._pitch_multi = float(
             self.parameter_window.ui.horizontalSliderPitchMulti.value() / 1000)
+
+    def _filter_runs(self) -> None:
+        pass
