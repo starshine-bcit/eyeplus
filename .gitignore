@@ -142,3 +142,4 @@ data/
 
 # Qt
 *.user
+mainwindow.ui.autosave

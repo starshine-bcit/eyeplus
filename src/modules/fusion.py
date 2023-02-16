@@ -21,8 +21,10 @@ class Fusion():
     # Optional offset for true north. A +ve value adds to heading
     declination = 0
 
-    def __init__(self, imu_data: dict, mag_data: dict) -> None:
+    def __init__(self, imu_data: dict, mag_data: dict, roll_offset: int = 90, pitch_multi: float = 1.0) -> None:
         # local magnetic bias factors: set from calibration
+        self.roll_diff = roll_offset - 90
+        self.pitch_multi = pitch_multi
         self.magbias = (0, 0, 0)
         self.expect_ts = True
         self.q = [1.0, 0.0, 0.0, 0.0]
@@ -159,6 +161,9 @@ class Fusion():
                                  (self.q[1] * self.q[3] - self.q[0] * self.q[2])))
             self.roll = degrees(atan2(2.0 * (self.q[0] * self.q[1] + self.q[2] * self.q[3]),
                                       self.q[0] * self.q[0] - self.q[1] * self.q[1] - self.q[2] * self.q[2] + self.q[3] * self.q[3]))
+
+            self.roll += self.roll_diff
+            self.pitch *= self.pitch_multi
 
             # calculate slope based off head tilt
             theta = self.roll + 90

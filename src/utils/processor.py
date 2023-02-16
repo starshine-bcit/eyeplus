@@ -34,7 +34,7 @@ def ingest_and_process(cb_progress, eyedb: EyeDB, paths: list[Path], type: str =
         eyedb.write_fusion_data(runid, fused)
 
 
-def reprocess(cb_progress, eyedb: EyeDB, runids: list[int]) -> None:
+def reprocess(cb_progress, eyedb: EyeDB, runids: list[int], roll_offset: int, pitch_multi: float) -> None:
     progress = 0.0
     cb_progress('Beginning to reprocess data...', progress)
     max_run = len(runids)
@@ -48,10 +48,13 @@ def reprocess(cb_progress, eyedb: EyeDB, runids: list[int]) -> None:
         progress += 0.50 / max_run
         cb_progress(
             f'Run {current_run} of {max_run}: Redoing calculations...', progress)
-        fuser = Fusion(imu_data, mag_data)
+        fuser = Fusion(imu_data, mag_data,
+                       roll_offset=roll_offset, pitch_multi=pitch_multi)
         fused = fuser.run()
         for k, v in fused.items():
             new_data[runid][k] = v
+        eyedb.update_parameters(
+            runid, roll_offset=roll_offset, pitch_multi=pitch_multi)
     progress += 0.25
     cb_progress(
         f'Updating data in database...', progress)

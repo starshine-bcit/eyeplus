@@ -61,3 +61,9 @@ class ParameterWindow(QtWidgets.QDialog):
     def _update_roll_slider(self) -> None:
         self.ui.horizontalSliderRollOffset.setValue(
             int(self.ui.lineEditRollOffset.text()))
+
+    def set_values(self, roll_offset: int, pitch_multi: float) -> None:
+        self.ui.lineEditRollOffset.setText(str(roll_offset))
+        self.ui.horizontalSliderRollOffset.setValue(roll_offset)
+        self.ui.lineEditPitchMulti.setText(str(int(pitch_multi * 1000)))
+        self.ui.horizontalSliderPitchMulti.setValue(int(pitch_multi * 1000))

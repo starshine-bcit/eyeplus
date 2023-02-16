@@ -1,7 +1,6 @@
 from pathlib import Path
 import sys
 import os
-import re
 
 from PyQt6 import QtCore, QtGui, QtWidgets
 
@@ -93,9 +92,8 @@ class EyeMainWindow(Ui_MainWindow):
             self._update_parameters)
         self.lineEditFilter.textChanged.connect(
             self._filter_runs)
-        # create dialog box here confirming, and stop playback
-        # self.actionRecalculate.triggered.connect(
-        #     self._redo_single_calc_clicked)
+        self.actionRecalculate.triggered.connect(
+            self._update_fusion)
 
     def _setup_video(self):
         if 'playback_worker' in self.__dict__:
@@ -212,8 +210,6 @@ class EyeMainWindow(Ui_MainWindow):
         self.player.seek(max(time_to_seek, 1), reference='absolute')
 
     def _play_clicked(self):
-        self._pitch_multi = 1.0
-        self._roll_offset = 90
         self.parameter_window.reset()
         self._tree_predicted = self._db.get_pgazed2d_data(self._selected_run)
         self._fusion_data = self._db.get_fusion_data(self._selected_run)
@@ -239,6 +235,8 @@ class EyeMainWindow(Ui_MainWindow):
             self.player.command('set', 'pause', 'yes')
 
     def _stop_clicked(self):
+        self.parameter_window.hide()
+        self.parameter_window.reset()
         self.player.terminate()
         self.player.wait_for_shutdown()
         self._playing_complete_callback()
@@ -290,6 +288,8 @@ class EyeMainWindow(Ui_MainWindow):
                 0, QtCore.Qt.SortOrder.AscendingOrder)
             self.tableViewRuns.selectRow(0)
             self._selected_run = 1
+            self._roll_offset = self._all_runs_list[0]['roll_offset']
+            self._pitch_multi = self._all_runs_list[0]['pitch_multi']
         else:
             self.tabWidgetMain.setEnabled(False)
             QtWidgets.QMessageBox
@@ -529,8 +529,10 @@ class EyeMainWindow(Ui_MainWindow):
         self.main_window.show()
         self._populate_runs_tables()
         self._update_status(f'Successfully imported data')
+        self.tabWidgetMain.setCurrentIndex(0)
 
     def _show_parameter_window(self) -> None:
+        self.parameter_window.set_values(self._roll_offset, self._pitch_multi)
         self.parameter_window.show()
         self.parameter_window.setFocus()
         self.parameter_window.move(250, 600)
@@ -544,3 +546,16 @@ class EyeMainWindow(Ui_MainWindow):
         self._title_filter_model.setFilterRegularExpression(text)
         self.tableViewRuns.resizeColumnsToContents()
         self.tableViewRuns.resizeRowsToContents()
+
+    def _update_fusion(self) -> None:
+        self._stop_clicked()
+        runs_to_redo = [self._selected_run]
+        ingest_worker = ReprocessWorker(
+            self._db_path, runs_to_redo, self._roll_offset, self._pitch_multi)
+        ingest_worker.signals.started.connect(
+            self._reprocess_started)
+        ingest_worker.signals.progress.connect(
+            self._reprocess_dialog_update)
+        ingest_worker.signals.finished.connect(
+            self._reprocess_finished)
+        self._thread_pool.start(ingest_worker)
