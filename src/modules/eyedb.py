@@ -577,6 +577,18 @@ class EyeDB():
         else:
             raise RuntimeError(f'Trying to select a non-existant ID: {runid}')
 
+    def get_parameters(self, runid: int) -> tuple:
+        self._cur.execute('''SELECT id FROM run WHERE id=(?);''', (runid,))
+        res = self._cur.fetchall()
+        if res:
+            self._cur.execute('''SELECT rolloffset, pitchmulti
+                            FROM run where id=(?);''', (runid,))
+            parameters = self._cur.fetchone()
+            print(parameters)
+            return parameters
+        else:
+            raise RuntimeError(f'Trying to select a non-existant ID: {runid}')
+
 
 if __name__ == '__main__':
     pass

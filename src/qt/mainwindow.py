@@ -100,7 +100,7 @@ class EyeMainWindow(Ui_MainWindow):
             self._stop_clicked()
         self.player = mpv.MPV(wid=str(int(self.widgetVideoContainer.winId())),
                               log_handler=print,
-                              loglevel='info',
+                              loglevel='error',
                               force_window='yes',
                               background="#FFFFFF")
         current_video = self._videos[self._selected_run]
@@ -112,7 +112,6 @@ class EyeMainWindow(Ui_MainWindow):
             self._playing_update_progress_callback)
         self.playback_worker.signals.finished.connect(
             self._playing_complete_callback)
-        print('player setup')
 
     def _setup_loading_dialog(self):
         self.processing_dialog = QtWidgets.QDialog(parent=self.main_window)
@@ -127,7 +126,6 @@ class EyeMainWindow(Ui_MainWindow):
             QtGui.QIcon(QtGui.QPixmap(':/icons/life-buoy.svg')))
 
     def _playing_started_callback(self):
-        print(f'playing started\nduration: {self.player.duration}')
         if self.actionMute.isChecked():
             self.player.command('set', 'mute', 'yes')
         self.actionPause.setChecked(False)
@@ -187,7 +185,6 @@ class EyeMainWindow(Ui_MainWindow):
             )
 
     def _playing_complete_callback(self):
-        print('playing stopped')
         if self._overlay.overlay_id:
             self._overlay.remove()
         self.playback_worker.timer.stop()
@@ -210,7 +207,7 @@ class EyeMainWindow(Ui_MainWindow):
         self.player.seek(max(time_to_seek, 1), reference='absolute')
 
     def _play_clicked(self):
-        self.parameter_window.reset()
+        self.parameter_window.set_values(self._roll_offset, self._pitch_multi)
         self._tree_predicted = self._db.get_pgazed2d_data(self._selected_run)
         self._fusion_data = self._db.get_fusion_data(self._selected_run)
         self._fusion_timestamps = list(self._fusion_data.keys())
@@ -302,7 +299,6 @@ class EyeMainWindow(Ui_MainWindow):
 
     def _table_item_single_clicked(self, index: QtCore.QModelIndex) -> None:
         original_index = self._title_filter_model.mapToSource(index)
-        print(original_index.row() + 1)
         self._selected_run = original_index.row() + 1
         self._update_status(
             f'Successfully loaded summary for runid {self._selected_run}')
@@ -310,6 +306,8 @@ class EyeMainWindow(Ui_MainWindow):
 
     def _open_review_clicked(self) -> None:
         self._gaze = self._db.get_gaze_data(self._selected_run)
+        self._roll_offset, self._pitch_multi = self._db.get_parameters(
+            self._selected_run)
         self._setup_video()
         self.actionPlay.setEnabled(True)
         self.tabWidgetMain.tabBar().setHidden(False)
