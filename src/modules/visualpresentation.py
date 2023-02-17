@@ -115,4 +115,3 @@ class Visual():
         # plt.ylabel("-")
         plt.show()
 
-
