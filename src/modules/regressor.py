@@ -30,6 +30,31 @@ class Regression2dGazeModel():
                 predicted_pos[i][0], predicted_pos[i][1]]
         return predicted_dict
 
+class Regression3dGazeModel():
+    def __init__(self, run_data: dict) -> None:
+        y = []
+        x = []
+        for key, val in run_data.items():
+            if val['gaze3d'][0] is not None and val['gaze3d'][1] is not None and val['gaze3d'][2]:
+                y.append(val['gaze3d'])
+                x.append(float(key))
+        self._x = np.array(x)
+        self._x = self._x.reshape(-1, 1)
+        self._y = np.array(y)
+        self._trees = RandomForestRegressor(
+            n_estimators=200, max_depth=35, n_jobs=-1, max_features=8, random_state=20, max_samples=None, bootstrap=True)
+        self._trees.fit(self._x, self._y)
+        self._length = int(round(x[-1] + 0.05, 2) * 20)
+
+    def get_predicted_3d(self) -> dict:
+        vals = [round(x / 20, 2) for x in range(self._length)]
+        predicted_dis = self._trees.predict(
+            np.array(vals).reshape(-1, 1))
+        predicted_dict = {}
+        for i in range(len(vals)):
+            predicted_dict[vals[i]] = [
+                predicted_dis[i][0], predicted_dis[i][1], predicted_dis[i][2]]
+        return predicted_dict
 
 class RegressionMagnetometerModel():
     def __init__(self, mag_data: dict, predict_timestamps: list[float]) -> None:
