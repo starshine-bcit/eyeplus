@@ -285,6 +285,15 @@ class EyeDB():
                 pgaze2dy REAL NOT NULL,
                 FOREIGN KEY(runid) REFERENCES run(id));''')
 
+        self._cur.execute('''CREATE TABLE IF NOT EXISTS pgaze3d(
+                id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                runid INTEGER NOT NULL,
+                timestamp REAL NOT NULL,
+                pgaze3dx REAL NOT NULL,
+                pgaze3dy REAL NOT NULL,
+                pgaze3dz REAL NOT NULL,
+                FOREIGN KEY(runid) REFERENCES run(id));''')
+
         self._cur.execute('''CREATE TABLE IF NOT EXISTS fusion(
                 id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
                 runid INTEGER NOT NULL,
@@ -312,6 +321,9 @@ class EyeDB():
 
         self._cur.execute('''CREATE INDEX idx_pgaze2d_id
                 ON pgaze2d (id, runid);''')
+
+        self._cur.execute('''CREATE INDEX idx_pgaze3d_id
+                ON pgaze3d (id, runid);''')
 
         self._cur.execute('''CREATE INDEX idx_fusion_id
                 ON fusion (id, runid);''')
@@ -475,6 +487,43 @@ class EyeDB():
             pgaze_data = self._cur.fetchall()
             for line in pgaze_data:
                 pgaze_dict[line[2]] = [line[3], line[4]]
+            return pgaze_dict
+        else:
+            raise RuntimeError(f'Trying to select a non-existant ID: {runid}')
+
+    def write_pgaze3d_data(self, runid: int, pgaze: dict) -> None:
+        """Writes out all predicted 3d gaze data to the database
+
+        Args:
+            runid (int): The runid of the data
+            pgaze (dict): The data to ingest
+        """
+        pgaze_data = [{'runid': runid, 'timestamp': k,
+                       'pgaze3dx': v[0], 'pgaze3dy': v[1], 'pgaze3dz': v[2]} for k, v in pgaze.items()]
+        pgaze_insert_query = '''INSERT INTO pgaze3d
+            (runid, timestamp, pgaze3dx, pgaze3dy, pgaze3dz)
+            VALUES(:runid, :timestamp, :pgaze3dx, :pgaze3dy, :pgaze3dz);'''
+        self._cur.executemany(pgaze_insert_query, pgaze_data)
+        self._con.commit()
+
+    def get_pgazed3d_data(self, runid: int) -> None:
+        """Gets all relevant predicted 3d gaze data for the runid
+
+        Args:
+            runid (int): The runid of the data we wish to grab
+
+        Raises:
+            RuntimeError: If the runid does not exist
+        """
+        pgaze_dict = {}
+        self._cur.execute('''SELECT id FROM run WHERE id=(?);''', (runid,))
+        res = self._cur.fetchall()
+        if res:
+            self._cur.execute(
+                '''SELECT * FROM pgaze3d WHERE runid=(?) ORDER BY id ASC;''', (runid,))
+            pgaze_data = self._cur.fetchall()
+            for line in pgaze_data:
+                pgaze_dict[line[2]] = [line[3], line[4], line[5]]
             return pgaze_dict
         else:
             raise RuntimeError(f'Trying to select a non-existant ID: {runid}')

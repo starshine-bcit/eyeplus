@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from modules.eyedb import EyeDB
-from modules.regressor import Regression2dGazeModel
+from modules.regressor import Regression2dGazeModel, Regression3dGazeModel
 from modules.fusion import Fusion
 
 
@@ -21,6 +21,9 @@ def ingest_and_process(cb_progress, eyedb: EyeDB, paths: list[Path], type: str =
             f'Run {current_run} of {max_run}: Using magic to predict 2d gaze...', progress)
         predicted_gaze = gaze_predictor.get_predicted_2d()
         eyedb.write_pgaze2d_data(runid, predicted_gaze)
+        gaze_predictor = Regression3dGazeModel(gaze_data)
+        predicted_gaze = gaze_predictor.get_predicted_3d()
+        eyedb.write_pgaze3d_data(runid, predicted_gaze)
         imu_data = eyedb.get_imu_data(runid)
         mag_data = eyedb.get_mag_data(runid)
         progress += 0.25 / len(runs_to_process)
