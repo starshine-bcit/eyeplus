@@ -10,23 +10,21 @@ class Analyze:
 
     def check(self, slope, y_intercept, gaze_x, gaze_y, gaze_dist):
         """Performs the check to see if a user is looking up or down and increments the number of checks that have been made."""
-        
-        #gaze3d_distance_from_user is the third element in the gaze3d dictionary
+        # gaze3d_distance_from_user is the third element in the gaze3d dictionary
         self.total_readings += 1
-        if gaze_y > slope * gaze_x + y_intercept:
+        if gaze_y < slope * gaze_x + y_intercept:
             self.readings_looking_up += 1
-        elif gaze_dist > 400:
-            self.readings_looking_up += 1
+        # elif gaze_dist > 400:
+        #     self.readings_looking_up += 1
         else:
             self.readings_looking_down += 1
 
-    def test_check(slope, y_intercept, gaze_x, gaze_y, gaze_dist = 0):
-        print(gaze_dist)
+    def test_check(slope, y_intercept, gaze_x, gaze_y, gaze_dist=0):
         """Returns a string describing whether a user is looking up or down with some data, for testing purposes."""
-        if gaze_y > slope * gaze_x + y_intercept:
+        if gaze_y < slope * gaze_x + y_intercept:
             return "Looking Up"
-        elif gaze_dist > 400:
-            return "Looking Up"
+        # elif gaze_dist > 400:
+        #     return "Looking Up"
         else:
             return "Looking Down"
 
