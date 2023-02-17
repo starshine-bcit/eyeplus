@@ -141,4 +141,5 @@ dmypy.json
 data/
 
 # Qt
-*.user
+eyeplus.pyproject.user
+mainwindow.ui.autosave

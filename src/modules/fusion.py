@@ -1,7 +1,6 @@
-from pathlib import Path
-from eyedb import EyeDB
+from math import sqrt, atan2, asin, degrees, radians, tan
 
-from math import sqrt, atan2, asin, degrees, radians
+from modules.regressor import RegressionMagnetometerModel
 
 
 class DeltaT():
@@ -18,42 +17,41 @@ class DeltaT():
         return delta
 
 
-class Fusion(object):
+class Fusion():
     # Optional offset for true north. A +ve value adds to heading
     declination = 0
 
-    def __init__(self, first_timestamp: float, all_data: dict):
-        self._all_data = all_data
+    def __init__(self, imu_data: dict, mag_data: dict, roll_offset: int = 90, pitch_multi: float = 1.0) -> None:
         # local magnetic bias factors: set from calibration
+        self.roll_diff = roll_offset - 90
+        self.pitch_multi = pitch_multi
         self.magbias = (0, 0, 0)
         self.expect_ts = True
-        self.deltat = DeltaT(first_timestamp)      # Time between updates
-        self.q = [1.0, 0.0, 0.0, 0.0]       # vector to hold quaternion
-        # Original code indicates this leads to a 2 sec response time
+        self.q = [1.0, 0.0, 0.0, 0.0]
         GyroMeasError = radians(40)
         # compute beta (see README)
         self.beta = sqrt(3.0 / 4.0) * GyroMeasError
         self.pitch = 0
         self.heading = 0
         self.roll = 0
+        self.y_intercept = 0
+        self.x_intercept = 0
+        self.slope = 0
         self.results = {}
+        self.deltat = DeltaT(list(imu_data.keys())[0])
+        mag_model = RegressionMagnetometerModel(
+            mag_data, list(imu_data.keys()))
+        predicted_mag = mag_model.get_predicted_mag()
+        self.all_data = {}
+        for k, v in imu_data.items():
+            self.all_data[k] = {
+                'accelerometer': v['accelerometer'],
+                'gyroscope': v['gyroscope'],
+                'magnetometer': predicted_mag[k]
+            }
 
-    # async def calibrate(self, stopfunc):
-    #     res = await self.read_coro()
-    #     mag = res[2]
-    #     # Initialise max and min lists with current values
-    #     magmax = list(mag)
-    #     magmin = magmax[:]
-    #     while not stopfunc():
-    #         res = await self.read_coro()
-    #         magxyz = res[2]
-    #         for x in range(3):
-    #             magmax[x] = max(magmax[x], magxyz[x])
-    #             magmin[x] = min(magmin[x], magxyz[x])
-    #     self.magbias = tuple(map(lambda a, b: (a + b)/2, magmin, magmax))
-
-    def go(self):
-        for k, v in self._all_data.items():
+    def run(self):
+        for k, v in self.all_data.items():
             accel = v['accelerometer']
             gyro = v['gyroscope']
             mag = v['magnetometer']
@@ -163,47 +161,42 @@ class Fusion(object):
                                  (self.q[1] * self.q[3] - self.q[0] * self.q[2])))
             self.roll = degrees(atan2(2.0 * (self.q[0] * self.q[1] + self.q[2] * self.q[3]),
                                       self.q[0] * self.q[0] - self.q[1] * self.q[1] - self.q[2] * self.q[2] + self.q[3] * self.q[3]))
+
+            self.roll += self.roll_diff
+            self.pitch *= self.pitch_multi
+
+            # calculate slope based off head tilt
+            theta = self.roll + 90
+            if theta != 90 or theta != -90:
+                self.slope = tan(radians(theta))
+            else:
+                self.slope = float('inf')
+
+            # calculate intercepts as percentage of screen based off head pitch and slope
+            theta = self.pitch
+
+            fov_constant = 0.25  # determined so that looking up 45 degrees would move the slope down 25 percent of the screen, and vice versa
+
+            if theta >= 0:
+                self.y_intercept = 0.5 - tan(radians(theta))*fov_constant
+            elif theta < 0:
+                theta = -theta
+                self.y_intercept = 0.5 + tan(radians(theta))*fov_constant
+
+            self.x_intercept = -self.y_intercept/self.slope
+
             self.results[ts] = {
                 'heading': self.heading,
                 'pitch': self.pitch,
                 'roll': self.roll,
-                'q': self.q
+                'q': self.q,
+                'y_intercept': self.y_intercept,
+                'x_intercept': self.x_intercept,
+                'slope': self.slope
             }
+
+        return self.results
 
 
 def main():
-    from regressor import RegressionMagnetometerModel
-    db = EyeDB(Path(__file__).parent.parent.parent / 'data' / 'eye.db')
-    imu_data = db.get_imu_data(4)
-    mag_data = db.get_mag_data(4)
-    mag_model = RegressionMagnetometerModel(mag_data, list(imu_data.keys()))
-    predicted_mag = mag_model.get_predicted_mag()
-
-    all_data = {}
-    for k, v in imu_data.items():
-        all_data[k] = {
-            'accelerometer': v['accelerometer'],
-            'gyroscope': v['gyroscope'],
-            'magnetometer': predicted_mag[k]
-        }
-
-    first_timestamp = list(imu_data.keys())[0]
-
-    fuse = Fusion(first_timestamp=first_timestamp,
-                  all_data=all_data)
-
-    fuse.go()
-
-    print(f'{"Timestamp":>9}{"Heading":>8}{"Pitch":>8}{"Roll":>8}')
-    for k, v in fuse.results.items():
-        if k < 2:
-            pass
-        elif k > 3:
-            break
-        else:
-            print(
-                f'{k:>9.2f}{v["heading"]:>8.2f}{v["pitch"]:>8.2f}{v["roll"]+90:>8.2f}')
-
-
-if __name__ == '__main__':
-    main()
+    pass
