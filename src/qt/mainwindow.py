@@ -268,6 +268,13 @@ class EyeMainWindow(Ui_MainWindow):
     def _populate_runs_tables(self):
         self.tableViewRuns.setSortingEnabled(False)
         self._all_runs_list = self._db.get_all_runs()
+        self._all_runs_dict = {}
+        for run in self._all_runs_list:
+            self._all_runs_dict[int(run['id'])] = {
+                'process_date': run['processdate'],
+                'import_date': run['importdate'],
+                'tags': run['tags']
+            }
         run_count = len(self._all_runs_list)
         if run_count > 0:
             self.tabWidgetMain.setEnabled(True)
@@ -311,7 +318,16 @@ class EyeMainWindow(Ui_MainWindow):
 
     def _table_item_single_clicked(self, index: QtCore.QModelIndex) -> None:
         original_index = self._title_filter_model.mapToSource(index)
-        self._selected_run = original_index.row() + 1
+        runid_index = self._runs_model.index(original_index.row(), 0)
+        self._selected_run = int(self._runs_model.itemData(runid_index)[0])
+        self.labelSummaryTitle.setText(
+            f'Summary for Run ID {self._selected_run}')
+        self.labelSummaryDate.setText(
+            f'Date: {self._all_runs_dict[self._selected_run]["import_date"]}')
+        self.labelSummaryProcessDate.setText(
+            f'Processed: {self._all_runs_dict[self._selected_run]["process_date"]}')
+        self.labelSummaryTag.setText(
+            f'Title: {self._all_runs_dict[self._selected_run]["tags"]}')
         self._update_status(
             f'Successfully loaded summary for runid {self._selected_run}')
         # code to show summary here
