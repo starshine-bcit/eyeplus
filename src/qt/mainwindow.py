@@ -174,7 +174,8 @@ class EyeMainWindow(Ui_MainWindow):
             img, pos_x, pos_y = create_video_overlay(
                 self.player.osd_dimensions, gaze_x, gaze_y, y_intercept, x_intercept, slope, roll, pitch)
             self._overlay.update(img, pos=(pos_x, pos_y))
-            status = self._analyze.test_check(slope, y_intercept, gaze_x, gaze_y, gaze_dist)
+            status = self._analyze.test_check(
+                slope, y_intercept, gaze_x, gaze_y, gaze_dist)
             self.plainTextEditStats.setPlainText(
                 f'RunID      : {self._selected_run}\n'
                 f'Title      : {self._all_runs_list[self._selected_run -1]["tags"]}\n'
@@ -513,7 +514,8 @@ class EyeMainWindow(Ui_MainWindow):
 
     def _redo_single_calc_clicked(self) -> None:
         runs_to_redo = [self._selected_run]
-        ingest_worker = ReprocessWorker(self._db_path, runs_to_redo)
+        ingest_worker = ReprocessWorker(
+            self._db_path, runs_to_redo, self._roll_offset, self._pitch_multi)
         ingest_worker.signals.started.connect(
             self._reprocess_started)
         ingest_worker.signals.progress.connect(

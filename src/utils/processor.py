@@ -35,6 +35,7 @@ def ingest_and_process(cb_progress, eyedb: EyeDB, paths: list[Path], type: str =
         cb_progress(
             f'Run {current_run} of {max_run}: Finishing up...', progress)
         eyedb.write_fusion_data(runid, fused)
+        eyedb.write_process_date(runid)
 
 
 def reprocess(cb_progress, eyedb: EyeDB, runids: list[int], roll_offset: int, pitch_multi: float) -> None:
@@ -62,3 +63,4 @@ def reprocess(cb_progress, eyedb: EyeDB, runids: list[int], roll_offset: int, pi
     cb_progress(
         f'Updating data in database...', progress)
     eyedb.update_fusion_data(new_data)
+    eyedb.write_process_date(runid)

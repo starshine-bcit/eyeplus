@@ -616,7 +616,7 @@ class EyeDB():
         self._cur.executemany(update_query, update_list)
         self._con.commit()
 
-    def update_parameters(self, runid: int, roll_offset: int, pitch_multi: float):
+    def update_parameters(self, runid: int, roll_offset: int, pitch_multi: float) -> None:
         self._cur.execute('''SELECT id FROM run WHERE id=(?);''', (runid,))
         res = self._cur.fetchall()
         if res:
@@ -633,10 +633,14 @@ class EyeDB():
             self._cur.execute('''SELECT rolloffset, pitchmulti
                             FROM run where id=(?);''', (runid,))
             parameters = self._cur.fetchone()
-            print(parameters)
             return parameters
         else:
             raise RuntimeError(f'Trying to select a non-existant ID: {runid}')
+
+    def write_process_date(self, runid: int) -> None:
+        self._cur.execute('''UPDATE run SET(processdate)=(?)
+                        WHERE id=(?);''', (str(datetime.now().date()), runid))
+        self._con.commit()
 
 
 if __name__ == '__main__':
