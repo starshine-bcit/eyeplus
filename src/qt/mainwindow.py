@@ -26,7 +26,6 @@ class EyeMainWindow(Ui_MainWindow):
         self._db_path = Path(__file__).parent.parent.parent / 'data' / 'eye.db'
         self._db = EyeDB(self._db_path)
         self._csv = DataExporter(self._db)
-        self._analyze = Analyze
         self.setupUi(self.main_window)
         self._setup_custom_ui()
         self._connect_events()
@@ -176,6 +175,8 @@ class EyeMainWindow(Ui_MainWindow):
             self._overlay.update(img, pos=(pos_x, pos_y))
             status = self._analyze.test_check(
                 slope, y_intercept, gaze_x, gaze_y, gaze_dist)
+            self._analyze.check(slope, y_intercept, gaze_x, gaze_y, gaze_dist)
+            cumulative = self._analyze.calculate()
             self.plainTextEditStats.setPlainText(
                 f'RunID      : {self._selected_run}\n'
                 f'Title      : {self._all_runs_list[self._selected_run -1]["tags"]}\n'
@@ -193,6 +194,8 @@ class EyeMainWindow(Ui_MainWindow):
                 f'Gaze3d Y   : {gaze_vert:.4f}\n'
                 f'Gaze3d Z   : {gaze_dist:.4f}\n\n'
                 f'Obervation : {status}\n'
+                f'Up %       : {cumulative[0]:.4f}\n'
+                f'Down %     : {cumulative[1]:.4f}\n'
             )
 
     def _playing_complete_callback(self):
@@ -219,6 +222,7 @@ class EyeMainWindow(Ui_MainWindow):
 
     def _play_clicked(self):
         self.parameter_window.set_values(self._roll_offset, self._pitch_multi)
+        self._analyze = Analyze()
         self._tree_predicted2d = self._db.get_pgazed2d_data(self._selected_run)
         self._tree_predicted3d = self._db.get_pgazed3d_data(self._selected_run)
         self._fusion_data = self._db.get_fusion_data(self._selected_run)

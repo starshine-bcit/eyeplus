@@ -10,7 +10,7 @@ class Analyze:
 
     def check(self, slope, y_intercept, gaze_x, gaze_y, gaze_dist):
         """Performs the check to see if a user is looking up or down and increments the number of checks that have been made."""
-        # make fuzzy horizon line
+        # make fuzzy horizon
         # gaze3d_distance_from_user is the third element in the gaze3d dictionary
         self.total_readings += 1
         if gaze_y < slope * gaze_x + y_intercept:
@@ -20,7 +20,7 @@ class Analyze:
         else:
             self.readings_looking_down += 1
 
-    def test_check(slope, y_intercept, gaze_x, gaze_y, gaze_dist=0):
+    def test_check(self, slope, y_intercept, gaze_x, gaze_y, gaze_dist=0):
         """Returns a string describing whether a user is looking up or down with some data, for testing purposes."""
         if gaze_y < slope * gaze_x + y_intercept:
             return "Looking Up"
