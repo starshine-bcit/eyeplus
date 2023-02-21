@@ -303,9 +303,8 @@ class EyeMainWindow(Ui_MainWindow):
             self.tableViewRuns.sortByColumn(
                 0, QtCore.Qt.SortOrder.AscendingOrder)
             self.tableViewRuns.selectRow(0)
-            self._selected_run = 1
-            self._roll_offset = self._all_runs_list[0]['roll_offset']
-            self._pitch_multi = self._all_runs_list[0]['pitch_multi']
+            self._table_item_single_clicked(
+                self._title_filter_model.index(0, 0))
         else:
             self.tabWidgetMain.setEnabled(False)
             QtWidgets.QMessageBox

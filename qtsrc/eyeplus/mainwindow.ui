@@ -18,7 +18,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidgetMain">
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="tabDataList">
        <attribute name="title">
@@ -64,6 +64,9 @@
              </item>
              <item>
               <widget class="QLineEdit" name="lineEditFilter">
+               <property name="toolTip">
+                <string>Filters by title</string>
+               </property>
                <property name="text">
                 <string/>
                </property>
@@ -168,6 +171,9 @@
              </item>
              <item>
               <widget class="QPushButton" name="pushButtonRecalculateOne">
+               <property name="toolTip">
+                <string>Developer Use Only - Will be Removed</string>
+               </property>
                <property name="text">
                 <string>Redo Calculations</string>
                </property>
@@ -185,6 +191,9 @@
                  <height>0</height>
                 </size>
                </property>
+               <property name="toolTip">
+                <string>Export a series for the selected run only</string>
+               </property>
                <property name="text">
                 <string>Export as CSV</string>
                </property>
@@ -196,6 +205,9 @@
              </item>
              <item>
               <widget class="QPushButton" name="pushButtonOpenReview">
+               <property name="toolTip">
+                <string>Open For individual review and playback</string>
+               </property>
                <property name="text">
                 <string>Open For Review</string>
                </property>
@@ -368,6 +380,9 @@
           </item>
           <item>
            <widget class="QPushButton" name="pushButtonExportAll">
+            <property name="toolTip">
+             <string>Export data from all runs in csv format</string>
+            </property>
             <property name="text">
              <string>Export All as CSV</string>
             </property>
@@ -461,6 +476,9 @@
    <property name="toolTip">
     <string>Select one or more zip files to import</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+I</string>
+   </property>
   </action>
   <action name="actionExit">
    <property name="icon">
@@ -469,6 +487,9 @@
    </property>
    <property name="text">
     <string>Exit</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Q</string>
    </property>
   </action>
   <action name="actionPause">
@@ -482,6 +503,9 @@
    <property name="text">
     <string>Pause</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+P</string>
+   </property>
   </action>
   <action name="actionPlay">
    <property name="icon">
@@ -491,6 +515,9 @@
    <property name="text">
     <string>Play</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+R</string>
+   </property>
   </action>
   <action name="actionStop">
    <property name="icon">
@@ -499,6 +526,9 @@
    </property>
    <property name="text">
     <string>Stop</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+S</string>
    </property>
   </action>
   <action name="actionExport_All_Data">
@@ -510,7 +540,10 @@
     <string>Export All Data...</string>
    </property>
    <property name="toolTip">
-    <string>Export all data in csv format</string>
+    <string>Export data from all runs in csv format</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+E</string>
    </property>
   </action>
   <action name="actionReadme">
@@ -519,7 +552,10 @@
      <normaloff>:/icons/help-circle.svg</normaloff>:/icons/help-circle.svg</iconset>
    </property>
    <property name="text">
-    <string>Readme</string>
+    <string>Readme...</string>
+   </property>
+   <property name="toolTip">
+    <string>Opens the readme file in a new window</string>
    </property>
   </action>
   <action name="actionAbout">
@@ -528,7 +564,10 @@
      <normaloff>:/icons/info.svg</normaloff>:/icons/info.svg</iconset>
    </property>
    <property name="text">
-    <string>About</string>
+    <string>About...</string>
+   </property>
+   <property name="toolTip">
+    <string>Opens about window</string>
    </property>
   </action>
   <action name="actionMute">
@@ -542,6 +581,9 @@
    <property name="text">
     <string>Mute</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+M</string>
+   </property>
   </action>
   <action name="actionImport_Folder">
    <property name="icon">
@@ -551,6 +593,9 @@
    <property name="text">
     <string>Import Folder(s)...</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+U</string>
+   </property>
   </action>
   <action name="actionUsage">
    <property name="icon">
@@ -558,7 +603,13 @@
      <normaloff>:/icons/life-buoy.svg</normaloff>:/icons/life-buoy.svg</iconset>
    </property>
    <property name="text">
-    <string>Usage</string>
+    <string>Usage...</string>
+   </property>
+   <property name="toolTip">
+    <string>Opens user manual in a new window</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+H</string>
    </property>
   </action>
   <action name="actionAdjust">
@@ -570,7 +621,10 @@
     <string>Adjust</string>
    </property>
    <property name="toolTip">
-    <string>Adjust Parameters</string>
+    <string>Adjust parameters for this run</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+T</string>
    </property>
   </action>
   <action name="actionRecalculate">
@@ -582,7 +636,7 @@
     <string>Recalculate</string>
    </property>
    <property name="toolTip">
-    <string>Recalculate and Store Data</string>
+    <string>Recalculate and store data based on provided parameter changes</string>
    </property>
   </action>
  </widget>
