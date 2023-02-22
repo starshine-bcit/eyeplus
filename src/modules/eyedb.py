@@ -285,15 +285,6 @@ class EyeDB():
                 pgaze2dy REAL NOT NULL,
                 FOREIGN KEY(runid) REFERENCES run(id));''')
 
-        self._cur.execute('''CREATE TABLE IF NOT EXISTS pgaze3d(
-                id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-                runid INTEGER NOT NULL,
-                timestamp REAL NOT NULL,
-                pgaze3dx REAL NOT NULL,
-                pgaze3dy REAL NOT NULL,
-                pgaze3dz REAL NOT NULL,
-                FOREIGN KEY(runid) REFERENCES run(id));''')
-
         self._cur.execute('''CREATE TABLE IF NOT EXISTS fusion(
                 id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
                 runid INTEGER NOT NULL,
@@ -310,10 +301,17 @@ class EyeDB():
                 slope REAL NOT NULL,
                 FOREIGN KEY(runid) REFERENCES run(id));''')
 
-        self._cur.execute('''CREATE TABLE IF NOT EXISTS updown(
-                id INTEGER NOT NULL PRIMAREY KEY AUTOINCREMENT,
+        self._cur.execute('''CREATE TABLE IF NOT EXISTS processed(
+                id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
                 runid INTEGER NOT NULL,
-                )''')
+                timestamp REAL NOT NULL,
+                totalcount INTEGER NOT NULL,
+                upcount INTEGER NOT NULL,
+                downcount REAL NOT NULL,
+                percentup REAL NOT NULL,
+                percentdown REAL NOT NULL,
+                currentup INTEGER NOT NULL,
+                FOREIGN KEY(runid) REFERENCES run(id));''')
 
         self._cur.execute('''CREATE INDEX idx_imu_id
                 ON imu (id, runid);''')
@@ -327,11 +325,11 @@ class EyeDB():
         self._cur.execute('''CREATE INDEX idx_pgaze2d_id
                 ON pgaze2d (id, runid);''')
 
-        self._cur.execute('''CREATE INDEX idx_pgaze3d_id
-                ON pgaze3d (id, runid);''')
-
         self._cur.execute('''CREATE INDEX idx_fusion_id
                 ON fusion (id, runid);''')
+
+        self._cur.execute('''CREATE INDEX idx_processed_id
+                ON processed (id, runid);''')
 
         self._cur.execute('''CREATE INDEX idx_fusion_timestamp
                 ON fusion (runid, timestamp);''')
@@ -488,41 +486,6 @@ class EyeDB():
         else:
             raise RuntimeError(f'Trying to select a non-existant ID: {runid}')
 
-    def write_pgaze3d_data(self, runid: int, pgaze: dict) -> None:
-        """Writes out all predicted 3d gaze data to the database
-
-        Args:
-            runid (int): The runid of the data
-            pgaze (dict): The data to ingest
-        """
-        pgaze_data = [{'runid': runid, 'timestamp': k,
-                       'pgaze3dx': v[0], 'pgaze3dy': v[1], 'pgaze3dz': v[2]} for k, v in pgaze.items()]
-        pgaze_insert_query = '''INSERT INTO pgaze3d
-            (runid, timestamp, pgaze3dx, pgaze3dy, pgaze3dz)
-            VALUES(:runid, :timestamp, :pgaze3dx, :pgaze3dy, :pgaze3dz);'''
-        self._cur.executemany(pgaze_insert_query, pgaze_data)
-        self._con.commit()
-
-    def get_pgazed3d_data(self, runid: int) -> None:
-        """Gets all relevant predicted 3d gaze data for the runid
-
-        Args:
-            runid (int): The runid of the data we wish to grab
-
-        Raises:
-            RuntimeError: If the runid does not exist
-        """
-        pgaze3d_dict = {}
-        self._cur.execute(
-            '''SELECT * FROM pgaze3d WHERE runid=(?) ORDER BY id ASC;''', (runid,))
-        pgaze_data = self._cur.fetchall()
-        if pgaze_data:
-            for line in pgaze_data:
-                pgaze3d_dict[line[2]] = [line[3], line[4], line[5]]
-            return pgaze3d_dict
-        else:
-            raise RuntimeError(f'Trying to select a non-existant ID: {runid}')
-
     def write_fusion_data(self, runid: int, fusion: dict) -> None:
         """Writes out all fusion data to the database for the runid
 
@@ -648,6 +611,35 @@ class EyeDB():
             return True
         else:
             return False
+
+    def write_processed_data(self, runid: int, processed: dict) -> None:
+        processed_data = [{'runid': runid, 'timestamp': k, 'totalcount': v['total'], 'upcount': v['up_count'], 'downcount': v['down_count'],
+                           'percentup': v['percent_up'], 'percentdown': v['percent_down'], 'currentup': 1 if v['currently_up'] else 0} for k, v in processed.items()]
+        processed_query = '''INSERT INTO processed (runid, timestamp, totalcount, upcount, downcount, percentup, percentdown, currentup) VALUES(:runid, :timestamp, :totalcount, :upcount, :downcount, :percentup, :percentdown, :currentup);'''
+        if self.check_existing_runid(runid):
+            self._cur.executemany(processed_query, processed_data)
+            self._con.commit()
+        else:
+            raise RuntimeError(f'Trying to select a non-existant ID: {runid}')
+
+    def get_processed_data(self, runid: int) -> dict:
+        processed_dict = {}
+        self._cur.execute(
+            '''SELECT * FROM processed WHERE runid=(?) ORDER BY id ASC;''', (runid,))
+        processed_data = self._cur.fetchall()
+        if processed_data:
+            for line in processed_data:
+                processed_dict[line[2]] = {
+                    'total': line[3],
+                    'up_count': line[4],
+                    'down_count': line[5],
+                    'percent_up': line[6],
+                    'percent_down': line[7],
+                    'currently_up': True if line[8] else False
+                }
+            return processed_dict
+        else:
+            raise RuntimeError(f'Trying to select a non-existant ID: {runid}')
 
 
 if __name__ == '__main__':

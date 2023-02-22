@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from modules.eyedb import EyeDB
-from modules.regressor import Regression2dGazeModel, Regression3dGazeModel
+from modules.regressor import Regression2dGazeModel
 from modules.fusion import Fusion
 from modules.analyze import HorizonGaze
 
@@ -22,9 +22,6 @@ def ingest_and_process(cb_progress, eyedb: EyeDB, paths: list[Path], type: str =
             f'Run {current_run} of {max_run}: Using magic to predict 2d gaze...', progress)
         predicted_gaze = gaze_predictor.get_predicted_2d()
         eyedb.write_pgaze2d_data(runid, predicted_gaze)
-        gaze_predictor = Regression3dGazeModel(gaze_data)
-        predicted_gaze = gaze_predictor.get_predicted_3d()
-        eyedb.write_pgaze3d_data(runid, predicted_gaze)
         imu_data = eyedb.get_imu_data(runid)
         mag_data = eyedb.get_mag_data(runid)
         progress += 0.20 / len(runs_to_process)
@@ -32,14 +29,18 @@ def ingest_and_process(cb_progress, eyedb: EyeDB, paths: list[Path], type: str =
             f'Run {current_run} of {max_run}: Fusing imu and magnetometer data...', progress)
         fuser = Fusion(imu_data, mag_data)
         fused = fuser.run()
+        progress += 0.20 / len(runs_to_process)
         cb_progress(
-            f'Run {current_run} of {max_run}: Calculating predicted up/down...')
-
+            f'Run {current_run} of {max_run}: Calculating predicted up/down...', progress)
+        gaze3d = eyedb.get_gaze3d_z(runid)
+        horizon = HorizonGaze(predicted_gaze, gaze3d, fused)
+        processed = horizon.calculates_all()
         progress += 0.20 / len(runs_to_process)
         cb_progress(
             f'Run {current_run} of {max_run}: Finishing up...', progress)
         eyedb.write_fusion_data(runid, fused)
         eyedb.write_process_date(runid)
+        eyedb.write_processed_data(runid, processed)
 
 
 def reprocess(cb_progress, eyedb: EyeDB, runids: list[int], roll_offset: int, pitch_multi: float) -> None:

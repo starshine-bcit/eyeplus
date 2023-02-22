@@ -16,41 +16,22 @@ class HorizonGaze():
         self._fused_ts = list(self._fused.keys())
         self._gaze3d_ts = list(self._gaze3d.keys())
 
-    def calculate_all(self) -> dict:
-        for ts in self._gaze2d_ts:
-            self._calculate_single(ts)
-        return {
-            'total': self._total_readings,
-            'looking_up': self._readings_looking_up,
-            'looking_down': self._readings_looking_down,
-            'percent_up': self._readings_looking_up / self._total_readings,
-            'percent_down': self._readings_looking_down / self._total_readings
-        }
-
-    def store_all(self) -> None:
+    def calculates_all(self) -> dict:
         while self._count < self._length:
             current_ts = self._gaze2d_ts[self._total_readings]
             self._playback_store[current_ts] = {
                 'total': self._total_readings,
                 'percent_up': self._readings_looking_up / self._total_readings if self._total_readings > 1 else 0,
                 'percent_down': self._readings_looking_down / self._total_readings if self._total_readings > 1 else 0,
+                'down_count': self._readings_looking_down,
+                'up_count': self._readings_looking_up,
                 'currently_up': self._currently_up
             }
             self._calculate_single(self._gaze2d_ts[self._count])
             self._count += 1
             self._calculate_single(self._gaze2d_ts[self._count])
             self._count += 1
-
-    def get_ts_data(self, timestamp: float) -> None:
-        if timestamp in self._playback_store:
-            return self._playback_store[timestamp]
-        else:
-            return {
-                'total': self._total_readings,
-                'percent_up': self._readings_looking_up / self._total_readings if self._total_readings > 1 else 0,
-                'percent_down': self._readings_looking_down / self._total_readings if self._total_readings > 1 else 0,
-                'currently_up': self._currently_up
-            }
+        return self._playback_store
 
     def _calculate_single(self, timestamp: float) -> None:
         if timestamp >= 1:
@@ -73,15 +54,6 @@ class HorizonGaze():
                 self._readings_looking_down += 1
                 self._currently_up = False
             self._total_readings += 1
-
-    def _get_return_dict(self) -> dict:
-        return {
-            'total': self._total_readings,
-            'looking_up': self._readings_looking_up,
-            'looking_down': self._readings_looking_down,
-            'percent_up': self._readings_looking_up / self._total_readings if self._total_readings > 1 else 0,
-            'percent_down': self._readings_looking_down / self._total_readings if self._total_readings > 1 else 0
-        }
 
     def _get_close_3d(self, timestamp: float) -> float | None:
         for time in self._gaze3d_ts:

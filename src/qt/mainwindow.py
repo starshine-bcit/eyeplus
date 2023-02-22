@@ -148,6 +148,8 @@ class EyeMainWindow(Ui_MainWindow):
             self.horizontalSliderSeek.setSliderPosition(progress)
         if not self.player.pause:
             curr_timestamp = round(self.player.time_pos, 1)
+            if self.player.duration - self.player.time_pos <= 2:
+                curr_timestamp = curr_timestamp - 2
             closest_fusion = self._fusion_timestamps[-1]
             for time in self._fusion_timestamps:
                 if time >= curr_timestamp:
@@ -161,7 +163,6 @@ class EyeMainWindow(Ui_MainWindow):
                     else:
                         closest_distance = None
                         break
-            horizon_data = self._horizon.get_ts_data(curr_timestamp)
             if self._overlay.overlay_id:
                 self._overlay.remove()
 
@@ -172,6 +173,12 @@ class EyeMainWindow(Ui_MainWindow):
             slope = self._fusion_data[closest_fusion]['slope']
             roll = self._fusion_data[closest_fusion]['roll']
             pitch = self._fusion_data[closest_fusion]['pitch']
+            total_count = self._horizon[curr_timestamp]['total']
+            up_count = self._horizon[curr_timestamp]['up_count']
+            down_count = self._horizon[curr_timestamp]['down_count']
+            percent_up = self._horizon[curr_timestamp]['percent_up']
+            percent_down = self._horizon[curr_timestamp]['percent_down']
+            currently_up = self._horizon[curr_timestamp]['currently_up']
 
             roll += self._roll_offset
             pitch *= self._pitch_multi
@@ -192,10 +199,10 @@ class EyeMainWindow(Ui_MainWindow):
                 f'y_intercept: {y_intercept:.4f}\n'
                 f'slope      : {slope:.4f}\n\n'
                 f'Gaze3d Z   : {closest_distance if closest_distance is not None else "None"}\n\n'
-                f'Obervation : {"Looking Up" if horizon_data["currently_up"] else "Looking Down"}\n'
-                f'Up %       : {horizon_data["percent_up"]:.4f}\n'
-                f'Down %     : {horizon_data["percent_down"]:.4f}\n'
-                f'Total Calcs: {horizon_data["total"]}'
+                f'Obervation : {"Looking Up" if currently_up else "Looking Down"}\n'
+                f'Up %       : {percent_up:.4f}\n'
+                f'Down %     : {percent_down:.4f}\n'
+                f'Total Calcs: {total_count}\n'
             )
 
     def _playing_complete_callback(self):
@@ -227,9 +234,7 @@ class EyeMainWindow(Ui_MainWindow):
         self._gaze_distance_timestamps = list(self._gaze_distance.keys())
         self._fusion_data = self._db.get_fusion_data(self._selected_run)
         self._fusion_timestamps = list(self._fusion_data.keys())
-        self._horizon = HorizonGaze(
-            self._tree_predicted2d, self._gaze_distance, self._fusion_data)
-        self._horizon.store_all()
+        self._horizon = self._db.get_processed_data(self._selected_run)
         self._thread_pool.start(self.playback_worker)
 
     def _safe_quit_x(self, event):
