@@ -14,6 +14,7 @@ from qt.processui import Ui_dialogProcessing
 from qt.helpwindow import Ui_helpDialog
 from qt.parameterwindow import ParameterWindow
 from modules.export import DataExporter
+from modules.visualize import TotalUpDown
 from utils.fileutils import validate_import_folder
 from utils.imageutils import create_video_overlay
 
@@ -21,6 +22,7 @@ from utils.imageutils import create_video_overlay
 class EyeMainWindow(Ui_MainWindow):
     def __init__(self, main_window: QtWidgets.QMainWindow, app: QtWidgets.QApplication) -> None:
         self.app = app
+        self.screen = self.app.screens()[0]
         self.main_window = main_window
         self._db_path = Path(__file__).parent.parent.parent / 'data' / 'eye.db'
         self._db = EyeDB(self._db_path)
@@ -52,7 +54,9 @@ class EyeMainWindow(Ui_MainWindow):
         self._selected_run = 0
         self._roll_offset = 90
         self._pitch_multi = 1.0
+        self._dpi = self.screen.logicalDotsPerInch()
         self._reset_stats_text()
+        self._setup_visual_widgets()
         self._populate_runs_tables()
         self._init_input_file_chooser()
         self._init_output_file_chooser()
@@ -227,13 +231,6 @@ class EyeMainWindow(Ui_MainWindow):
         self.player.seek(max(time_to_seek, 1), reference='absolute')
 
     def _play_clicked(self):
-        self.parameter_window.set_values(self._roll_offset, self._pitch_multi)
-        self._tree_predicted2d = self._db.get_pgazed2d_data(self._selected_run)
-        self._gaze_distance = self._db.get_gaze3d_z(self._selected_run)
-        self._gaze_distance_timestamps = list(self._gaze_distance.keys())
-        self._fusion_data = self._db.get_fusion_data(self._selected_run)
-        self._fusion_timestamps = list(self._fusion_data.keys())
-        self._horizon = self._db.get_processed_data(self._selected_run)
         self._thread_pool.start(self.playback_worker)
 
     def _safe_quit_x(self, event):
@@ -330,17 +327,10 @@ class EyeMainWindow(Ui_MainWindow):
         original_index = self._title_filter_model.mapToSource(index)
         runid_index = self._runs_model.index(original_index.row(), 0)
         self._selected_run = int(self._runs_model.itemData(runid_index)[0])
-        self.labelSummaryTitle.setText(
-            f'Summary for Run ID {self._selected_run}')
-        self.labelSummaryDate.setText(
-            f'Date: {self._all_runs_dict[self._selected_run]["import_date"]}')
-        self.labelSummaryProcessDate.setText(
-            f'Processed: {self._all_runs_dict[self._selected_run]["process_date"]}')
-        self.labelSummaryTag.setText(
-            f'Title: {self._all_runs_dict[self._selected_run]["tags"]}')
+        self._load_summary_data()
+        self._display_summary_visuals()
         self._update_status(
             f'Successfully loaded summary for runid {self._selected_run}')
-        # code to show summary here
 
     def _open_review_clicked(self) -> None:
         self._gaze = self._db.get_gaze_data(self._selected_run)
@@ -596,3 +586,32 @@ class EyeMainWindow(Ui_MainWindow):
         ingest_worker.signals.finished.connect(
             self._reprocess_finished)
         self._thread_pool.start(ingest_worker)
+
+    def _load_summary_data(self) -> None:
+        self.labelSummaryTitle.setText(
+            f'Summary for Run ID {self._selected_run}')
+        self.labelSummaryDate.setText(
+            f'Date: {self._all_runs_dict[self._selected_run]["import_date"]}')
+        self.labelSummaryProcessDate.setText(
+            f'Processed: {self._all_runs_dict[self._selected_run]["process_date"]}')
+        self.labelSummaryTag.setText(
+            f'Title: {self._all_runs_dict[self._selected_run]["tags"]}')
+        self._tree_predicted2d = self._db.get_pgazed2d_data(self._selected_run)
+        self._gaze_distance = self._db.get_gaze3d_z(self._selected_run)
+        self._gaze_distance_timestamps = list(self._gaze_distance.keys())
+        self._fusion_data = self._db.get_fusion_data(self._selected_run)
+        self._fusion_timestamps = list(self._fusion_data.keys())
+        self._horizon = self._db.get_processed_data(self._selected_run)
+        self._horizon_timestamps = list(self._horizon.keys())
+        self.parameter_window.set_values(self._roll_offset, self._pitch_multi)
+
+    def _display_summary_visuals(self) -> None:
+        self._visual_summary_up_down.plot(
+            self._horizon[self._horizon_timestamps[-1]])
+
+    def _setup_visual_widgets(self) -> None:
+        self._visual_summary_up_down = TotalUpDown(
+            500, 500, self._dpi)
+        g1_summary_parent = self.widgetSummaryGraphic1.parentWidget().layout()
+        g1_summary_parent.removeWidget(self.widgetSummaryGraphic1)
+        g1_summary_parent.addWidget(self._visual_summary_up_down)

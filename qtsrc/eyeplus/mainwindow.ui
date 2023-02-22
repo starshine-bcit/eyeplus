@@ -140,17 +140,89 @@
               <widget class="QPlainTextEdit" name="plainTextEditSummary"/>
              </item>
              <item>
-              <widget class="QWidget" name="widgetSummaryGraphic1" native="true"/>
+              <widget class="QFrame" name="frameSummaryGraphic1">
+               <property name="frameShape">
+                <enum>QFrame::StyledPanel</enum>
+               </property>
+               <layout class="QHBoxLayout" name="horizontalLayout_4">
+                <property name="spacing">
+                 <number>0</number>
+                </property>
+                <property name="leftMargin">
+                 <number>1</number>
+                </property>
+                <property name="topMargin">
+                 <number>1</number>
+                </property>
+                <property name="rightMargin">
+                 <number>1</number>
+                </property>
+                <property name="bottomMargin">
+                 <number>1</number>
+                </property>
+                <item>
+                 <widget class="QWidget" name="widgetSummaryGraphic1" native="true"/>
+                </item>
+               </layout>
+              </widget>
              </item>
             </layout>
            </item>
            <item>
             <layout class="QHBoxLayout" name="horizontalLayoutSummaryBottomGraphics" stretch="1,1">
              <item>
-              <widget class="QWidget" name="widgetSummaryGraphic2" native="true"/>
+              <widget class="QFrame" name="frameSummaryGraphic2">
+               <property name="frameShape">
+                <enum>QFrame::StyledPanel</enum>
+               </property>
+               <layout class="QHBoxLayout" name="horizontalLayout_5">
+                <property name="spacing">
+                 <number>0</number>
+                </property>
+                <property name="leftMargin">
+                 <number>1</number>
+                </property>
+                <property name="topMargin">
+                 <number>1</number>
+                </property>
+                <property name="rightMargin">
+                 <number>1</number>
+                </property>
+                <property name="bottomMargin">
+                 <number>1</number>
+                </property>
+                <item>
+                 <widget class="QWidget" name="widgetSummaryGraphic2" native="true"/>
+                </item>
+               </layout>
+              </widget>
              </item>
              <item>
-              <widget class="QWidget" name="widgetSummaryGraphic3" native="true"/>
+              <widget class="QFrame" name="frameSummaryGraphic3">
+               <property name="frameShape">
+                <enum>QFrame::StyledPanel</enum>
+               </property>
+               <layout class="QHBoxLayout" name="horizontalLayout_6">
+                <property name="spacing">
+                 <number>0</number>
+                </property>
+                <property name="leftMargin">
+                 <number>1</number>
+                </property>
+                <property name="topMargin">
+                 <number>1</number>
+                </property>
+                <property name="rightMargin">
+                 <number>1</number>
+                </property>
+                <property name="bottomMargin">
+                 <number>1</number>
+                </property>
+                <item>
+                 <widget class="QWidget" name="widgetSummaryGraphic3" native="true"/>
+                </item>
+               </layout>
+              </widget>
              </item>
             </layout>
            </item>
@@ -263,13 +335,25 @@
             </property>
             <layout class="QHBoxLayout" name="horizontalLayout_3">
              <item>
-              <widget class="QWidget" name="widgetReviewGraphicTop1" native="true"/>
+              <widget class="QFrame" name="frameReviewGraphicTop1">
+               <property name="frameShape">
+                <enum>QFrame::StyledPanel</enum>
+               </property>
+              </widget>
              </item>
              <item>
-              <widget class="QWidget" name="widgetReviewGraphicTop2" native="true"/>
+              <widget class="QFrame" name="frameReviewGraphicTop2">
+               <property name="frameShape">
+                <enum>QFrame::StyledPanel</enum>
+               </property>
+              </widget>
              </item>
              <item>
-              <widget class="QWidget" name="widgetReviewGraphicTop3" native="true"/>
+              <widget class="QFrame" name="frameReviewGraphicTop3">
+               <property name="frameShape">
+                <enum>QFrame::StyledPanel</enum>
+               </property>
+              </widget>
              </item>
             </layout>
            </widget>
