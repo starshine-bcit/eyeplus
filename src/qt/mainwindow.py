@@ -10,7 +10,7 @@ from qt.playbackworker import PlaybackWorker
 from qt.ingestworker import IngestWorker, ReprocessWorker
 import qt.resources
 from modules.eyedb import EyeDB
-from modules.analyze import Analyze
+from modules.analyze import HorizonGaze
 from qt.processui import Ui_dialogProcessing
 from qt.helpwindow import Ui_helpDialog
 from qt.parameterwindow import ParameterWindow
@@ -153,14 +153,20 @@ class EyeMainWindow(Ui_MainWindow):
                 if time >= curr_timestamp:
                     closest_fusion = time
                     break
+            for time in self._gaze_distance_timestamps:
+                if time >= curr_timestamp:
+                    if curr_timestamp - time <= 0.05 and self._gaze_distance[time] is not None:
+                        closest_distance = f'{self._gaze_distance[time]:.4f}'
+                        break
+                    else:
+                        closest_distance = None
+                        break
+            horizon_data = self._horizon.get_ts_data(curr_timestamp)
             if self._overlay.overlay_id:
                 self._overlay.remove()
 
             gaze_x = self._tree_predicted2d[curr_timestamp][0]
             gaze_y = self._tree_predicted2d[curr_timestamp][1]
-            gaze_side = self._tree_predicted3d[curr_timestamp][0]
-            gaze_vert = self._tree_predicted3d[curr_timestamp][1]
-            gaze_dist = self._tree_predicted3d[curr_timestamp][2]
             y_intercept = self._fusion_data[closest_fusion]['y_intercept']
             x_intercept = self._fusion_data[closest_fusion]['x_intercept']
             slope = self._fusion_data[closest_fusion]['slope']
@@ -173,10 +179,6 @@ class EyeMainWindow(Ui_MainWindow):
             img, pos_x, pos_y = create_video_overlay(
                 self.player.osd_dimensions, gaze_x, gaze_y, y_intercept, x_intercept, slope, roll, pitch)
             self._overlay.update(img, pos=(pos_x, pos_y))
-            status = self._analyze.test_check(
-                slope, y_intercept, gaze_x, gaze_y, gaze_dist)
-            self._analyze.check(slope, y_intercept, gaze_x, gaze_y, gaze_dist)
-            cumulative = self._analyze.calculate()
             self.plainTextEditStats.setPlainText(
                 f'RunID      : {self._selected_run}\n'
                 f'Title      : {self._all_runs_list[self._selected_run -1]["tags"]}\n'
@@ -184,18 +186,16 @@ class EyeMainWindow(Ui_MainWindow):
                 f'Duration   : {self.player.duration:.2f}\n\n'
                 f'Gaze X     : {gaze_x:.4f}\n'
                 f'Gaze Y     : {gaze_y:.4f}\n\n'
-                # f'Heading    : {self._fusion_data[closest_fusion]["heading"]:.4f}\n'
                 f'Roll       : {roll:.4f}\n'
                 f'Pitch      : {pitch:.4f}\n\n'
                 f'x_intercept: {x_intercept:.4f}\n'
                 f'y_intercept: {y_intercept:.4f}\n'
                 f'slope      : {slope:.4f}\n\n'
-                f'Gaze3d X   : {gaze_side:.4f}\n'
-                f'Gaze3d Y   : {gaze_vert:.4f}\n'
-                f'Gaze3d Z   : {gaze_dist:.4f}\n\n'
-                f'Obervation : {status}\n'
-                f'Up %       : {cumulative[0]:.4f}\n'
-                f'Down %     : {cumulative[1]:.4f}\n'
+                f'Gaze3d Z   : {closest_distance if closest_distance is not None else "None"}\n\n'
+                f'Obervation : {"Looking Up" if horizon_data["currently_up"] else "Looking Down"}\n'
+                f'Up %       : {horizon_data["percent_up"]:.4f}\n'
+                f'Down %     : {horizon_data["percent_down"]:.4f}\n'
+                f'Total Calcs: {horizon_data["total"]}'
             )
 
     def _playing_complete_callback(self):
@@ -222,11 +222,14 @@ class EyeMainWindow(Ui_MainWindow):
 
     def _play_clicked(self):
         self.parameter_window.set_values(self._roll_offset, self._pitch_multi)
-        self._analyze = Analyze()
         self._tree_predicted2d = self._db.get_pgazed2d_data(self._selected_run)
-        self._tree_predicted3d = self._db.get_pgazed3d_data(self._selected_run)
+        self._gaze_distance = self._db.get_gaze3d_z(self._selected_run)
+        self._gaze_distance_timestamps = list(self._gaze_distance.keys())
         self._fusion_data = self._db.get_fusion_data(self._selected_run)
         self._fusion_timestamps = list(self._fusion_data.keys())
+        self._horizon = HorizonGaze(
+            self._tree_predicted2d, self._gaze_distance, self._fusion_data)
+        self._horizon.store_all()
         self._thread_pool.start(self.playback_worker)
 
     def _safe_quit_x(self, event):

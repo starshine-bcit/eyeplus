@@ -310,6 +310,11 @@ class EyeDB():
                 slope REAL NOT NULL,
                 FOREIGN KEY(runid) REFERENCES run(id));''')
 
+        self._cur.execute('''CREATE TABLE IF NOT EXISTS updown(
+                id INTEGER NOT NULL PRIMAREY KEY AUTOINCREMENT,
+                runid INTEGER NOT NULL,
+                )''')
+
         self._cur.execute('''CREATE INDEX idx_imu_id
                 ON imu (id, runid);''')
 
@@ -601,6 +606,18 @@ class EyeDB():
 
         self._cur.executemany(update_query, update_list)
         self._con.commit()
+
+    def get_gaze3d_z(self, runid: int) -> dict:
+        if self.check_existing_runid(runid):
+            gaze_distance_dict = {}
+            self._cur.execute('''SELECT timestamp, gaze3d2
+                            FROM gaze WHERE runid=(?)''', (runid,))
+            res = self._cur.fetchall()
+            for row in res:
+                gaze_distance_dict[row[0]] = row[1]
+            return gaze_distance_dict
+        else:
+            raise RuntimeError(f'Trying to select a non-existant ID: {runid}')
 
     def update_parameters(self, runid: int, roll_offset: int, pitch_multi: float) -> None:
         if self.check_existing_runid(runid):
