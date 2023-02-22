@@ -10,7 +10,6 @@ from qt.playbackworker import PlaybackWorker
 from qt.ingestworker import IngestWorker, ReprocessWorker
 import qt.resources
 from modules.eyedb import EyeDB
-from modules.analyze import HorizonGaze
 from qt.processui import Ui_dialogProcessing
 from qt.helpwindow import Ui_helpDialog
 from qt.parameterwindow import ParameterWindow

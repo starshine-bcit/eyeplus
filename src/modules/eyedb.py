@@ -307,7 +307,7 @@ class EyeDB():
                 timestamp REAL NOT NULL,
                 totalcount INTEGER NOT NULL,
                 upcount INTEGER NOT NULL,
-                downcount REAL NOT NULL,
+                downcount INTEGER NOT NULL,
                 percentup REAL NOT NULL,
                 percentdown REAL NOT NULL,
                 currentup INTEGER NOT NULL,
@@ -640,6 +640,30 @@ class EyeDB():
             return processed_dict
         else:
             raise RuntimeError(f'Trying to select a non-existant ID: {runid}')
+
+    def update_processed_data(self, runid: int, processed: dict) -> None:
+        update_query = '''UPDATE processed
+                        SET (totalcount, upcount, downcount, percentup, percentdown, currentup) = (:totalcount, :upcount, :downcount, :percentup, :percentdown, :currentup)
+                        WHERE runid = (:runid) AND timestamp = (:timestamp);'''
+        update_list = []
+        if not self.check_existing_runid(runid):
+            raise RuntimeError(
+                f'Trying to select a non-existant ID: {runid}')
+
+        for k, v in processed.items():
+            update_list.append({
+                'timestamp': k,
+                'runid': runid,
+                'totalcount': v['total'],
+                'upcount': v['up_count'],
+                'downcount': v['down_count'],
+                'percentup': v['percent_up'],
+                'percentdown': v['percent_down'],
+                'currentup': 1 if v['currently_up'] else 0
+            })
+
+        self._cur.executemany(update_query, update_list)
+        self._con.commit()
 
 
 if __name__ == '__main__':

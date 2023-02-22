@@ -64,6 +64,11 @@ def reprocess(cb_progress, eyedb: EyeDB, runids: list[int], roll_offset: int, pi
             new_data[runid][k] = v
         eyedb.update_parameters(
             runid, roll_offset=roll_offset, pitch_multi=pitch_multi)
+        predicted_gaze = eyedb.get_pgazed2d_data(runid)
+        gaze3d = eyedb.get_gaze3d_z(runid)
+        horizon = HorizonGaze(predicted_gaze, gaze3d, fused)
+        processed = horizon.calculates_all()
+        eyedb.update_processed_data(runid, processed)
     progress += 0.25
     cb_progress(
         f'Updating data in database...', progress)
