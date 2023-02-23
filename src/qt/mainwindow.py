@@ -14,7 +14,7 @@ from qt.processui import Ui_dialogProcessing
 from qt.helpwindow import Ui_helpDialog
 from qt.parameterwindow import ParameterWindow
 from modules.export import DataExporter
-from modules.visualize import TotalUpDown
+from modules.visualize import TotalUpDown, CumulativeUpDown
 from utils.fileutils import validate_import_folder
 from utils.imageutils import create_video_overlay
 
@@ -189,6 +189,10 @@ class EyeMainWindow(Ui_MainWindow):
             img, pos_x, pos_y = create_video_overlay(
                 self.player.osd_dimensions, gaze_x, gaze_y, y_intercept, x_intercept, slope, roll, pitch)
             self._overlay.update(img, pos=(pos_x, pos_y))
+
+            self._visual_review_up_down.plot(
+                self._horizon[curr_timestamp], curr_timestamp)
+
             self.plainTextEditStats.setPlainText(
                 f'RunID      : {self._selected_run}\n'
                 f'Title      : {self._all_runs_list[self._selected_run -1]["tags"]}\n'
@@ -615,8 +619,11 @@ class EyeMainWindow(Ui_MainWindow):
         g1_summary_parent = self.widgetSummaryGraphic1.parentWidget().layout()
         g1_summary_parent.removeWidget(self.widgetSummaryGraphic1)
         g1_summary_parent.addWidget(self._visual_summary_up_down)
+        self._visual_review_up_down = CumulativeUpDown(500, 500, self._dpi)
+        g1_review_parent = self.widgetReviewGraphic1.parentWidget().layout()
+        g1_review_parent.removeWidget(self.widgetReviewGraphic1)
+        g1_review_parent.addWidget(self._visual_review_up_down)
         g2_summary_parent = self.widgetSummaryGraphic2.parentWidget().layout()
         g3_summary_parent = self.widgetSummaryGraphic3.parentWidget().layout()
-        g1_review_parent = self.widgetSummaryGraphic1.parentWidget().layout()
-        g2_review_parent = self.widgetSummaryGraphic2.parentWidget().layout()
-        g3_review_parent = self.widgetSummaryGraphic3.parentWidget().layout()
+        g2_review_parent = self.widgetReviewGraphic2.parentWidget().layout()
+        g3_review_parent = self.widgetReviewGraphic3.parentWidget().layout()

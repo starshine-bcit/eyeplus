@@ -219,6 +219,9 @@ class Ui_MainWindow(object):
         self.widgetReviewGraphic3.setObjectName("widgetReviewGraphic3")
         self.horizontalLayout_9.addWidget(self.widgetReviewGraphic3)
         self.horizontalLayout_3.addWidget(self.frameReviewGraphicTop3)
+        self.horizontalLayout_3.setStretch(0, 1)
+        self.horizontalLayout_3.setStretch(1, 1)
+        self.horizontalLayout_3.setStretch(2, 1)
         self.verticalLayoutReviewRight.addWidget(self.frameReviewImages)
         self.frameVideo = QtWidgets.QFrame(self.tabReviewData)
         self.frameVideo.setFrameShape(QtWidgets.QFrame.Shape.StyledPanel)
@@ -381,7 +384,7 @@ class Ui_MainWindow(object):
         self.toolBar.addAction(self.actionRecalculate)
 
         self.retranslateUi(MainWindow)
-        self.tabWidgetMain.setCurrentIndex(0)
+        self.tabWidgetMain.setCurrentIndex(1)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
