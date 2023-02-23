@@ -615,3 +615,8 @@ class EyeMainWindow(Ui_MainWindow):
         g1_summary_parent = self.widgetSummaryGraphic1.parentWidget().layout()
         g1_summary_parent.removeWidget(self.widgetSummaryGraphic1)
         g1_summary_parent.addWidget(self._visual_summary_up_down)
+        g2_summary_parent = self.widgetSummaryGraphic2.parentWidget().layout()
+        g3_summary_parent = self.widgetSummaryGraphic3.parentWidget().layout()
+        g1_review_parent = self.widgetSummaryGraphic1.parentWidget().layout()
+        g2_review_parent = self.widgetSummaryGraphic2.parentWidget().layout()
+        g3_review_parent = self.widgetSummaryGraphic3.parentWidget().layout()
