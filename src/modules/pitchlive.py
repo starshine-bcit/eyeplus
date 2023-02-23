@@ -7,13 +7,6 @@ from matplotlib import style
 import time
 # ask for the run id
 
-def write_list_to_file(lst):
-    file_path = Path("example.txt")
-    with file_path.open(mode="w") as file:
-        for i in range(0, len(lst), 1000):
-            file.write("\n".join(lst[i:i+1000]))
-            file.write("\n")
-            time.sleep(3)
 
 path = 'data\eye.db'
 db = EyeDB(db_path=Path(path))
@@ -29,13 +22,8 @@ fusion_keys = fusion_data.keys()
 y_list = []
 for key in fusion_data:
     y_list.append(fusion_data[key]['pitch'])
-print(len(y_list))
-# plt.axis([0, 10, 0, 1])
 
 ax = plt.axes()
-# style.use('fivethirtyeight')
-# fig = plt.figure()
-# ax1 = fig.add_subplot(1,1,1)
 
 
 xs = [i for i in range(0, len(y_list), 100)]
@@ -44,16 +32,17 @@ for i in range(0, len(y_list), 1000):
     plt.ylim(-15,25)
     plt.scatter(i, y[i])
     plt.plot(i, y[i])
-
-    # plt.plot(i, y[i], linestyle="-", marker="o")
-    # plt.legend()
-    # ax1.plot(i, y[i])
-
-
     plt.pause(0.01)
 
 plt.show()
 
+# def write_list_to_file(lst):
+#     file_path = Path("example.txt")
+#     with file_path.open(mode="w") as file:
+#         for i in range(0, len(lst), 1000):
+#             file.write("\n".join(lst[i:i+1000]))
+#             file.write("\n")
+#             time.sleep(3)
 
 # # y_arr = np.array(y_list)
 
