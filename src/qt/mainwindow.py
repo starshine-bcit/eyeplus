@@ -10,7 +10,6 @@ from qt.playbackworker import PlaybackWorker
 from qt.ingestworker import IngestWorker, ReprocessWorker
 import qt.resources
 from modules.eyedb import EyeDB
-from modules.analyze import Analyze
 from qt.processui import Ui_dialogProcessing
 from qt.helpwindow import Ui_helpDialog
 from qt.parameterwindow import ParameterWindow
@@ -26,7 +25,6 @@ class EyeMainWindow(Ui_MainWindow):
         self._db_path = Path(__file__).parent.parent.parent / 'data' / 'eye.db'
         self._db = EyeDB(self._db_path)
         self._csv = DataExporter(self._db)
-        self._analyze = Analyze
         self.setupUi(self.main_window)
         self._setup_custom_ui()
         self._connect_events()
@@ -149,24 +147,37 @@ class EyeMainWindow(Ui_MainWindow):
             self.horizontalSliderSeek.setSliderPosition(progress)
         if not self.player.pause:
             curr_timestamp = round(self.player.time_pos, 1)
+            if self.player.duration - self.player.time_pos <= 2:
+                curr_timestamp = curr_timestamp - 2
             closest_fusion = self._fusion_timestamps[-1]
             for time in self._fusion_timestamps:
                 if time >= curr_timestamp:
                     closest_fusion = time
                     break
+            for time in self._gaze_distance_timestamps:
+                if time >= curr_timestamp:
+                    if curr_timestamp - time <= 0.05 and self._gaze_distance[time] is not None:
+                        closest_distance = f'{self._gaze_distance[time]:.4f}'
+                        break
+                    else:
+                        closest_distance = None
+                        break
             if self._overlay.overlay_id:
                 self._overlay.remove()
 
             gaze_x = self._tree_predicted2d[curr_timestamp][0]
             gaze_y = self._tree_predicted2d[curr_timestamp][1]
-            gaze_side = self._tree_predicted3d[curr_timestamp][0]
-            gaze_vert = self._tree_predicted3d[curr_timestamp][1]
-            gaze_dist = self._tree_predicted3d[curr_timestamp][2]
             y_intercept = self._fusion_data[closest_fusion]['y_intercept']
             x_intercept = self._fusion_data[closest_fusion]['x_intercept']
             slope = self._fusion_data[closest_fusion]['slope']
             roll = self._fusion_data[closest_fusion]['roll']
             pitch = self._fusion_data[closest_fusion]['pitch']
+            total_count = self._horizon[curr_timestamp]['total']
+            up_count = self._horizon[curr_timestamp]['up_count']
+            down_count = self._horizon[curr_timestamp]['down_count']
+            percent_up = self._horizon[curr_timestamp]['percent_up']
+            percent_down = self._horizon[curr_timestamp]['percent_down']
+            currently_up = self._horizon[curr_timestamp]['currently_up']
 
             roll += self._roll_offset
             pitch *= self._pitch_multi
@@ -174,7 +185,6 @@ class EyeMainWindow(Ui_MainWindow):
             img, pos_x, pos_y = create_video_overlay(
                 self.player.osd_dimensions, gaze_x, gaze_y, y_intercept, x_intercept, slope, roll, pitch)
             self._overlay.update(img, pos=(pos_x, pos_y))
-            status = self._analyze.test_check(slope, y_intercept, gaze_x, gaze_y, gaze_dist)
             self.plainTextEditStats.setPlainText(
                 f'RunID      : {self._selected_run}\n'
                 f'Title      : {self._all_runs_list[self._selected_run -1]["tags"]}\n'
@@ -182,16 +192,16 @@ class EyeMainWindow(Ui_MainWindow):
                 f'Duration   : {self.player.duration:.2f}\n\n'
                 f'Gaze X     : {gaze_x:.4f}\n'
                 f'Gaze Y     : {gaze_y:.4f}\n\n'
-                # f'Heading    : {self._fusion_data[closest_fusion]["heading"]:.4f}\n'
                 f'Roll       : {roll:.4f}\n'
                 f'Pitch      : {pitch:.4f}\n\n'
                 f'x_intercept: {x_intercept:.4f}\n'
                 f'y_intercept: {y_intercept:.4f}\n'
                 f'slope      : {slope:.4f}\n\n'
-                f'Gaze3d X   : {gaze_side:.4f}\n'
-                f'Gaze3d Y   : {gaze_vert:.4f}\n'
-                f'Gaze3d Z   : {gaze_dist:.4f}\n\n'
-                f'Obervation : {status}\n'
+                f'Gaze3d Z   : {closest_distance if closest_distance is not None else "None"}\n\n'
+                f'Obervation : {"Looking Up" if currently_up else "Looking Down"}\n'
+                f'Up %       : {percent_up:.4f}\n'
+                f'Down %     : {percent_down:.4f}\n'
+                f'Total Calcs: {total_count}\n'
             )
 
     def _playing_complete_callback(self):
@@ -219,9 +229,11 @@ class EyeMainWindow(Ui_MainWindow):
     def _play_clicked(self):
         self.parameter_window.set_values(self._roll_offset, self._pitch_multi)
         self._tree_predicted2d = self._db.get_pgazed2d_data(self._selected_run)
-        self._tree_predicted3d = self._db.get_pgazed3d_data(self._selected_run)
+        self._gaze_distance = self._db.get_gaze3d_z(self._selected_run)
+        self._gaze_distance_timestamps = list(self._gaze_distance.keys())
         self._fusion_data = self._db.get_fusion_data(self._selected_run)
         self._fusion_timestamps = list(self._fusion_data.keys())
+        self._horizon = self._db.get_processed_data(self._selected_run)
         self._thread_pool.start(self.playback_worker)
 
     def _safe_quit_x(self, event):
@@ -267,6 +279,13 @@ class EyeMainWindow(Ui_MainWindow):
     def _populate_runs_tables(self):
         self.tableViewRuns.setSortingEnabled(False)
         self._all_runs_list = self._db.get_all_runs()
+        self._all_runs_dict = {}
+        for run in self._all_runs_list:
+            self._all_runs_dict[int(run['id'])] = {
+                'process_date': run['processdate'],
+                'import_date': run['importdate'],
+                'tags': run['tags']
+            }
         run_count = len(self._all_runs_list)
         if run_count > 0:
             self.tabWidgetMain.setEnabled(True)
@@ -295,9 +314,8 @@ class EyeMainWindow(Ui_MainWindow):
             self.tableViewRuns.sortByColumn(
                 0, QtCore.Qt.SortOrder.AscendingOrder)
             self.tableViewRuns.selectRow(0)
-            self._selected_run = 1
-            self._roll_offset = self._all_runs_list[0]['roll_offset']
-            self._pitch_multi = self._all_runs_list[0]['pitch_multi']
+            self._table_item_single_clicked(
+                self._title_filter_model.index(0, 0))
         else:
             self.tabWidgetMain.setEnabled(False)
             QtWidgets.QMessageBox
@@ -310,7 +328,16 @@ class EyeMainWindow(Ui_MainWindow):
 
     def _table_item_single_clicked(self, index: QtCore.QModelIndex) -> None:
         original_index = self._title_filter_model.mapToSource(index)
-        self._selected_run = original_index.row() + 1
+        runid_index = self._runs_model.index(original_index.row(), 0)
+        self._selected_run = int(self._runs_model.itemData(runid_index)[0])
+        self.labelSummaryTitle.setText(
+            f'Summary for Run ID {self._selected_run}')
+        self.labelSummaryDate.setText(
+            f'Date: {self._all_runs_dict[self._selected_run]["import_date"]}')
+        self.labelSummaryProcessDate.setText(
+            f'Processed: {self._all_runs_dict[self._selected_run]["process_date"]}')
+        self.labelSummaryTag.setText(
+            f'Title: {self._all_runs_dict[self._selected_run]["tags"]}')
         self._update_status(
             f'Successfully loaded summary for runid {self._selected_run}')
         # code to show summary here
@@ -513,7 +540,8 @@ class EyeMainWindow(Ui_MainWindow):
 
     def _redo_single_calc_clicked(self) -> None:
         runs_to_redo = [self._selected_run]
-        ingest_worker = ReprocessWorker(self._db_path, runs_to_redo)
+        ingest_worker = ReprocessWorker(
+            self._db_path, runs_to_redo, self._roll_offset, self._pitch_multi)
         ingest_worker.signals.started.connect(
             self._reprocess_started)
         ingest_worker.signals.progress.connect(
