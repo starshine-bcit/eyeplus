@@ -6,6 +6,7 @@ import shutil
 import gzip
 import json
 from hashlib import file_digest
+import os
 
 
 class EyeDB():
@@ -33,6 +34,7 @@ class EyeDB():
         else:
             self._con = sqlite3.connect(self._db_path)
             self._cur = self._con.cursor()
+            self.database_check()
 
     def ingest_data(self, paths: list[Path], type: str = 'zip') -> list[int]:
         """Takes a list of paths with with the type of 'zip' or 'dir' and imports them
@@ -50,7 +52,18 @@ class EyeDB():
             list[int]: List of all the runids imported at once
         """
 
-        # Create backup here
+        #self._con = sqlite3.connect(self._db_path)
+        #self._cur = self._con.cursor()
+        current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        #if os.path.isfile(f"{self._data_dir}/eye_backup.db"):
+            #os.remove(f"{self._data_dir}/eye_backup.db")
+        #shutil.copy2(self._db_path, f"{self._data_dir}/eye_backup_.db")
+        #self._con.commit()
+        #f"{self._data_dir}/eye.db"
+        for file in os.listdir(self._data_dir):
+            if file.startswith("eye_backup"):
+                os.remove(f"{self._data_dir}/{file}")
+        shutil.copy2(self._db_path, f"{self._data_dir}/eye_backup_{current_time}.db")
 
         run_query = '''INSERT INTO run
         (importdate, tags, video, hash, rolloffset, pitchmulti)
@@ -664,6 +677,34 @@ class EyeDB():
 
         self._cur.executemany(update_query, update_list)
         self._con.commit()
+    
+    def database_check(self):
+        #To test if integrity check works
+        #self._cur.execute('UPDATE imu SET runid = 3 WHERE id = 1')
+        #self._cur.execute('UPDATE imu SET runid = 1 WHERE id = 1')
+
+        self._cur.execute('SELECT * FROM imu LIMIT 10')
+        imu_rows = self._cur.fetchall()
+        self._cur.execute('SELECT * FROM gaze LIMIT 10')
+        gaze_rows = self._cur.fetchall()
+        self._cur.execute('SELECT * FROM mag LIMIT 10')
+        mag_rows = self._cur.fetchall()
+        self._cur.execute('SELECT * FROM mag LIMIT 10')
+        fusion_rows = self._cur.fetchall()
+        self._cur.execute('SELECT * FROM page2d LIMIT 10')
+        page2d_rows = self._cur.fetchall()
+        self._cur.execute('SELECT * FROM processed LIMIT 10')
+        processed_rows = self._cur.fetchall()
+
+
+        self._cur.execute('SELECT id FROM run')
+        run_ids = set(row[0] for row in self._cur.fetchall())
+
+        for row in imu_rows + gaze_rows + mag_rows + fusion_rows + page2d_rows + processed_rows:
+            if row[1] not in run_ids:
+                raise Exception(f"Orphaned row found with runid {row[1]}")
+
+        print("Integrity check passed.")
 
 
 if __name__ == '__main__':
