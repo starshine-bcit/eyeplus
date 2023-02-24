@@ -691,8 +691,8 @@ class EyeDB():
         mag_rows = self._cur.fetchall()
         self._cur.execute('SELECT * FROM mag LIMIT 10')
         fusion_rows = self._cur.fetchall()
-        self._cur.execute('SELECT * FROM page2d LIMIT 10')
-        page2d_rows = self._cur.fetchall()
+        self._cur.execute('SELECT * FROM pgaze2d LIMIT 10')
+        pgaze2d_rows = self._cur.fetchall()
         self._cur.execute('SELECT * FROM processed LIMIT 10')
         processed_rows = self._cur.fetchall()
 
@@ -700,7 +700,7 @@ class EyeDB():
         self._cur.execute('SELECT id FROM run')
         run_ids = set(row[0] for row in self._cur.fetchall())
 
-        for row in imu_rows + gaze_rows + mag_rows + fusion_rows + page2d_rows + processed_rows:
+        for row in imu_rows + gaze_rows + mag_rows + fusion_rows + pgaze2d_rows + processed_rows:
             if row[1] not in run_ids:
                 raise Exception(f"Orphaned row found with runid {row[1]}")
 
