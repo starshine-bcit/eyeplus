@@ -14,7 +14,7 @@ from qt.processui import Ui_dialogProcessing
 from qt.helpwindow import Ui_helpDialog
 from qt.parameterwindow import ParameterWindow
 from modules.export import DataExporter
-from modules.visualize import TotalUpDown, CumulativeUpDown
+from modules.visualize import TotalUpDown, CumulativeUpDown, PitchLive
 from utils.fileutils import validate_import_folder
 from utils.imageutils import create_video_overlay
 
@@ -129,6 +129,11 @@ class EyeMainWindow(Ui_MainWindow):
         self.help_window.setWindowIcon(
             QtGui.QIcon(QtGui.QPixmap(':/icons/life-buoy.svg')))
 
+    def _play_clicked(self):
+        self._visual_review_pitch.plot(
+            self._fusion_data, self._fusion_timestamps)
+        self._thread_pool.start(self.playback_worker)
+
     def _playing_started_callback(self):
         if self.actionMute.isChecked():
             self.player.command('set', 'mute', 'yes')
@@ -151,6 +156,9 @@ class EyeMainWindow(Ui_MainWindow):
             self.horizontalSliderSeek.setSliderPosition(progress)
         if not self.player.pause:
             curr_timestamp = round(self.player.time_pos, 1)
+            if self._visual_review_pitch.is_paused:
+                self._visual_review_pitch.start()
+            self._visual_review_pitch.current_timestamp = curr_timestamp
             if self.player.duration - self.player.time_pos <= 2:
                 curr_timestamp = curr_timestamp - 2
             closest_fusion = self._fusion_timestamps[-1]
@@ -226,6 +234,7 @@ class EyeMainWindow(Ui_MainWindow):
         self.actionRecalculate.setEnabled(False)
         self.horizontalSliderVolume.setEnabled(False)
         self.actionMute.setEnabled(False)
+        self._visual_review_pitch.stop()
         self._reset_stats_text()
         self._update_status('Playback stopped')
 
@@ -233,9 +242,6 @@ class EyeMainWindow(Ui_MainWindow):
         time_to_seek = self.horizontalSliderSeek.sliderPosition() * \
             self.player.duration / 1000
         self.player.seek(max(time_to_seek, 1), reference='absolute')
-
-    def _play_clicked(self):
-        self._thread_pool.start(self.playback_worker)
 
     def _safe_quit_x(self, event):
         if 'player' in self.__dict__:
@@ -252,8 +258,10 @@ class EyeMainWindow(Ui_MainWindow):
     def _pause_clicked(self):
         if self.player.pause:
             self.player.command('set', 'pause', 'no')
+            self._visual_review_pitch.start()
         else:
             self.player.command('set', 'pause', 'yes')
+            self._visual_review_pitch.pause()
 
     def _stop_clicked(self):
         self.parameter_window.hide()
@@ -626,4 +634,7 @@ class EyeMainWindow(Ui_MainWindow):
         g2_summary_parent = self.widgetSummaryGraphic2.parentWidget().layout()
         g3_summary_parent = self.widgetSummaryGraphic3.parentWidget().layout()
         g2_review_parent = self.widgetReviewGraphic2.parentWidget().layout()
+        self._visual_review_pitch = PitchLive(500, 500, self._dpi)
+        g2_review_parent.removeWidget(self.widgetReviewGraphic2)
+        g2_review_parent.addWidget(self._visual_review_pitch)
         g3_review_parent = self.widgetReviewGraphic3.parentWidget().layout()
