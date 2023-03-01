@@ -123,17 +123,30 @@ class PitchLive(BasicCanvas):
     def stop(self) -> None:
         self.ax.clear()
 
-    def seek(self) -> None:
-        pass
-        # xs = [i for i in range(0, len(y_list), 100)]
-        # x = np.array(xs)
-        # y = np.array(y_list)
 
-        # self.ax.set_xlabel("X")
-        # self.ax.set_ylabel("Y")
-        # self.ax.set_title("live pitch Scatter Plot")
-        # for i in range(0, len(y_list), 1000):
-        #     self.ax.set_ylim(-15, 25)
-        #     self.ax.scatter(i, y[i])
-        #     self.ax.plot(i, y[i])
-        #     self.ax.pause(0.01)
+class HeatMap(BasicCanvas):
+    def __init__(self, width: int, height: int, dpi: float):
+        super().__init__(width, height, dpi)
+
+    def plot(self, gaze2d: dict) -> None:
+        self.ax.clear()
+        arr_min = 0
+        arr_max = 1
+        n_rows = 100
+        n_cols = 100
+        v_min = 0
+        v_max = 0
+        self.x = np.linspace(arr_min, arr_max, n_rows)
+        self.y = np.linspace(arr_min, arr_max, n_cols)
+        self.z = np.array([0] * (n_rows * n_cols)).reshape(n_rows, n_cols)
+        for v in gaze2d.values():
+            x_round = round(v[0] * 100)
+            y_round = round(v[1] * 100)
+            if x_round <= 100 and y_round <= 100:
+                self.z[y_round][x_round] += 1
+                if self.z[y_round][x_round] > v_max:
+                    v_max = self.z[y_round][x_round]
+        self.heat_map = self.ax.pcolormesh(
+            self.x, self.y, self.z, shading='gouraud', cmap='plasma', vmin=v_min, vmax=v_max)
+        self.ax.set_title('Heatmap of 2d Gaze')
+        self.fig.canvas.draw()
