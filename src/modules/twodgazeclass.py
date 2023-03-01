@@ -21,9 +21,7 @@ class twodgazescatter(FigureCanvasQTAgg):
 
         self.plt.scatter(x, y, color='cyan',s=.1)
 
-        # self.plt.bar(x, y, color='maroon',
-        #         width=0.4)
-
         self.plt.xlabel("X")
         self.plt.ylabel("Y")
         self.plt.title("2D gaze Scatter Plot")
+    

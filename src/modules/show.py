@@ -23,7 +23,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
-from barclass import BarChartUpDown
+# from barclass import BarChartUpDown
 
 path = 'data\eye.db'
 db = EyeDB(db_path=Path(path))
@@ -79,7 +79,7 @@ imu_keys = imu_data.keys()
 
 
 
-from pitchliveclass import pitchlive
+# from pitchliveclass import pitchlive
 
 path = 'data\eye.db'
 db = EyeDB(db_path=Path(path))
@@ -92,12 +92,50 @@ fusion_keys = fusion_data.keys()
 # # print(list(fusion_data[0.009372]))
 # print(fusion_data[0.009372])
 
-y_list = []
-for key in fusion_data:
-    y_list.append(fusion_data[key]['pitch'])
-print(len(y_list))
-xs = [i for i in range(0, len(y_list), 100)]
+# y_list = []
+# for key in fusion_data:
+#     y_list.append(fusion_data[key]['pitch'])
+# print(len(y_list))
+# xs = [i for i in range(0, len(y_list), 100)]
 
-plot = pitchlive(width=1000,height=1000)
-plot.plotify(y_list=y_list,x_list=xs)
-plot.plt.show()
+# plot = pitchlive(width=1000,height=1000)
+# plot.plotify(y_list=y_list,x_list=xs)
+# plot.plt.show()
+
+# from pitchliveclass import pitchlive
+# plot = pitchlive(width=1000,height=1000)
+# plot.plot({'y':y_list})
+# plot.show()
+
+
+
+path = 'data\eye.db'
+db = EyeDB(db_path=Path(path))
+gaze_data = db.get_gaze_data(runid=1)
+
+gaze_keys = gaze_data.keys()
+
+x_list = []
+y_list = []
+z_list = []
+
+for key in gaze_keys:
+    gaze = gaze_data[key]
+
+    gaze3d = gaze['gaze3d']
+    if gaze3d[0] and gaze3d[1] and gaze3d[2]:
+        x = gaze3d[0]
+        y = gaze3d[1]
+        z = gaze3d[2]
+        x_list.append(x)
+        y_list.append(y)
+        z_list.append(z)
+data = {}
+data['x_list'] = x_list
+data['y_list'] = y_list
+data['z_list'] = z_list
+
+from threedgazeclass import threedgazeclass
+plot = threedgazeclass(width=500, height=500)
+plot.plotify(data)
+plot.show()
