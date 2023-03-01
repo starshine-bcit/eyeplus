@@ -62,8 +62,11 @@ class ParameterWindow(QtWidgets.QDialog):
         self.ui.horizontalSliderRollOffset.setValue(
             int(self.ui.lineEditRollOffset.text()))
 
-    def set_values(self, roll_offset: int, pitch_multi: float) -> None:
+    def set_values(self, roll_offset: int, pitch_multi: float, horizon_offset: float) -> None:
         self.ui.lineEditRollOffset.setText(str(roll_offset))
         self.ui.horizontalSliderRollOffset.setValue(roll_offset)
         self.ui.lineEditPitchMulti.setText(str(int(pitch_multi * 1000)))
         self.ui.horizontalSliderPitchMulti.setValue(int(pitch_multi * 1000))
+        self.ui.lineEditHorizonFuzzy.setText(str(int(horizon_offset * 1000)))
+        self.ui.horizontalSliderHorizonFuzzy.setValue(
+            int(horizon_offset * 1000))

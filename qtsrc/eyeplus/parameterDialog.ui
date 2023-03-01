@@ -128,7 +128,7 @@
      <item>
       <widget class="QLabel" name="labelHorizonFuzzy">
        <property name="text">
-        <string>Not Implemented</string>
+        <string>Horizon Offset</string>
        </property>
       </widget>
      </item>
@@ -148,7 +148,10 @@
      <item>
       <widget class="QLineEdit" name="lineEditHorizonFuzzy">
        <property name="inputMask">
-        <string>#000</string>
+        <string extracomment="0">#000</string>
+       </property>
+       <property name="text">
+        <string>00</string>
        </property>
        <property name="alignment">
         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -160,10 +163,10 @@
    <item>
     <widget class="QSlider" name="horizontalSliderHorizonFuzzy">
      <property name="minimum">
-      <number>-999</number>
+      <number>-500</number>
      </property>
      <property name="maximum">
-      <number>999</number>
+      <number>500</number>
      </property>
      <property name="orientation">
       <enum>Qt::Horizontal</enum>

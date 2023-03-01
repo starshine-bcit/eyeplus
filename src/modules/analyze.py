@@ -1,12 +1,13 @@
 
 
 class HorizonGaze():
-    def __init__(self, gaze2d: dict, gaze3d: dict, fused: dict):
+    def __init__(self, gaze2d: dict, gaze3d: dict, fused: dict, horizon_offset: float):
         self._gaze2d = gaze2d
         self._gaze3d = gaze3d
         self._fused = fused
         self._readings_looking_up = 0
         self._readings_looking_down = 0
+        self._horizon_offset = horizon_offset
         self._total_readings = 0
         self._currently_up = False
         self._playback_store = {}

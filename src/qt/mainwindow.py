@@ -54,6 +54,7 @@ class EyeMainWindow(Ui_MainWindow):
         self._selected_run = 0
         self._roll_offset = 90
         self._pitch_multi = 1.0
+        self._horizon_offset = 0.0
         self._dpi = self.screen.logicalDotsPerInch()
         self._reset_stats_text()
         self._setup_visual_widgets()
@@ -346,7 +347,7 @@ class EyeMainWindow(Ui_MainWindow):
 
     def _open_review_clicked(self) -> None:
         self._gaze = self._db.get_gaze_data(self._selected_run)
-        self._roll_offset, self._pitch_multi = self._db.get_parameters(
+        self._roll_offset, self._pitch_multi, self._horizon_offset = self._db.get_parameters(
             self._selected_run)
         self._setup_video()
         self.actionPlay.setEnabled(True)
@@ -543,7 +544,7 @@ class EyeMainWindow(Ui_MainWindow):
     def _redo_single_calc_clicked(self) -> None:
         runs_to_redo = [self._selected_run]
         ingest_worker = ReprocessWorker(
-            self._db_path, runs_to_redo, self._roll_offset, self._pitch_multi)
+            self._db_path, runs_to_redo, self._roll_offset, self._pitch_multi, self._horizon_offset)
         ingest_worker.signals.started.connect(
             self._reprocess_started)
         ingest_worker.signals.progress.connect(
@@ -571,7 +572,8 @@ class EyeMainWindow(Ui_MainWindow):
         self.tabWidgetMain.setCurrentIndex(0)
 
     def _show_parameter_window(self) -> None:
-        self.parameter_window.set_values(self._roll_offset, self._pitch_multi)
+        self.parameter_window.set_values(
+            self._roll_offset, self._pitch_multi, self._horizon_offset)
         self.parameter_window.show()
         self.parameter_window.setFocus()
         self.parameter_window.move(250, 600)
@@ -580,6 +582,8 @@ class EyeMainWindow(Ui_MainWindow):
         self._roll_offset = self.parameter_window.ui.horizontalSliderRollOffset.value()
         self._pitch_multi = float(
             self.parameter_window.ui.horizontalSliderPitchMulti.value() / 1000)
+        self._horizon_offset = float(
+            self.parameter_window.ui.horizontalSliderHorizonFuzzy.value() / 1000)
 
     def _filter_runs(self, text: str) -> None:
         self._title_filter_model.setFilterRegularExpression(text)
@@ -615,7 +619,8 @@ class EyeMainWindow(Ui_MainWindow):
         self._fusion_timestamps = list(self._fusion_data.keys())
         self._horizon = self._db.get_processed_data(self._selected_run)
         self._horizon_timestamps = list(self._horizon.keys())
-        self.parameter_window.set_values(self._roll_offset, self._pitch_multi)
+        self.parameter_window.set_values(
+            self._roll_offset, self._pitch_multi, self._horizon_offset)
 
     def _display_summary_visuals(self) -> None:
         self._visual_summary_up_down.plot(

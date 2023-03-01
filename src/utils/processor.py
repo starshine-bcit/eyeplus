@@ -6,7 +6,7 @@ from modules.fusion import Fusion
 from modules.analyze import HorizonGaze
 
 
-def ingest_and_process(cb_progress, eyedb: EyeDB, paths: list[Path], type: str = 'zip') -> None:
+def ingest_and_process(cb_progress, eyedb: EyeDB, paths: list[Path], type: str = 'zip', horizon_offset: float = 0.0) -> None:
     progress = 0.0
     cb_progress('Beginning to ingest data...', progress)
     runs_to_process = eyedb.ingest_data(paths, type)
@@ -33,7 +33,7 @@ def ingest_and_process(cb_progress, eyedb: EyeDB, paths: list[Path], type: str =
         cb_progress(
             f'Run {current_run} of {max_run}: Calculating predicted up/down...', progress)
         gaze3d = eyedb.get_gaze3d_z(runid)
-        horizon = HorizonGaze(predicted_gaze, gaze3d, fused)
+        horizon = HorizonGaze(predicted_gaze, gaze3d, fused, horizon_offset)
         processed = horizon.calculates_all()
         progress += 0.20 / len(runs_to_process)
         cb_progress(
@@ -43,7 +43,7 @@ def ingest_and_process(cb_progress, eyedb: EyeDB, paths: list[Path], type: str =
         eyedb.write_processed_data(runid, processed)
 
 
-def reprocess(cb_progress, eyedb: EyeDB, runids: list[int], roll_offset: int, pitch_multi: float) -> None:
+def reprocess(cb_progress, eyedb: EyeDB, runids: list[int], roll_offset: int, pitch_multi: float, horizon_offset: float) -> None:
     progress = 0.0
     cb_progress('Beginning to reprocess data...', progress)
     max_run = len(runids)
@@ -66,7 +66,7 @@ def reprocess(cb_progress, eyedb: EyeDB, runids: list[int], roll_offset: int, pi
             runid, roll_offset=roll_offset, pitch_multi=pitch_multi)
         predicted_gaze = eyedb.get_pgazed2d_data(runid)
         gaze3d = eyedb.get_gaze3d_z(runid)
-        horizon = HorizonGaze(predicted_gaze, gaze3d, fused)
+        horizon = HorizonGaze(predicted_gaze, gaze3d, fused, horizon_offset)
         processed = horizon.calculates_all()
         eyedb.update_processed_data(runid, processed)
     progress += 0.25

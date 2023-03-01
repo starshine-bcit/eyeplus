@@ -140,9 +140,9 @@ class HeatMap(BasicCanvas):
         self.y = np.linspace(arr_min, arr_max, n_cols)
         self.z = np.array([0] * (n_rows * n_cols)).reshape(n_rows, n_cols)
         for v in gaze2d.values():
-            x_round = round(v[0] * 100)
-            y_round = round(v[1] * 100)
-            if x_round <= 100 and y_round <= 100:
+            x_round = round(v[0] * n_rows)
+            y_round = round(v[1] * n_cols)
+            if x_round <= n_cols and y_round <= n_rows:
                 self.z[y_round][x_round] += 1
                 if self.z[y_round][x_round] > v_max:
                     v_max = self.z[y_round][x_round]
