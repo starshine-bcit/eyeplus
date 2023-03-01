@@ -25,13 +25,13 @@ class TotalUpDown_stacked(BasicCanvas):
         x = ['Up and down']
         up = data['up_count']
         down = data['down_count']
-        # mean_pitch = data['mean_pitch']
+        mean_pitch = data['mean_pitch']
         total = data['total']
-        y1 = [up/total]
-        y2 = [down/total]
+        y1 = [mean_pitch, up/total]
+        y2 = [0,down/total]
         self.ax.set_yticks(y_ticks)
         self.ax.set_yticklabels([str(x) for x in y_ticks])
-        self.ax.set_title('Proportion of Time Looking Up vs. Down')
+        self.ax.set_title('Mean value of Pitch versus the stacked percentage of Up Vs. Down')
         #self.ax.bar(x, y1, color=['mediumseagreen', 'firebrick'])
         self.ax.bar(x, y1)
         self.ax.bar(x, y2, bottom=y1)
