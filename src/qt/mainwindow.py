@@ -14,7 +14,7 @@ from qt.processui import Ui_dialogProcessing
 from qt.helpwindow import Ui_helpDialog
 from qt.parameterwindow import ParameterWindow
 from modules.export import DataExporter
-from modules.visualize import TotalUpDown, CumulativeUpDown, PitchLive, HeatMap
+from modules.visualize import TotalUpDown, CumulativeUpDown, PitchLive, HeatMap, TotalUpDownStacked
 from utils.fileutils import validate_import_folder
 from utils.imageutils import create_video_overlay
 
@@ -626,6 +626,9 @@ class EyeMainWindow(Ui_MainWindow):
         self._visual_summary_up_down.plot(
             self._horizon[self._horizon_timestamps[-1]])
         self._visual_review_heat_map.plot(self._tree_predicted2d)
+        mean_pitch = self._db.get_mean_pitch(self._selected_run)
+        self._visual_review_mean_pitch.plot(
+            self._horizon[self._horizon_timestamps[-1]], mean_pitch)
 
     def _setup_visual_widgets(self) -> None:
         self._visual_summary_up_down = TotalUpDown(
@@ -642,6 +645,10 @@ class EyeMainWindow(Ui_MainWindow):
         g2_summary_parent.removeWidget(self.widgetSummaryGraphic2)
         g2_summary_parent.addWidget(self._visual_review_heat_map)
         g3_summary_parent = self.widgetSummaryGraphic3.parentWidget().layout()
+        self._visual_review_mean_pitch = TotalUpDownStacked(
+            500, 500, self._dpi)
+        g3_summary_parent.removeWidget(self.widgetSummaryGraphic3)
+        g3_summary_parent.addWidget(self._visual_review_mean_pitch)
         g2_review_parent = self.widgetReviewGraphic2.parentWidget().layout()
         self._visual_review_pitch = PitchLive(500, 500, self._dpi)
         g2_review_parent.removeWidget(self.widgetReviewGraphic2)

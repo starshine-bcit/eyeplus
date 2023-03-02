@@ -150,3 +150,26 @@ class HeatMap(BasicCanvas):
             self.x, self.y, self.z, shading='gouraud', cmap='plasma', vmin=v_min, vmax=v_max)
         self.ax.set_title('Heatmap of 2d Gaze')
         self.fig.canvas.draw()
+
+
+class TotalUpDownStacked(BasicCanvas):
+    def __init__(self, width: int, height: int, dpi: float):
+        super().__init__(width, height, dpi)
+
+    def plot(self, up_down: dict, mean_pitch: float) -> None:
+        self.ax.clear()
+        self.up_down = up_down
+        self.mean_pitch = mean_pitch
+        x = ['Up/Down', 'Avg. Pitch']
+        y1 = [up_down['percent_down']]
+        y1_2 = [up_down['percent_up']]
+        y2 = [(mean_pitch + 15) / 30]
+        self.ax.set_ybound(0.0, 1.0)
+        self.ax.set_title(
+            'Total Up/Down vs. Mean Pitch')
+        self.ax.bar(x[0], y1, color='mediumseagreen')
+        self.ax.bar(x[0], y1_2, bottom=y1, color='firebrick')
+        self.ax.bar(x[1], y2, color='darkviolet')
+        self.ax.set_yticklabels([])
+        self.ax.text(1, y2[0] + 0.05, round(self.mean_pitch, 2), ha='center')
+        self.fig.canvas.draw()

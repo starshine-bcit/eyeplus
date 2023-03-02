@@ -668,6 +668,15 @@ class EyeDB():
         self._cur.executemany(update_query, update_list)
         self._con.commit()
 
+    def get_mean_pitch(self, runid: int) -> float:
+        if self.check_existing_runid(runid):
+            self._cur.execute('''SELECT avg(pitch)
+                        FROM fusion WHERE runid=(?);''', (runid,))
+            return self._cur.fetchone()[0]
+        else:
+            raise RuntimeError(
+                f'Trying to select a non-existant ID: {runid}')
+
 
 if __name__ == '__main__':
     pass
