@@ -622,6 +622,8 @@ class EyeDB():
         else:
             raise RuntimeError(f'Trying to select a non-existant ID: {runid}')
 
+        self.update_processed_view()
+
     def get_processed_data(self, runid: int) -> dict:
         processed_dict = {}
         self._cur.execute(
@@ -665,6 +667,20 @@ class EyeDB():
         self._cur.executemany(update_query, update_list)
         self._con.commit()
 
+    def update_processed_view(self) -> None:
+        drop_view_query = '''DROP VIEW IF EXISTS overall_percentage_view;'''
+        view_query = '''
+                CREATE VIEW overall_percentage_view
+                AS SELECT a.runid, a.percentup, a.percentdown
+                FROM processed a
+                INNER JOIN (
+                    SELECT runid, MAX(totalcount) totalcount
+                    FROM processed
+                    GROUP BY runid)
+                b ON a.runid = b.runid AND a.totalcount = b.totalcount;'''
+
+        self._cur.execute(drop_view_query)
+        self._cur.execute(view_query)
 
 if __name__ == '__main__':
     pass
