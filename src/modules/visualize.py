@@ -104,7 +104,6 @@ class PitchLive(BasicCanvas):
         ymax = max(abs(max(self.y)), abs(min(self.y)))
         ymod = ((ymax // 15) + 1) * 15
         self.ax.set_ylim(-ymod - 2, ymod + 2)
-        print(ymod)
         self.ax.set_yticks(np.arange(-ymod, ymod + 1, 15))
         self.ani = FuncAnimation(
             self.fig, self._draw_next_frame, frames=self.frames_range, init_func=self._init_scatter, interval=100)

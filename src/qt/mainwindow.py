@@ -196,7 +196,7 @@ class EyeMainWindow(Ui_MainWindow):
             pitch *= self._pitch_multi
 
             img, pos_x, pos_y = create_video_overlay(
-                self.player.osd_dimensions, gaze_x, gaze_y, y_intercept, x_intercept, slope, roll, pitch)
+                self.player.osd_dimensions, gaze_x, gaze_y, y_intercept, x_intercept, slope, roll, pitch, self._horizon_offset)
             self._overlay.update(img, pos=(pos_x, pos_y))
 
             self._visual_review_up_down.plot(
@@ -573,7 +573,7 @@ class EyeMainWindow(Ui_MainWindow):
 
     def _show_parameter_window(self) -> None:
         self.parameter_window.set_values(
-            self._roll_offset, self._pitch_multi, self._horizon_offset)
+            self._roll_offset, self._pitch_multi, -self._horizon_offset)
         self.parameter_window.show()
         self.parameter_window.setFocus()
         self.parameter_window.move(250, 600)
@@ -583,7 +583,7 @@ class EyeMainWindow(Ui_MainWindow):
         self._pitch_multi = float(
             self.parameter_window.ui.horizontalSliderPitchMulti.value() / 1000)
         self._horizon_offset = float(
-            self.parameter_window.ui.horizontalSliderHorizonFuzzy.value() / 1000)
+            -self.parameter_window.ui.horizontalSliderHorizonFuzzy.value() / 1000)
 
     def _filter_runs(self, text: str) -> None:
         self._title_filter_model.setFilterRegularExpression(text)
@@ -594,7 +594,7 @@ class EyeMainWindow(Ui_MainWindow):
         self._stop_clicked()
         runs_to_redo = [self._selected_run]
         ingest_worker = ReprocessWorker(
-            self._db_path, runs_to_redo, self._roll_offset, self._pitch_multi)
+            self._db_path, runs_to_redo, self._roll_offset, self._pitch_multi, self._horizon_offset)
         ingest_worker.signals.started.connect(
             self._reprocess_started)
         ingest_worker.signals.progress.connect(

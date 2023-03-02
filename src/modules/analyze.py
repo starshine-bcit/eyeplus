@@ -74,6 +74,7 @@ class HorizonGaze():
 
     def _calculate_up(self, slope: float, y_intercept: float, gaze_x: float, gaze_y: float, gaze_distance: float | None) -> bool:
         # make horizon fuzzy somehow
+        y_intercept += self._horizon_offset
         if gaze_distance is not None and gaze_distance < 200:
             return False
         elif gaze_y < slope * gaze_x + y_intercept:

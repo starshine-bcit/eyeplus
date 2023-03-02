@@ -63,7 +63,7 @@ def reprocess(cb_progress, eyedb: EyeDB, runids: list[int], roll_offset: int, pi
         for k, v in fused.items():
             new_data[runid][k] = v
         eyedb.update_parameters(
-            runid, roll_offset=roll_offset, pitch_multi=pitch_multi)
+            runid, roll_offset=roll_offset, pitch_multi=pitch_multi, horizon_offset=horizon_offset)
         predicted_gaze = eyedb.get_pgazed2d_data(runid)
         gaze3d = eyedb.get_gaze3d_z(runid)
         horizon = HorizonGaze(predicted_gaze, gaze3d, fused, horizon_offset)
