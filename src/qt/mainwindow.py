@@ -14,6 +14,7 @@ from qt.processui import Ui_dialogProcessing
 from qt.helpwindow import Ui_helpDialog
 from qt.parameterwindow import ParameterWindow
 from modules.export import DataExporter
+from modules.visualize import TotalUpDown, CumulativeUpDown, PitchLive, HeatMap, TotalUpDownStacked
 from utils.fileutils import validate_import_folder
 from utils.imageutils import create_video_overlay
 
@@ -21,6 +22,7 @@ from utils.imageutils import create_video_overlay
 class EyeMainWindow(Ui_MainWindow):
     def __init__(self, main_window: QtWidgets.QMainWindow, app: QtWidgets.QApplication) -> None:
         self.app = app
+        self.screen = self.app.screens()[0]
         self.main_window = main_window
         self._db_path = Path(__file__).parent.parent.parent / 'data' / 'eye.db'
         self._db = EyeDB(self._db_path)
@@ -52,7 +54,10 @@ class EyeMainWindow(Ui_MainWindow):
         self._selected_run = 0
         self._roll_offset = 90
         self._pitch_multi = 1.0
+        self._horizon_offset = 0.0
+        self._dpi = self.screen.logicalDotsPerInch()
         self._reset_stats_text()
+        self._setup_visual_widgets()
         self._populate_runs_tables()
         self._init_input_file_chooser()
         self._init_output_file_chooser()
@@ -125,6 +130,11 @@ class EyeMainWindow(Ui_MainWindow):
         self.help_window.setWindowIcon(
             QtGui.QIcon(QtGui.QPixmap(':/icons/life-buoy.svg')))
 
+    def _play_clicked(self):
+        self._visual_review_pitch.plot(
+            self._fusion_data, self._fusion_timestamps)
+        self._thread_pool.start(self.playback_worker)
+
     def _playing_started_callback(self):
         if self.actionMute.isChecked():
             self.player.command('set', 'mute', 'yes')
@@ -147,6 +157,9 @@ class EyeMainWindow(Ui_MainWindow):
             self.horizontalSliderSeek.setSliderPosition(progress)
         if not self.player.pause:
             curr_timestamp = round(self.player.time_pos, 1)
+            if self._visual_review_pitch.is_paused:
+                self._visual_review_pitch.start()
+            self._visual_review_pitch.current_timestamp = curr_timestamp
             if self.player.duration - self.player.time_pos <= 2:
                 curr_timestamp = curr_timestamp - 2
             closest_fusion = self._fusion_timestamps[-1]
@@ -183,8 +196,12 @@ class EyeMainWindow(Ui_MainWindow):
             pitch *= self._pitch_multi
 
             img, pos_x, pos_y = create_video_overlay(
-                self.player.osd_dimensions, gaze_x, gaze_y, y_intercept, x_intercept, slope, roll, pitch)
+                self.player.osd_dimensions, gaze_x, gaze_y, y_intercept, x_intercept, slope, roll, pitch, self._horizon_offset)
             self._overlay.update(img, pos=(pos_x, pos_y))
+
+            self._visual_review_up_down.plot(
+                self._horizon[curr_timestamp], curr_timestamp)
+
             self.plainTextEditStats.setPlainText(
                 f'RunID      : {self._selected_run}\n'
                 f'Title      : {self._all_runs_list[self._selected_run -1]["tags"]}\n'
@@ -218,6 +235,7 @@ class EyeMainWindow(Ui_MainWindow):
         self.actionRecalculate.setEnabled(False)
         self.horizontalSliderVolume.setEnabled(False)
         self.actionMute.setEnabled(False)
+        self._visual_review_pitch.stop()
         self._reset_stats_text()
         self._update_status('Playback stopped')
 
@@ -225,16 +243,6 @@ class EyeMainWindow(Ui_MainWindow):
         time_to_seek = self.horizontalSliderSeek.sliderPosition() * \
             self.player.duration / 1000
         self.player.seek(max(time_to_seek, 1), reference='absolute')
-
-    def _play_clicked(self):
-        self.parameter_window.set_values(self._roll_offset, self._pitch_multi)
-        self._tree_predicted2d = self._db.get_pgazed2d_data(self._selected_run)
-        self._gaze_distance = self._db.get_gaze3d_z(self._selected_run)
-        self._gaze_distance_timestamps = list(self._gaze_distance.keys())
-        self._fusion_data = self._db.get_fusion_data(self._selected_run)
-        self._fusion_timestamps = list(self._fusion_data.keys())
-        self._horizon = self._db.get_processed_data(self._selected_run)
-        self._thread_pool.start(self.playback_worker)
 
     def _safe_quit_x(self, event):
         if 'player' in self.__dict__:
@@ -251,8 +259,10 @@ class EyeMainWindow(Ui_MainWindow):
     def _pause_clicked(self):
         if self.player.pause:
             self.player.command('set', 'pause', 'no')
+            self._visual_review_pitch.start()
         else:
             self.player.command('set', 'pause', 'yes')
+            self._visual_review_pitch.pause()
 
     def _stop_clicked(self):
         self.parameter_window.hide()
@@ -330,21 +340,14 @@ class EyeMainWindow(Ui_MainWindow):
         original_index = self._title_filter_model.mapToSource(index)
         runid_index = self._runs_model.index(original_index.row(), 0)
         self._selected_run = int(self._runs_model.itemData(runid_index)[0])
-        self.labelSummaryTitle.setText(
-            f'Summary for Run ID {self._selected_run}')
-        self.labelSummaryDate.setText(
-            f'Date: {self._all_runs_dict[self._selected_run]["import_date"]}')
-        self.labelSummaryProcessDate.setText(
-            f'Processed: {self._all_runs_dict[self._selected_run]["process_date"]}')
-        self.labelSummaryTag.setText(
-            f'Title: {self._all_runs_dict[self._selected_run]["tags"]}')
+        self._load_summary_data()
+        self._display_summary_visuals()
         self._update_status(
             f'Successfully loaded summary for runid {self._selected_run}')
-        # code to show summary here
 
     def _open_review_clicked(self) -> None:
         self._gaze = self._db.get_gaze_data(self._selected_run)
-        self._roll_offset, self._pitch_multi = self._db.get_parameters(
+        self._roll_offset, self._pitch_multi, self._horizon_offset = self._db.get_parameters(
             self._selected_run)
         self._setup_video()
         self.actionPlay.setEnabled(True)
@@ -541,7 +544,7 @@ class EyeMainWindow(Ui_MainWindow):
     def _redo_single_calc_clicked(self) -> None:
         runs_to_redo = [self._selected_run]
         ingest_worker = ReprocessWorker(
-            self._db_path, runs_to_redo, self._roll_offset, self._pitch_multi)
+            self._db_path, runs_to_redo, self._roll_offset, self._pitch_multi, self._horizon_offset)
         ingest_worker.signals.started.connect(
             self._reprocess_started)
         ingest_worker.signals.progress.connect(
@@ -569,7 +572,8 @@ class EyeMainWindow(Ui_MainWindow):
         self.tabWidgetMain.setCurrentIndex(0)
 
     def _show_parameter_window(self) -> None:
-        self.parameter_window.set_values(self._roll_offset, self._pitch_multi)
+        self.parameter_window.set_values(
+            self._roll_offset, self._pitch_multi, -self._horizon_offset)
         self.parameter_window.show()
         self.parameter_window.setFocus()
         self.parameter_window.move(250, 600)
@@ -578,6 +582,8 @@ class EyeMainWindow(Ui_MainWindow):
         self._roll_offset = self.parameter_window.ui.horizontalSliderRollOffset.value()
         self._pitch_multi = float(
             self.parameter_window.ui.horizontalSliderPitchMulti.value() / 1000)
+        self._horizon_offset = float(
+            -self.parameter_window.ui.horizontalSliderHorizonFuzzy.value() / 1000)
 
     def _filter_runs(self, text: str) -> None:
         self._title_filter_model.setFilterRegularExpression(text)
@@ -588,7 +594,7 @@ class EyeMainWindow(Ui_MainWindow):
         self._stop_clicked()
         runs_to_redo = [self._selected_run]
         ingest_worker = ReprocessWorker(
-            self._db_path, runs_to_redo, self._roll_offset, self._pitch_multi)
+            self._db_path, runs_to_redo, self._roll_offset, self._pitch_multi, self._horizon_offset)
         ingest_worker.signals.started.connect(
             self._reprocess_started)
         ingest_worker.signals.progress.connect(
@@ -596,3 +602,55 @@ class EyeMainWindow(Ui_MainWindow):
         ingest_worker.signals.finished.connect(
             self._reprocess_finished)
         self._thread_pool.start(ingest_worker)
+
+    def _load_summary_data(self) -> None:
+        self.labelSummaryTitle.setText(
+            f'Summary for Run ID {self._selected_run}')
+        self.labelSummaryDate.setText(
+            f'Date: {self._all_runs_dict[self._selected_run]["import_date"]}')
+        self.labelSummaryProcessDate.setText(
+            f'Processed: {self._all_runs_dict[self._selected_run]["process_date"]}')
+        self.labelSummaryTag.setText(
+            f'Title: {self._all_runs_dict[self._selected_run]["tags"]}')
+        self._tree_predicted2d = self._db.get_pgazed2d_data(self._selected_run)
+        self._gaze_distance = self._db.get_gaze3d_z(self._selected_run)
+        self._gaze_distance_timestamps = list(self._gaze_distance.keys())
+        self._fusion_data = self._db.get_fusion_data(self._selected_run)
+        self._fusion_timestamps = list(self._fusion_data.keys())
+        self._horizon = self._db.get_processed_data(self._selected_run)
+        self._horizon_timestamps = list(self._horizon.keys())
+        self.parameter_window.set_values(
+            self._roll_offset, self._pitch_multi, self._horizon_offset)
+
+    def _display_summary_visuals(self) -> None:
+        self._visual_summary_up_down.plot(
+            self._horizon[self._horizon_timestamps[-1]])
+        self._visual_review_heat_map.plot(self._tree_predicted2d)
+        mean_pitch = self._db.get_mean_pitch(self._selected_run)
+        self._visual_review_mean_pitch.plot(
+            self._horizon[self._horizon_timestamps[-1]], mean_pitch)
+
+    def _setup_visual_widgets(self) -> None:
+        self._visual_summary_up_down = TotalUpDown(
+            500, 500, self._dpi)
+        g1_summary_parent = self.widgetSummaryGraphic1.parentWidget().layout()
+        g1_summary_parent.removeWidget(self.widgetSummaryGraphic1)
+        g1_summary_parent.addWidget(self._visual_summary_up_down)
+        self._visual_review_up_down = CumulativeUpDown(500, 500, self._dpi)
+        g1_review_parent = self.widgetReviewGraphic1.parentWidget().layout()
+        g1_review_parent.removeWidget(self.widgetReviewGraphic1)
+        g1_review_parent.addWidget(self._visual_review_up_down)
+        g2_summary_parent = self.widgetSummaryGraphic2.parentWidget().layout()
+        self._visual_review_heat_map = HeatMap(500, 500, self._dpi)
+        g2_summary_parent.removeWidget(self.widgetSummaryGraphic2)
+        g2_summary_parent.addWidget(self._visual_review_heat_map)
+        g3_summary_parent = self.widgetSummaryGraphic3.parentWidget().layout()
+        self._visual_review_mean_pitch = TotalUpDownStacked(
+            500, 500, self._dpi)
+        g3_summary_parent.removeWidget(self.widgetSummaryGraphic3)
+        g3_summary_parent.addWidget(self._visual_review_mean_pitch)
+        g2_review_parent = self.widgetReviewGraphic2.parentWidget().layout()
+        self._visual_review_pitch = PitchLive(500, 500, self._dpi)
+        g2_review_parent.removeWidget(self.widgetReviewGraphic2)
+        g2_review_parent.addWidget(self._visual_review_pitch)
+        g3_review_parent = self.widgetReviewGraphic3.parentWidget().layout()
