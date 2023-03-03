@@ -202,24 +202,27 @@ class EyeMainWindow(Ui_MainWindow):
             self._visual_review_up_down.plot(
                 self._horizon[curr_timestamp], curr_timestamp)
 
-            self.plainTextEditStats.setPlainText(
-                f'RunID      : {self._selected_run}\n'
-                f'Title      : {self._all_runs_list[self._selected_run -1]["tags"]}\n'
-                f'Timestamp  : {self.player.time_pos:.2f}\n'
-                f'Duration   : {self.player.duration:.2f}\n\n'
-                f'Gaze X     : {gaze_x:.4f}\n'
-                f'Gaze Y     : {gaze_y:.4f}\n\n'
-                f'Roll       : {roll:.4f}\n'
-                f'Pitch      : {pitch:.4f}\n\n'
-                f'x_intercept: {x_intercept:.4f}\n'
-                f'y_intercept: {y_intercept:.4f}\n'
-                f'slope      : {slope:.4f}\n\n'
-                f'Gaze3d Z   : {closest_distance if closest_distance is not None else "None"}\n\n'
-                f'Obervation : {"Looking Up" if currently_up else "Looking Down"}\n'
-                f'Up %       : {percent_up:.4f}\n'
-                f'Down %     : {percent_down:.4f}\n'
-                f'Total Calcs: {total_count}\n'
-            )
+            if self.player.time_pos == None or self.player.duration == None: #catch timer having None type at end of video
+                self._playing_complete_callback()
+            else:
+                self.plainTextEditStats.setPlainText(
+                    f'RunID      : {self._selected_run}\n'
+                    f'Title      : {self._all_runs_list[self._selected_run -1]["tags"]}\n'
+                    f'Timestamp  : {self.player.time_pos:.2f}\n'
+                    f'Duration   : {self.player.duration:.2f}\n\n'
+                    f'Gaze X     : {gaze_x:.4f}\n'
+                    f'Gaze Y     : {gaze_y:.4f}\n\n'
+                    f'Roll       : {roll:.4f}\n'
+                    f'Pitch      : {pitch:.4f}\n\n'
+                    f'x_intercept: {x_intercept:.4f}\n'
+                    f'y_intercept: {y_intercept:.4f}\n'
+                    f'slope      : {slope:.4f}\n\n'
+                    f'Gaze3d Z   : {closest_distance if closest_distance is not None else "None"}\n\n'
+                    f'Obervation : {"Looking Up" if currently_up else "Looking Down"}\n'
+                    f'Up %       : {percent_up:.4f}\n'
+                    f'Down %     : {percent_down:.4f}\n'
+                    f'Total Calcs: {total_count}\n'
+                )
 
     def _playing_complete_callback(self):
         if self._overlay.overlay_id:
