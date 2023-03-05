@@ -198,6 +198,8 @@ class GazeLive(BasicCanvas):
                 inner_x.append(k)
                 inner_y.append(self.gaze2d[k][1])
             elif v['currently_up'] != current_up:
+                inner_x.append(k)
+                inner_y.append(self.gaze2d[k][1])
                 colour = 'mediumseagreen' if current_up else 'firebrick'
                 self._draw_single_line(inner_x, inner_y, colour)
                 current_up = v['currently_up']
