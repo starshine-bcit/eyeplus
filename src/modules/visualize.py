@@ -97,8 +97,8 @@ class PitchLive(BasicCanvas):
             round(0.1 * x + self.fusion_timestamps[0], 1) for x in range(play_range)]
         self.x = self.fusion_timestamps
         self.y = [v['pitch'] for v in fusion.values()]
-        self.ax.set_xlabel('Timestamp')
-        self.ax.set_ylabel('Pitch')
+        # self.ax.set_xlabel('Timestamp')
+        # self.ax.set_ylabel('Pitch')
         self.ax.set_title('Calculated Head Pitch Over Time')
         self.ax.set_xlim(-2, len(self.frames_range) + 2)
         ymax = max(abs(max(self.y)), abs(min(self.y)))
@@ -235,8 +235,8 @@ class GazeLive(BasicCanvas):
         self.ax.set_xlim(-2, len(self.frames_range) + 2)
         self.ax.set_ylim(0, 1)
         self.ax.set_title('Gaze 2d Y Over Time')
-        self.ax.set_xlabel('Timestamp')
-        self.ax.set_ylabel('Gaze 2d Y')
+        # self.ax.set_xlabel('Timestamp')
+        # self.ax.set_ylabel('Gaze 2d Y')
         self.ax.set_yticks(
             [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.0])
         self.ax.invert_yaxis()
