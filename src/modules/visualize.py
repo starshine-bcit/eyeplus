@@ -73,7 +73,7 @@ class PitchLive(BasicCanvas):
     def is_paused(self) -> bool:
         return self._pause
 
-    def _init_scatter(self):
+    def _init_line(self):
         self.line, = self.ax.plot(self.x, self.y)
         return self.line,
 
@@ -106,7 +106,7 @@ class PitchLive(BasicCanvas):
         self.ax.set_ylim(-ymod - 2, ymod + 2)
         self.ax.set_yticks(np.arange(-ymod, ymod + 1, 15))
         self.ani = FuncAnimation(
-            self.fig, self._draw_next_frame, frames=self.frames_range, init_func=self._init_scatter, interval=100)
+            self.fig, self._draw_next_frame, frames=self.frames_range, init_func=self._init_line, interval=100)
         self.draw()
         self._pause = True
         self.ani.pause()
@@ -172,3 +172,85 @@ class TotalUpDownStacked(BasicCanvas):
         self.ax.set_yticklabels([])
         self.ax.text(1, y2[0] + 0.05, round(self.mean_pitch, 2), ha='center')
         self.fig.canvas.draw()
+
+
+class GazeLive(BasicCanvas):
+    def __init__(self, width: int, height: int, dpi: float):
+        super().__init__(width, height, dpi)
+        self._current_line = None
+        self._pause = False
+        self.current_timestamp = 0.0
+
+    @property
+    def is_paused(self) -> bool:
+        return self._pause
+
+    def _draw_single_line(self, x: list, y: list, colour: str) -> None:
+        self.ax.plot(x, y, color=colour)
+
+    def _init_line(self) -> None:
+        current_up = self.processed[self.processed_timestamps[0]
+                                    ]['currently_up']
+        inner_x = []
+        inner_y = []
+        for k, v in self.processed.items():
+            if v['currently_up'] == current_up:
+                inner_x.append(k)
+                inner_y.append(self.gaze2d[k][1])
+            elif v['currently_up'] != current_up:
+                colour = 'mediumseagreen' if current_up else 'firebrick'
+                self._draw_single_line(inner_x, inner_y, colour)
+                current_up = v['currently_up']
+                inner_x.clear()
+                inner_y.clear()
+                inner_x.append(k)
+                inner_y.append(self.gaze2d[k][1])
+        if inner_x and inner_y:
+            colour = 'mediumseagreen' if not current_up else 'firebrick'
+            self._draw_single_line(inner_x, inner_y, colour)
+
+    def _draw_next_frame(self, frame: float):
+        if self.current_timestamp > 10:
+            x_low = self.current_timestamp - 10
+            x_high = self.current_timestamp
+        else:
+            x_low = 0
+            x_high = 10
+        self.ax.set_xlim(x_low, x_high)
+
+    def plot(self, gaze2d: dict, processed: dict) -> None:
+        self.ax.clear()
+        self.processed = processed
+        self.gaze2d = gaze2d
+        self.processed_timestamps = list(processed.keys())
+        self.current_timestamp = 0.0
+        play_range = int(
+            (self.processed_timestamps[-1] - self.processed_timestamps[0]) * 10)
+        self.frames_range = [
+            round(0.1 * x + self.processed_timestamps[0], 1) for x in range(play_range)]
+        self.x = self.processed_timestamps
+        self.y = [gaze2d[x][1] for x in self.processed_timestamps]
+        self.ax.set_xlim(-2, len(self.frames_range) + 2)
+        self.ax.set_ylim(0, 1)
+        self.ax.set_title('Gaze 2d Y Over Time')
+        self.ax.set_xlabel('Timestamp')
+        self.ax.set_ylabel('Gaze 2d Y')
+        self.ax.set_yticks(
+            [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.0])
+        self.ax.invert_yaxis()
+        self.ani = FuncAnimation(self.fig, self._draw_next_frame,
+                                 frames=self.frames_range, init_func=self._init_line, interval=100)
+        self.draw()
+        self._pause = True
+        self.ani.pause()
+
+    def start(self) -> None:
+        self._pause = False
+        self.ani.resume()
+
+    def pause(self) -> None:
+        self._pause = True
+        self.ani.pause()
+
+    def stop(self) -> None:
+        self.ax.clear()

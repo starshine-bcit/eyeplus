@@ -14,7 +14,7 @@ from qt.processui import Ui_dialogProcessing
 from qt.helpwindow import Ui_helpDialog
 from qt.parameterwindow import ParameterWindow
 from modules.export import DataExporter
-from modules.visualize import TotalUpDown, CumulativeUpDown, PitchLive, HeatMap, TotalUpDownStacked
+from modules.visualize import TotalUpDown, CumulativeUpDown, PitchLive, HeatMap, TotalUpDownStacked, GazeLive
 from utils.fileutils import validate_import_folder
 from utils.imageutils import create_video_overlay
 
@@ -159,7 +159,10 @@ class EyeMainWindow(Ui_MainWindow):
             curr_timestamp = round(self.player.time_pos, 1)
             if self._visual_review_pitch.is_paused:
                 self._visual_review_pitch.start()
+            if self._visual_review_gaze_live.is_paused:
+                self._visual_review_gaze_live.start()
             self._visual_review_pitch.current_timestamp = curr_timestamp
+            self._visual_review_gaze_live.current_timestamp = curr_timestamp
             if self.player.duration - self.player.time_pos <= 2:
                 curr_timestamp = curr_timestamp - 2
             closest_fusion = self._fusion_timestamps[-1]
@@ -236,6 +239,7 @@ class EyeMainWindow(Ui_MainWindow):
         self.horizontalSliderVolume.setEnabled(False)
         self.actionMute.setEnabled(False)
         self._visual_review_pitch.stop()
+        self._visual_review_gaze_live.stop()
         self._reset_stats_text()
         self._update_status('Playback stopped')
 
@@ -260,9 +264,11 @@ class EyeMainWindow(Ui_MainWindow):
         if self.player.pause:
             self.player.command('set', 'pause', 'no')
             self._visual_review_pitch.start()
+            self._visual_review_gaze_live.start()
         else:
             self.player.command('set', 'pause', 'yes')
             self._visual_review_pitch.pause()
+            self._visual_review_gaze_live.pause()
 
     def _stop_clicked(self):
         self.parameter_window.hide()
@@ -629,6 +635,8 @@ class EyeMainWindow(Ui_MainWindow):
         mean_pitch = self._db.get_mean_pitch(self._selected_run)
         self._visual_review_mean_pitch.plot(
             self._horizon[self._horizon_timestamps[-1]], mean_pitch)
+        self._visual_review_gaze_live.plot(
+            self._tree_predicted2d, self._horizon)
 
     def _setup_visual_widgets(self) -> None:
         self._visual_summary_up_down = TotalUpDown(
@@ -654,3 +662,6 @@ class EyeMainWindow(Ui_MainWindow):
         g2_review_parent.removeWidget(self.widgetReviewGraphic2)
         g2_review_parent.addWidget(self._visual_review_pitch)
         g3_review_parent = self.widgetReviewGraphic3.parentWidget().layout()
+        g3_review_parent.removeWidget(self.widgetReviewGraphic3)
+        self._visual_review_gaze_live = GazeLive(500, 500, self._dpi)
+        g3_review_parent.addWidget(self._visual_review_gaze_live)
