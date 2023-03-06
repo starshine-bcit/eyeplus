@@ -700,11 +700,11 @@ class EyeDB():
         p_up = []
         p_down = []
         for runid in res:
-            self._cur.execute('''select id, runid, percentup, percentdown
-                            from processed
-                            where runid=(?)
-                            order by id desc
-                            limit 1;''', runid)
+            self._cur.execute('''SELECT id, runid, percentup, percentdown
+                            FROM processed
+                            WHERE runid=(?)
+                            ORDER BY id DESC
+                            LIMIT 1;''', runid)
             line = self._cur.fetchone()
             p_up.append(line[2])
             p_down.append(line[3])

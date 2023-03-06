@@ -177,9 +177,6 @@ class TotalUpDownStacked(BasicCanvas):
 class GazeLive(BasicCanvas):
     def __init__(self, width: int, height: int, dpi: float):
         super().__init__(width, height, dpi)
-        self._current_line = None
-        self._pause = False
-        self.current_timestamp = 0.0
 
     @property
     def is_paused(self) -> bool:
@@ -221,7 +218,9 @@ class GazeLive(BasicCanvas):
         self.ax.set_xlim(x_low, x_high)
 
     def plot(self, gaze2d: dict, processed: dict) -> None:
-        self.ax.clear()
+        self.fig.clear()
+        self.ax = self.fig.add_subplot()
+        self.current_timestamp = 0.0
         self.processed = processed
         self.gaze2d = gaze2d
         self.processed_timestamps = list(processed.keys())
@@ -255,4 +254,4 @@ class GazeLive(BasicCanvas):
         self.ani.pause()
 
     def stop(self) -> None:
-        self.ax.clear()
+        pass
