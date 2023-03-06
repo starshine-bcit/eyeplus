@@ -17,6 +17,7 @@ from modules.export import DataExporter
 from modules.visualize import TotalUpDown, CumulativeUpDown, PitchLive, HeatMap, TotalUpDownStacked, GazeLive
 from utils.fileutils import validate_import_folder
 from utils.imageutils import create_video_overlay
+from utils.statutils import get_gaze_stats, get_fusion_stats
 
 
 class EyeMainWindow(Ui_MainWindow):
@@ -332,7 +333,6 @@ class EyeMainWindow(Ui_MainWindow):
             self.tableViewRuns.selectRow(0)
             self._table_item_single_clicked(
                 self._title_filter_model.index(0, 0))
-            self._db.get_overall_up_down()
         else:
             self.tabWidgetMain.setEnabled(False)
             QtWidgets.QMessageBox
@@ -349,6 +349,7 @@ class EyeMainWindow(Ui_MainWindow):
         self._selected_run = int(self._runs_model.itemData(runid_index)[0])
         self._load_summary_data()
         self._display_summary_visuals()
+        self._display_summary_text()
         self._update_status(
             f'Successfully loaded summary for runid {self._selected_run}')
 
@@ -639,6 +640,25 @@ class EyeMainWindow(Ui_MainWindow):
         self._visual_review_gaze_live.plot(
             self._tree_predicted2d, self._horizon)
 
+    def _display_summary_text(self) -> None:
+        gaze_stats = get_gaze_stats(self._tree_predicted2d)
+        fusion_stats = get_fusion_stats(self._fusion_data)
+        last_horizon = self._horizon_timestamps[-1]
+        self.plainTextEditSummary.setPlainText(
+            f'Gaze 2D, {gaze_stats["num_samples"]} Observations\n'
+            f'  Mean / Median / Standard Deviation\n'
+            f'  X: {gaze_stats["x"]["mean"]:.4f} / {gaze_stats["x"]["median"]:.4f} / {gaze_stats["x"]["stdev"]:.4f}\n'
+            f'  Y: {gaze_stats["y"]["mean"]:.4f} / {gaze_stats["y"]["median"]:.4f} / {gaze_stats["y"]["stdev"]:.4f}\n\n'
+            f'Sensor Fusion, {fusion_stats["num_samples"]} Observations\n'
+            f'  Mean / Median / Standard Deviation\n'
+            f'  Pitch: {fusion_stats["pitch"]["mean"]:.4f} / {fusion_stats["pitch"]["median"]:.4f} / {fusion_stats["pitch"]["stdev"]:.4f}\n'
+            f'  Roll: {fusion_stats["roll"]["mean"]:.4f} / {fusion_stats["roll"]["median"]:.4f} / {fusion_stats["roll"]["stdev"]:.4f}\n\n'
+            f'Horizon, {self._horizon[last_horizon]["total"]} Observations\n'
+            f'  Count / Proportion\n'
+            f'  Looking Up: {self._horizon[last_horizon]["up_count"]} / {self._horizon[last_horizon]["percent_up"]:.4f}\n'
+            f'  Looking Down: {self._horizon[last_horizon]["down_count"]} / {self._horizon[last_horizon]["percent_down"]:.4f}'
+        )
+
     def _setup_visual_widgets(self) -> None:
         self._visual_summary_up_down = TotalUpDown(
             500, 500, self._dpi)
@@ -666,3 +686,6 @@ class EyeMainWindow(Ui_MainWindow):
         g3_review_parent.removeWidget(self.widgetReviewGraphic3)
         self._visual_review_gaze_live = GazeLive(500, 500, self._dpi)
         g3_review_parent.addWidget(self._visual_review_gaze_live)
+        g1_overall_parent = self.widgetOverallGraphic1.parentWidget().layout()
+        g2_overall_parent = self.widgetOverallGraphic2.parentWidget().layout()
+        g3_overall_parent = self.widgetOverallGraphic3.parentWidget().layout()
