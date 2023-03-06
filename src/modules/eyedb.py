@@ -684,7 +684,7 @@ class EyeDB():
 
         self._cur.execute(drop_view_query)
         self._cur.execute(view_query)
-        
+
     def get_mean_pitch(self, runid: int) -> float:
         if self.check_existing_runid(runid):
             self._cur.execute('''SELECT avg(pitch)
@@ -693,6 +693,26 @@ class EyeDB():
         else:
             raise RuntimeError(
                 f'Trying to select a non-existant ID: {runid}')
+
+    def get_overall_up_down(self) -> dict:
+        self._cur.execute('''SELECT id from run;''')
+        res = self._cur.fetchall()
+        p_up = []
+        p_down = []
+        for runid in res:
+            self._cur.execute('''select id, runid, percentup, percentdown
+                            from processed
+                            where runid=(?)
+                            order by id desc
+                            limit 1;''', runid)
+            line = self._cur.fetchone()
+            p_up.append(line[2])
+            p_down.append(line[3])
+        return {
+            'run_count': len(res),
+            'total_up': sum(p_up) / len(p_up),
+            'total_down': sum(p_down) / len(p_down)
+        }
 
 
 if __name__ == '__main__':

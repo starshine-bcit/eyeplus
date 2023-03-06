@@ -332,6 +332,7 @@ class EyeMainWindow(Ui_MainWindow):
             self.tableViewRuns.selectRow(0)
             self._table_item_single_clicked(
                 self._title_filter_model.index(0, 0))
+            self._db.get_overall_up_down()
         else:
             self.tabWidgetMain.setEnabled(False)
             QtWidgets.QMessageBox
