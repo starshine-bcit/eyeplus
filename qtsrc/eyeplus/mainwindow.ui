@@ -18,7 +18,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidgetMain">
       <property name="currentIndex">
-       <number>0</number>
+       <number>2</number>
       </property>
       <widget class="QWidget" name="tabDataList">
        <attribute name="title">
@@ -552,7 +552,7 @@
            </layout>
           </item>
           <item>
-           <layout class="QVBoxLayout" name="verticalLayoutOverallRight">
+           <layout class="QVBoxLayout" name="verticalLayoutOverallRight" stretch="1,1">
             <item>
              <layout class="QHBoxLayout" name="horizontalLayoutOverallTop">
               <property name="spacing">
@@ -630,7 +630,7 @@
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_3" stretch="0,0">
                <property name="spacing">
-                <number>4</number>
+                <number>0</number>
                </property>
                <property name="leftMargin">
                 <number>1</number>
@@ -648,7 +648,7 @@
                 <widget class="QWidget" name="widgetOverallGraphic3" native="true"/>
                </item>
                <item>
-                <widget class="QScrollBar" name="horizontalScrollBar">
+                <widget class="QScrollBar" name="horizontalScrollBarLongChart">
                  <property name="orientation">
                   <enum>Qt::Horizontal</enum>
                  </property>

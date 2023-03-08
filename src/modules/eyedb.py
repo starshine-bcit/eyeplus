@@ -714,6 +714,25 @@ class EyeDB():
             'total_down': sum(p_down) / len(p_down)
         }
 
+    def get_all_gaze_2dy(self) -> dict:
+        self._cur.execute('''SELECT id from run;''')
+        res = self._cur.fetchall()
+        gaze_data = {}
+        for runid in res:
+            self._cur.execute('''SELECT timestamp, pgaze2dy
+                            FROM pgaze2d
+                            WHERE runid=(?)
+                            ORDER BY id ASC;''', runid)
+            gaze_list = self._cur.fetchall()
+            gaze_data[runid] = {
+                'ts': [],
+                'y': []
+            }
+            for line in gaze_list:
+                gaze_data[runid]['ts'].append(line[0])
+                gaze_data[runid]['y'].append(line[1])
+        return gaze_data
+
 
 if __name__ == '__main__':
     pass

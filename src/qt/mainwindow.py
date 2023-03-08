@@ -14,7 +14,7 @@ from qt.processui import Ui_dialogProcessing
 from qt.helpwindow import Ui_helpDialog
 from qt.parameterwindow import ParameterWindow
 from modules.export import DataExporter
-from modules.visualize import TotalUpDown, CumulativeUpDown, PitchLive, HeatMap, TotalUpDownStacked, GazeLive
+from modules.visualize import TotalUpDown, CumulativeUpDown, PitchLive, HeatMap, TotalUpDownStacked, GazeLive, OverallGaze2DY
 from utils.fileutils import validate_import_folder
 from utils.imageutils import create_video_overlay
 from utils.statutils import get_gaze_stats, get_fusion_stats
@@ -100,6 +100,8 @@ class EyeMainWindow(Ui_MainWindow):
             self._filter_runs)
         self.actionRecalculate.triggered.connect(
             self._update_fusion)
+        self.horizontalScrollBarLongChart.sliderMoved.connect(
+            self._overall_graphic_slider_moved)
 
     def _setup_video(self):
         if 'playback_worker' in self.__dict__:
@@ -333,6 +335,7 @@ class EyeMainWindow(Ui_MainWindow):
             self.tableViewRuns.selectRow(0)
             self._table_item_single_clicked(
                 self._title_filter_model.index(0, 0))
+            self._display_overall_visuals()
         else:
             self.tabWidgetMain.setEnabled(False)
             QtWidgets.QMessageBox
@@ -688,4 +691,20 @@ class EyeMainWindow(Ui_MainWindow):
         g3_review_parent.addWidget(self._visual_review_gaze_live)
         g1_overall_parent = self.widgetOverallGraphic1.parentWidget().layout()
         g2_overall_parent = self.widgetOverallGraphic2.parentWidget().layout()
+
         g3_overall_parent = self.widgetOverallGraphic3.parentWidget().layout()
+        self._visual_overall_gaze2d = OverallGaze2DY(10000, 500, self._dpi)
+        g3_overall_parent.removeWidget(self.widgetOverallGraphic3)
+        g3_overall_parent.removeWidget(self.horizontalScrollBarLongChart)
+        g3_overall_parent.addWidget(self._visual_overall_gaze2d)
+        g3_overall_parent.addWidget(self.horizontalScrollBarLongChart)
+
+    def _display_overall_visuals(self) -> None:
+        self._longest_run = self._visual_overall_gaze2d.plot(
+            self._db.get_all_gaze_2dy())
+        self.horizontalScrollBarLongChart.setMaximum(self._longest_run)
+        self.horizontalScrollBarLongChart.setValue(30)
+        self.horizontalScrollBarLongChart.setMinimum(30)
+
+    def _overall_graphic_slider_moved(self, val: int) -> None:
+        self._visual_overall_gaze2d.update_scroll(val)
