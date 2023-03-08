@@ -14,6 +14,7 @@ mpl.rcParams['axes.titlesize'] = 8
 mpl.rcParams['axes.labelsize'] = 8
 mpl.rcParams['xtick.labelsize'] = 8
 mpl.rcParams['ytick.labelsize'] = 8
+mpl.rcParams['legend.fontsize'] = 'small'
 
 
 class BasicCanvas(FigureCanvasQTAgg):
@@ -279,7 +280,7 @@ class OverallGaze2DY(BasicCanvas):
             if curr_len > max_len:
                 max_len = curr_len
             self.ax.plot(v['ts'], v['y'],
-                         color=curr_colours, linewidth=0.7)
+                         color=curr_colours, linewidth=0.7, label=f'Run {runid[0]}')
         self.ax.set_yticks(
             [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.0])
         self.ax.set_xticks(np.arange(0, max_len, 2))
@@ -287,6 +288,7 @@ class OverallGaze2DY(BasicCanvas):
         self.ax.set_ylim(0.0, 1.0)
         self.ax.set_xlim(0.0, 30.0)
         self.ax.invert_yaxis()
+        self.fig.legend()
         self.fig.canvas.draw()
         return int(max_len)
 
