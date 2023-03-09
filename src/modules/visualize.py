@@ -1,9 +1,12 @@
 
+from random import shuffle
+
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 from matplotlib.animation import FuncAnimation
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+import matplotlib.colors as colours
 import numpy as np
 
 plt.style.use('ggplot')
@@ -177,9 +180,6 @@ class TotalUpDownStacked(BasicCanvas):
 class GazeLive(BasicCanvas):
     def __init__(self, width: int, height: int, dpi: float):
         super().__init__(width, height, dpi)
-        self._current_line = None
-        self._pause = False
-        self.current_timestamp = 0.0
 
     @property
     def is_paused(self) -> bool:
@@ -221,7 +221,9 @@ class GazeLive(BasicCanvas):
         self.ax.set_xlim(x_low, x_high)
 
     def plot(self, gaze2d: dict, processed: dict) -> None:
-        self.ax.clear()
+        self.fig.clear()
+        self.ax = self.fig.add_subplot()
+        self.current_timestamp = 0.0
         self.processed = processed
         self.gaze2d = gaze2d
         self.processed_timestamps = list(processed.keys())
@@ -255,7 +257,42 @@ class GazeLive(BasicCanvas):
         self.ani.pause()
 
     def stop(self) -> None:
+        pass
+
+
+class OverallGaze2DY(BasicCanvas):
+    def __init__(self, width: int, height: int, dpi: float):
+        super().__init__(width, height, dpi)
+        self.colours = [x for x in colours.XKCD_COLORS]
+        shuffle(self.colours)
+        self.colour_index = 0
+
+    def plot(self, gaze_data: dict) -> int:
         self.ax.clear()
+        max_len = 0
+        for runid, v in gaze_data.items():
+            curr_colours = self.colours[self.colour_index]
+            self.colour_index += 1
+            if self.colour_index >= len(self.colours):
+                self.colour_index = 0
+            curr_len = v['ts'][-1]
+            if curr_len > max_len:
+                max_len = curr_len
+            self.ax.plot(v['ts'], v['y'],
+                         color=curr_colours, linewidth=0.7)
+        self.ax.set_yticks(
+            [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.0])
+        self.ax.set_xticks(np.arange(0, max_len, 2))
+        self.ax.set_title('2D Eye Y Over Time For All Runs')
+        self.ax.set_ylim(0.0, 1.0)
+        self.ax.set_xlim(0.0, 30.0)
+        self.ax.invert_yaxis()
+        self.fig.canvas.draw()
+        return int(max_len)
+
+    def update_scroll(self, val: int) -> None:
+        self.ax.set_xlim(float(val - 30), float(val))
+        self.fig.canvas.draw_idle()
 
 
 class OverallUpAndDown(BasicCanvas):

@@ -700,11 +700,11 @@ class EyeDB():
         p_up = []
         p_down = []
         for runid in res:
-            self._cur.execute('''select id, runid, percentup, percentdown
-                            from processed
-                            where runid=(?)
-                            order by id desc
-                            limit 1;''', runid)
+            self._cur.execute('''SELECT id, runid, percentup, percentdown
+                            FROM processed
+                            WHERE runid=(?)
+                            ORDER BY id DESC
+                            LIMIT 1;''', runid)
             line = self._cur.fetchone()
             p_up.append(line[2])
             p_down.append(line[3])
@@ -713,6 +713,25 @@ class EyeDB():
             'total_up': sum(p_up) / len(p_up),
             'total_down': sum(p_down) / len(p_down)
         }
+
+    def get_all_gaze_2dy(self) -> dict:
+        self._cur.execute('''SELECT id from run;''')
+        res = self._cur.fetchall()
+        gaze_data = {}
+        for runid in res:
+            self._cur.execute('''SELECT timestamp, pgaze2dy
+                            FROM pgaze2d
+                            WHERE runid=(?)
+                            ORDER BY id ASC;''', runid)
+            gaze_list = self._cur.fetchall()
+            gaze_data[runid] = {
+                'ts': [],
+                'y': []
+            }
+            for line in gaze_list:
+                gaze_data[runid]['ts'].append(line[0])
+                gaze_data[runid]['y'].append(line[1])
+        return gaze_data
 
 
 if __name__ == '__main__':

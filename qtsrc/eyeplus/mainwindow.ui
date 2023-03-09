@@ -143,7 +143,13 @@
               <number>4</number>
              </property>
              <item>
-              <widget class="QPlainTextEdit" name="plainTextEditSummary"/>
+              <widget class="QPlainTextEdit" name="plainTextEditSummary">
+               <property name="font">
+                <font>
+                 <family>Lucida Sans Typewriter</family>
+                </font>
+               </property>
+              </widget>
              </item>
              <item>
               <widget class="QFrame" name="frameSummaryGraphic1">
@@ -514,7 +520,7 @@
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_5" stretch="1,0">
         <item>
-         <layout class="QHBoxLayout" name="horizontalLayoutOverallMain" stretch="3,5,5">
+         <layout class="QHBoxLayout" name="horizontalLayoutOverallMain" stretch="2,5">
           <property name="spacing">
            <number>4</number>
           </property>
@@ -546,71 +552,74 @@
            </layout>
           </item>
           <item>
-           <layout class="QVBoxLayout" name="verticalLayoutOverallMiddle">
+           <layout class="QVBoxLayout" name="verticalLayoutOverallRight" stretch="1,1">
             <item>
-             <widget class="QFrame" name="frameOverallGraphic1">
-              <property name="frameShape">
-               <enum>QFrame::StyledPanel</enum>
+             <layout class="QHBoxLayout" name="horizontalLayoutOverallTop">
+              <property name="spacing">
+               <number>4</number>
               </property>
-              <property name="frameShadow">
-               <enum>QFrame::Plain</enum>
-              </property>
-              <layout class="QHBoxLayout" name="horizontalLayout_10">
-               <property name="spacing">
-                <number>0</number>
-               </property>
-               <property name="leftMargin">
-                <number>1</number>
-               </property>
-               <property name="topMargin">
-                <number>1</number>
-               </property>
-               <property name="rightMargin">
-                <number>1</number>
-               </property>
-               <property name="bottomMargin">
-                <number>1</number>
-               </property>
-               <item>
-                <widget class="QWidget" name="widgetOverallGraphic1" native="true"/>
-               </item>
-              </layout>
-             </widget>
+              <item>
+               <widget class="QFrame" name="frameOverallGraphic1">
+                <property name="frameShape">
+                 <enum>QFrame::StyledPanel</enum>
+                </property>
+                <property name="frameShadow">
+                 <enum>QFrame::Plain</enum>
+                </property>
+                <layout class="QHBoxLayout" name="horizontalLayout_10">
+                 <property name="spacing">
+                  <number>0</number>
+                 </property>
+                 <property name="leftMargin">
+                  <number>1</number>
+                 </property>
+                 <property name="topMargin">
+                  <number>1</number>
+                 </property>
+                 <property name="rightMargin">
+                  <number>1</number>
+                 </property>
+                 <property name="bottomMargin">
+                  <number>1</number>
+                 </property>
+                 <item>
+                  <widget class="QWidget" name="widgetOverallGraphic1" native="true"/>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+              <item>
+               <widget class="QFrame" name="frameOverallGraphic2">
+                <property name="frameShape">
+                 <enum>QFrame::StyledPanel</enum>
+                </property>
+                <property name="frameShadow">
+                 <enum>QFrame::Plain</enum>
+                </property>
+                <layout class="QHBoxLayout" name="horizontalLayout_11">
+                 <property name="spacing">
+                  <number>0</number>
+                 </property>
+                 <property name="leftMargin">
+                  <number>1</number>
+                 </property>
+                 <property name="topMargin">
+                  <number>1</number>
+                 </property>
+                 <property name="rightMargin">
+                  <number>1</number>
+                 </property>
+                 <property name="bottomMargin">
+                  <number>1</number>
+                 </property>
+                 <item>
+                  <widget class="QWidget" name="widgetOverallGraphic2" native="true"/>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+             </layout>
             </item>
-            <item>
-             <widget class="QFrame" name="frameOverallGraphic2">
-              <property name="frameShape">
-               <enum>QFrame::StyledPanel</enum>
-              </property>
-              <property name="frameShadow">
-               <enum>QFrame::Plain</enum>
-              </property>
-              <layout class="QHBoxLayout" name="horizontalLayout_12">
-               <property name="spacing">
-                <number>0</number>
-               </property>
-               <property name="leftMargin">
-                <number>1</number>
-               </property>
-               <property name="topMargin">
-                <number>1</number>
-               </property>
-               <property name="rightMargin">
-                <number>1</number>
-               </property>
-               <property name="bottomMargin">
-                <number>1</number>
-               </property>
-               <item>
-                <widget class="QWidget" name="widgetOverallGraphic2" native="true"/>
-               </item>
-              </layout>
-             </widget>
-            </item>
-           </layout>
-          </item>
-          <item>
-           <layout class="QVBoxLayout" name="verticalLayoutOverallRight">
             <item>
              <widget class="QFrame" name="frameOverallGraphic3">
               <property name="frameShape">
@@ -619,7 +628,7 @@
               <property name="frameShadow">
                <enum>QFrame::Plain</enum>
               </property>
-              <layout class="QHBoxLayout" name="horizontalLayout_11">
+              <layout class="QVBoxLayout" name="verticalLayout_3" stretch="0,0">
                <property name="spacing">
                 <number>0</number>
                </property>
@@ -638,35 +647,12 @@
                <item>
                 <widget class="QWidget" name="widgetOverallGraphic3" native="true"/>
                </item>
-              </layout>
-             </widget>
-            </item>
-            <item>
-             <widget class="QFrame" name="frameOverallGraphic4">
-              <property name="frameShape">
-               <enum>QFrame::StyledPanel</enum>
-              </property>
-              <property name="frameShadow">
-               <enum>QFrame::Plain</enum>
-              </property>
-              <layout class="QHBoxLayout" name="horizontalLayout_13">
-               <property name="spacing">
-                <number>0</number>
-               </property>
-               <property name="leftMargin">
-                <number>1</number>
-               </property>
-               <property name="topMargin">
-                <number>1</number>
-               </property>
-               <property name="rightMargin">
-                <number>1</number>
-               </property>
-               <property name="bottomMargin">
-                <number>1</number>
-               </property>
                <item>
-                <widget class="QWidget" name="widgetOverallGraphic4" native="true"/>
+                <widget class="QScrollBar" name="horizontalScrollBarLongChart">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                </widget>
                </item>
               </layout>
              </widget>
