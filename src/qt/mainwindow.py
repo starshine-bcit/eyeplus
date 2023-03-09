@@ -168,19 +168,43 @@ class EyeMainWindow(Ui_MainWindow):
             self._visual_review_gaze_live.current_timestamp = curr_timestamp
             if self.player.duration - self.player.time_pos <= 2:
                 curr_timestamp = curr_timestamp - 2
-            closest_fusion = self._fusion_timestamps[-1]
-            for time in self._fusion_timestamps:
-                if time >= curr_timestamp:
-                    closest_fusion = time
-                    break
-            for time in self._gaze_distance_timestamps:
-                if time >= curr_timestamp:
-                    if curr_timestamp - time <= 0.05 and self._gaze_distance[time] is not None:
-                        closest_distance = f'{self._gaze_distance[time]:.4f}'
+            closest_fusion = -1
+            length = len(self._fusion_timestamps)
+            mid = length / 2
+            count = 1
+            while closest_fusion < 0:
+                count += 1
+                diff = length / 2**count
+                mid_point1 = self._fusion_timestamps_dict[int(mid)]
+                mid_point2 = self._fusion_timestamps_dict[int(mid+1)]
+                if curr_timestamp >= mid_point1 and curr_timestamp < mid_point2:
+                    closest_fusion = mid_point1
+                elif curr_timestamp < mid_point1:
+                    mid -= diff
+                else:
+                    mid += diff
+            
+            length = len(self._gaze_distance_timestamps)
+            mid = length / 2
+            closest_distance = -1
+            count = 1
+            while closest_distance < 0:
+                count += 1
+                diff = length / 2**count
+                mid_point1 = self._gaze_distance_timestamps_dict[int(mid)]
+                mid_point2 = self._gaze_distance_timestamps_dict[int(mid+1)]
+                if curr_timestamp >= mid_point1 and curr_timestamp < mid_point2:
+                    if curr_timestamp - mid_point1 <= 0.05 and self._gaze_distance[mid_point1] is not None:
+                        closest_distance = f'{self._gaze_distance[mid_point1]:.4f}'
                         break
                     else:
                         closest_distance = None
                         break
+                elif curr_timestamp < mid_point1:
+                    mid -= diff
+                else:
+                    mid += diff
+
             if self._overlay.overlay_id:
                 self._overlay.remove()
 
@@ -629,8 +653,14 @@ class EyeMainWindow(Ui_MainWindow):
         self._tree_predicted2d = self._db.get_pgazed2d_data(self._selected_run)
         self._gaze_distance = self._db.get_gaze3d_z(self._selected_run)
         self._gaze_distance_timestamps = list(self._gaze_distance.keys())
+        self._gaze_distance_timestamps_dict = {}
+        for i,j in enumerate(self._gaze_distance_timestamps):
+            self._gaze_distance_timestamps_dict[i] = j
         self._fusion_data = self._db.get_fusion_data(self._selected_run)
         self._fusion_timestamps = list(self._fusion_data.keys())
+        self._fusion_timestamps_dict = {}
+        for i,j in enumerate(self._fusion_timestamps):
+            self._fusion_timestamps_dict[i] = j
         self._horizon = self._db.get_processed_data(self._selected_run)
         self._horizon_timestamps = list(self._horizon.keys())
         self.parameter_window.set_values(

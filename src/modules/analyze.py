@@ -15,7 +15,13 @@ class HorizonGaze():
         self._gaze2d_ts = list(self._gaze2d.keys())
         self._length = len(self._gaze2d_ts) - 2
         self._fused_ts = list(self._fused.keys())
+        self._fused_ts_dict = {}
+        for i,j in enumerate(self._fused_ts):
+            self._fused_ts_dict[i] = j
         self._gaze3d_ts = list(self._gaze3d.keys())
+        self._gaze3d_ts_dict = {}
+        for i,j in enumerate(self._gaze3d_ts):
+            self._gaze3d_ts_dict[i] = j
 
     def calculates_all(self) -> dict:
         while self._count < self._length:
@@ -57,20 +63,56 @@ class HorizonGaze():
             self._total_readings += 1
 
     def _get_close_3d(self, timestamp: float) -> float | None:
-        for time in self._gaze3d_ts:
-            if time >= timestamp:
-                if timestamp - time <= 0.05:
-                    return time
+        length = len(self._gaze3d_ts)
+        mid = length / 2
+        time = -1
+        count = 1
+        while time < 0:
+            count += 1
+            diff = length / 2**count
+            mid_point1 = self._gaze3d_ts_dict[int(mid)]
+            try:
+                mid_point2 = self._gaze3d_ts_dict[int(mid+1)]
+            except KeyError:
+                return self._gaze3d_ts_dict[length -1]
+            if timestamp >= mid_point1 and timestamp <= mid_point2:
+                left = timestamp - mid_point1
+                right = mid_point2 - timestamp
+                if left < right and left <= 0.05:
+                    return mid_point1
+                elif right >= left and right <= 0.05:
+                    return mid_point2
                 else:
                     return None
+            elif timestamp < mid_point1:
+                mid -= diff
             else:
-                return None
+                mid += diff
 
     def _get_close_fuse(self, timestamp: float) -> float:
-        for time in self._fused_ts:
-            if time >= timestamp:
-                return time
-        return self._fused_ts[-1]
+        length = len(self._fused_ts)
+        mid = length / 2
+        closest_fused = -1
+        count = 1
+        while closest_fused < 0:
+            count += 1
+            diff = length / 2**count
+            mid_point1 = self._fused_ts_dict[int(mid)]
+            try:
+                mid_point2 = self._fused_ts_dict[int(mid + 1)]
+            except KeyError:
+                return self._fused_ts_dict[length-1]
+            if timestamp >= mid_point1 and timestamp <= mid_point2:
+                left = timestamp - mid_point1
+                right = mid_point2 - timestamp
+                if left < right:
+                    return mid_point1
+                else:
+                    return mid_point2
+            elif timestamp < mid_point1:
+                mid -= diff
+            else:
+                mid += diff
 
     def _calculate_up(self, slope: float, y_intercept: float, gaze_x: float, gaze_y: float, gaze_distance: float | None) -> bool:
         # make horizon fuzzy somehow
