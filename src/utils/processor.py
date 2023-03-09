@@ -7,7 +7,7 @@ from modules.analyze import HorizonGaze
 from utils.statutils import calc_horizon_line, get_roll_offset
 
 
-def ingest_and_process(cb_progress, eyedb: EyeDB, paths: list[Path], type: str = 'zip', horizon_offset: float = 0.10, pitch_multi: float = 1.4) -> None:
+def ingest_and_process(cb_progress, eyedb: EyeDB, paths: list[Path], type: str = 'zip', horizon_offset: float = 0.13, pitch_multi: float = 1.6) -> None:
     progress = 0.0
     cb_progress('Beginning to ingest data...', progress)
     runs_to_process = eyedb.ingest_data(paths, type)
@@ -49,6 +49,9 @@ def ingest_and_process(cb_progress, eyedb: EyeDB, paths: list[Path], type: str =
 
 
 def reprocess(cb_progress, eyedb: EyeDB, runids: list[int], roll_offset: int, pitch_multi: float, horizon_offset: float) -> None:
+    print(roll_offset)
+    print(pitch_multi)
+    print(horizon_offset)
     progress = 0.0
     cb_progress('Beginning to reprocess data...', progress)
     max_run = len(runids)
