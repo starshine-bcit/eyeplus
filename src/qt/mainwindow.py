@@ -14,9 +14,10 @@ from qt.processui import Ui_dialogProcessing
 from qt.helpwindow import Ui_helpDialog
 from qt.parameterwindow import ParameterWindow
 from modules.export import DataExporter
-from modules.visualize import TotalUpDown, CumulativeUpDown, PitchLive, HeatMap, TotalUpDownStacked
+from modules.visualize import TotalUpDown, CumulativeUpDown, PitchLive, HeatMap, TotalUpDownStacked, GazeLive, OverallGaze2DY
 from utils.fileutils import validate_import_folder
 from utils.imageutils import create_video_overlay
+from utils.statutils import get_gaze_stats, get_fusion_stats
 
 
 class EyeMainWindow(Ui_MainWindow):
@@ -99,6 +100,8 @@ class EyeMainWindow(Ui_MainWindow):
             self._filter_runs)
         self.actionRecalculate.triggered.connect(
             self._update_fusion)
+        self.horizontalScrollBarLongChart.sliderMoved.connect(
+            self._overall_graphic_slider_moved)
 
     def _setup_video(self):
         if 'playback_worker' in self.__dict__:
@@ -159,7 +162,10 @@ class EyeMainWindow(Ui_MainWindow):
             curr_timestamp = round(self.player.time_pos, 1)
             if self._visual_review_pitch.is_paused:
                 self._visual_review_pitch.start()
+            if self._visual_review_gaze_live.is_paused:
+                self._visual_review_gaze_live.start()
             self._visual_review_pitch.current_timestamp = curr_timestamp
+            self._visual_review_gaze_live.current_timestamp = curr_timestamp
             if self.player.duration - self.player.time_pos <= 2:
                 curr_timestamp = curr_timestamp - 2
             closest_fusion = self._fusion_timestamps[-1]
@@ -236,6 +242,7 @@ class EyeMainWindow(Ui_MainWindow):
         self.horizontalSliderVolume.setEnabled(False)
         self.actionMute.setEnabled(False)
         self._visual_review_pitch.stop()
+        self._visual_review_gaze_live.stop()
         self._reset_stats_text()
         self._update_status('Playback stopped')
 
@@ -260,9 +267,11 @@ class EyeMainWindow(Ui_MainWindow):
         if self.player.pause:
             self.player.command('set', 'pause', 'no')
             self._visual_review_pitch.start()
+            self._visual_review_gaze_live.start()
         else:
             self.player.command('set', 'pause', 'yes')
             self._visual_review_pitch.pause()
+            self._visual_review_gaze_live.pause()
 
     def _stop_clicked(self):
         self.parameter_window.hide()
@@ -326,6 +335,7 @@ class EyeMainWindow(Ui_MainWindow):
             self.tableViewRuns.selectRow(0)
             self._table_item_single_clicked(
                 self._title_filter_model.index(0, 0))
+            self._display_overall_visuals()
         else:
             self.tabWidgetMain.setEnabled(False)
             QtWidgets.QMessageBox
@@ -340,15 +350,16 @@ class EyeMainWindow(Ui_MainWindow):
         original_index = self._title_filter_model.mapToSource(index)
         runid_index = self._runs_model.index(original_index.row(), 0)
         self._selected_run = int(self._runs_model.itemData(runid_index)[0])
+        self._roll_offset, self._pitch_multi, self._horizon_offset = self._db.get_parameters(
+            self._selected_run)
         self._load_summary_data()
         self._display_summary_visuals()
+        self._display_summary_text()
         self._update_status(
             f'Successfully loaded summary for runid {self._selected_run}')
 
     def _open_review_clicked(self) -> None:
         self._gaze = self._db.get_gaze_data(self._selected_run)
-        self._roll_offset, self._pitch_multi, self._horizon_offset = self._db.get_parameters(
-            self._selected_run)
         self._setup_video()
         self.actionPlay.setEnabled(True)
         self.tabWidgetMain.tabBar().setHidden(False)
@@ -573,7 +584,7 @@ class EyeMainWindow(Ui_MainWindow):
 
     def _show_parameter_window(self) -> None:
         self.parameter_window.set_values(
-            self._roll_offset, self._pitch_multi, -self._horizon_offset)
+            int(self._roll_offset), self._pitch_multi, -self._horizon_offset)
         self.parameter_window.show()
         self.parameter_window.setFocus()
         self.parameter_window.move(250, 600)
@@ -629,6 +640,29 @@ class EyeMainWindow(Ui_MainWindow):
         mean_pitch = self._db.get_mean_pitch(self._selected_run)
         self._visual_review_mean_pitch.plot(
             self._horizon[self._horizon_timestamps[-1]], mean_pitch)
+        self._visual_review_gaze_live.plot(
+            self._tree_predicted2d, self._horizon)
+
+    def _display_summary_text(self) -> None:
+        gaze_stats = get_gaze_stats(self._tree_predicted2d)
+        fusion_stats = get_fusion_stats(self._fusion_data)
+        last_horizon = self._horizon_timestamps[-1]
+        self.plainTextEditSummary.setPlainText(
+            f'Gaze 2D, {gaze_stats["num_samples"]} Observations\n'
+            f'  Mean / Median / Standard Deviation\n'
+            f'  X: {gaze_stats["x"]["mean"]:.4f} / {gaze_stats["x"]["median"]:.4f} / {gaze_stats["x"]["stdev"]:.4f}\n'
+            f'  Y: {gaze_stats["y"]["mean"]:.4f} / {gaze_stats["y"]["median"]:.4f} / {gaze_stats["y"]["stdev"]:.4f}\n\n'
+            f'Sensor Fusion, {fusion_stats["num_samples"]} Observations\n'
+            f'  Mean / Median / Standard Deviation\n'
+            f'  Pitch: {fusion_stats["pitch"]["mean"]:.4f} / {fusion_stats["pitch"]["median"]:.4f} / {fusion_stats["pitch"]["stdev"]:.4f}\n'
+            f'  Roll: {fusion_stats["roll"]["mean"]:.4f} / {fusion_stats["roll"]["median"]:.4f} / {fusion_stats["roll"]["stdev"]:.4f}\n\n'
+            f'Horizon, {self._horizon[last_horizon]["total"]} Observations\n'
+            f'  Count / Proportion\n'
+            f'  Looking Up: {self._horizon[last_horizon]["up_count"]} / {self._horizon[last_horizon]["percent_up"]:.4f}\n'
+            f'  Looking Down: {self._horizon[last_horizon]["down_count"]} / {self._horizon[last_horizon]["percent_down"]:.4f}\n\n'
+            f'Offsets\n'
+            f'  Horizon: {-self._horizon_offset:.2f}, Roll: {self._roll_offset}, Pitch: {self._pitch_multi:.2f}'
+        )
 
     def _setup_visual_widgets(self) -> None:
         self._visual_summary_up_down = TotalUpDown(
@@ -654,3 +688,25 @@ class EyeMainWindow(Ui_MainWindow):
         g2_review_parent.removeWidget(self.widgetReviewGraphic2)
         g2_review_parent.addWidget(self._visual_review_pitch)
         g3_review_parent = self.widgetReviewGraphic3.parentWidget().layout()
+        g3_review_parent.removeWidget(self.widgetReviewGraphic3)
+        self._visual_review_gaze_live = GazeLive(500, 500, self._dpi)
+        g3_review_parent.addWidget(self._visual_review_gaze_live)
+        g1_overall_parent = self.widgetOverallGraphic1.parentWidget().layout()
+        g2_overall_parent = self.widgetOverallGraphic2.parentWidget().layout()
+
+        g3_overall_parent = self.widgetOverallGraphic3.parentWidget().layout()
+        self._visual_overall_gaze2d = OverallGaze2DY(10000, 500, self._dpi)
+        g3_overall_parent.removeWidget(self.widgetOverallGraphic3)
+        g3_overall_parent.removeWidget(self.horizontalScrollBarLongChart)
+        g3_overall_parent.addWidget(self._visual_overall_gaze2d)
+        g3_overall_parent.addWidget(self.horizontalScrollBarLongChart)
+
+    def _display_overall_visuals(self) -> None:
+        self._longest_run = self._visual_overall_gaze2d.plot(
+            self._db.get_all_gaze_2dy())
+        self.horizontalScrollBarLongChart.setMaximum(self._longest_run)
+        self.horizontalScrollBarLongChart.setValue(30)
+        self.horizontalScrollBarLongChart.setMinimum(30)
+
+    def _overall_graphic_slider_moved(self, val: int) -> None:
+        self._visual_overall_gaze2d.update_scroll(val)

@@ -625,6 +625,8 @@ class EyeDB():
         else:
             raise RuntimeError(f'Trying to select a non-existant ID: {runid}')
 
+        self.update_processed_view()
+
     def get_processed_data(self, runid: int) -> dict:
         processed_dict = {}
         self._cur.execute(
@@ -668,6 +670,21 @@ class EyeDB():
         self._cur.executemany(update_query, update_list)
         self._con.commit()
 
+    def update_processed_view(self) -> None:
+        drop_view_query = '''DROP VIEW IF EXISTS overall_percentage_view;'''
+        view_query = '''
+                CREATE VIEW overall_percentage_view
+                AS SELECT a.runid, a.percentup, a.percentdown
+                FROM processed a
+                INNER JOIN (
+                    SELECT runid, MAX(totalcount) totalcount
+                    FROM processed
+                    GROUP BY runid)
+                b ON a.runid = b.runid AND a.totalcount = b.totalcount;'''
+
+        self._cur.execute(drop_view_query)
+        self._cur.execute(view_query)
+
     def get_mean_pitch(self, runid: int) -> float:
         if self.check_existing_runid(runid):
             self._cur.execute('''SELECT avg(pitch)
@@ -676,6 +693,45 @@ class EyeDB():
         else:
             raise RuntimeError(
                 f'Trying to select a non-existant ID: {runid}')
+
+    def get_overall_up_down(self) -> dict:
+        self._cur.execute('''SELECT id from run;''')
+        res = self._cur.fetchall()
+        p_up = []
+        p_down = []
+        for runid in res:
+            self._cur.execute('''SELECT id, runid, percentup, percentdown
+                            FROM processed
+                            WHERE runid=(?)
+                            ORDER BY id DESC
+                            LIMIT 1;''', runid)
+            line = self._cur.fetchone()
+            p_up.append(line[2])
+            p_down.append(line[3])
+        return {
+            'run_count': len(res),
+            'total_up': sum(p_up) / len(p_up),
+            'total_down': sum(p_down) / len(p_down)
+        }
+
+    def get_all_gaze_2dy(self) -> dict:
+        self._cur.execute('''SELECT id from run;''')
+        res = self._cur.fetchall()
+        gaze_data = {}
+        for runid in res:
+            self._cur.execute('''SELECT timestamp, pgaze2dy
+                            FROM pgaze2d
+                            WHERE runid=(?)
+                            ORDER BY id ASC;''', runid)
+            gaze_list = self._cur.fetchall()
+            gaze_data[runid] = {
+                'ts': [],
+                'y': []
+            }
+            for line in gaze_list:
+                gaze_data[runid]['ts'].append(line[0])
+                gaze_data[runid]['y'].append(line[1])
+        return gaze_data
 
 
 if __name__ == '__main__':
