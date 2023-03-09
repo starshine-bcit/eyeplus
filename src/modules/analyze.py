@@ -74,10 +74,14 @@ class HorizonGaze():
             try:
                 mid_point2 = self._gaze3d_ts_dict[int(mid+1)]
             except KeyError:
-                mid_point2 = self._gaze3d_ts_dict[length -1]
-            if timestamp >= mid_point1 and timestamp <= mid_point2+1:
-                if timestamp - mid_point1 <= 0.05:
+                return self._gaze3d_ts_dict[length -1]
+            if timestamp >= mid_point1 and timestamp <= mid_point2:
+                left = timestamp - mid_point1
+                right = mid_point2 - timestamp
+                if left < right and left <= 0.05:
                     return mid_point1
+                elif right >= left and right <= 0.05:
+                    return mid_point2
                 else:
                     return None
             elif timestamp < mid_point1:
@@ -97,9 +101,14 @@ class HorizonGaze():
             try:
                 mid_point2 = self._fused_ts_dict[int(mid + 1)]
             except KeyError:
-                mid_point2 = self._fused_ts_dict[length-1]
-            if timestamp >= mid_point1 and timestamp <= mid_point2+1:
-                return mid_point1
+                return self._fused_ts_dict[length-1]
+            if timestamp >= mid_point1 and timestamp <= mid_point2:
+                left = timestamp - mid_point1
+                right = mid_point2 - timestamp
+                if left < right:
+                    return mid_point1
+                else:
+                    return mid_point2
             elif timestamp < mid_point1:
                 mid -= diff
             else:
