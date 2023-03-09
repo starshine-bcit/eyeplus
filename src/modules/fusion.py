@@ -175,17 +175,17 @@ class Fusion():
 
     def calc_horizon_line(self, roll_offset: int, pitch_multi) -> None:
         for k, v in self.results.items():
-            v['roll'] += roll_offset
-            v['pitch'] *= pitch_multi
+            roll = v['roll'] + roll_offset
+            pitch = v['pitch'] * pitch_multi
             # calculate slope based off head tilt
-            theta = v['roll'] + 90
+            theta = roll + 90
             if theta != 90 or theta != -90:
                 slope = tan(radians(theta))
             else:
                 slope = float('inf')
 
             # calculate intercepts as percentage of screen based off head pitch and slope
-            theta = v['pitch']
+            theta = -pitch
 
             fov_constant = 0.25  # determined so that looking up 45 degrees would move the slope down 25 percent of the screen, and vice versa
 

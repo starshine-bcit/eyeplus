@@ -159,14 +159,15 @@ class TotalUpDownStacked(BasicCanvas):
     def __init__(self, width: int, height: int, dpi: float):
         super().__init__(width, height, dpi)
 
-    def plot(self, up_down: dict, mean_pitch: float) -> None:
+    def plot(self, up_down: dict, fusion: dict, pitch_multi: float) -> None:
         self.ax.clear()
         self.up_down = up_down
-        self.mean_pitch = mean_pitch
+        pitch_data = [v['pitch'] * pitch_multi for v in fusion.values()]
+        self.mean_pitch = np.mean(pitch_data)
         x = ['Up/Down', 'Avg. Pitch']
         y1 = [up_down['percent_down']]
         y1_2 = [up_down['percent_up']]
-        y2 = [(mean_pitch + 15) / 30]
+        y2 = [(self.mean_pitch + 15) / 30]
         self.ax.set_ybound(0.0, 1.0)
         self.ax.set_title(
             'Total Up/Down vs. Mean Pitch')

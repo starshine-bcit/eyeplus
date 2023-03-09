@@ -198,6 +198,9 @@ class EyeMainWindow(Ui_MainWindow):
             percent_down = self._horizon[curr_timestamp]['percent_down']
             currently_up = self._horizon[curr_timestamp]['currently_up']
 
+            # roll_diff = self._loaded_roll_offset - self._roll_offset
+            # pitch_diff = self._loaded_roll_offset- self._pitch_multi
+
             roll += self._roll_offset
             pitch *= self._pitch_multi
 
@@ -637,9 +640,8 @@ class EyeMainWindow(Ui_MainWindow):
         self._visual_summary_up_down.plot(
             self._horizon[self._horizon_timestamps[-1]])
         self._visual_review_heat_map.plot(self._tree_predicted2d)
-        mean_pitch = self._db.get_mean_pitch(self._selected_run)
         self._visual_review_mean_pitch.plot(
-            self._horizon[self._horizon_timestamps[-1]], mean_pitch)
+            self._horizon[self._horizon_timestamps[-1]], self._fusion_data, self._pitch_multi)
         self._visual_review_gaze_live.plot(
             self._tree_predicted2d, self._horizon)
 

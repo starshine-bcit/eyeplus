@@ -6,7 +6,7 @@ from modules.fusion import Fusion
 from modules.analyze import HorizonGaze
 
 
-def ingest_and_process(cb_progress, eyedb: EyeDB, paths: list[Path], type: str = 'zip', horizon_offset: float = 0.15, pitch_multi: float = 1.5) -> None:
+def ingest_and_process(cb_progress, eyedb: EyeDB, paths: list[Path], type: str = 'zip', horizon_offset: float = 0.10, pitch_multi: float = 1.4) -> None:
     progress = 0.0
     cb_progress('Beginning to ingest data...', progress)
     runs_to_process = eyedb.ingest_data(paths, type)
