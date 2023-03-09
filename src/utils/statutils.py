@@ -1,3 +1,5 @@
+from math import tan, radians
+
 import numpy as np
 
 
@@ -34,3 +36,41 @@ def get_fusion_stats(fusion: dict) -> dict:
     }
     fusion_stats['num_samples'] = len(fusion)
     return fusion_stats
+
+
+def get_roll_offset(fusion: dict) -> float:
+    roll_vals = [v['roll'] for v in fusion.values()]
+    avg_roll = int((sum(roll_vals) / len(roll_vals)))
+    roll_offset = -90 - avg_roll
+    return roll_offset
+
+
+def calc_horizon_line(fusion: dict, roll_offset: int, pitch_multi: float) -> dict:
+    for k, v in fusion.items():
+        roll = v['roll'] + roll_offset
+        pitch = v['pitch'] * pitch_multi
+        # calculate slope based off head tilt
+        theta = roll + 90
+        if theta != 90 or theta != -90:
+            slope = tan(radians(theta))
+        else:
+            slope = float('inf')
+
+        # calculate intercepts as percentage of screen based off head pitch and slope
+        theta = pitch
+
+        fov_constant = 0.25  # determined so that looking up 45 degrees would move the slope down 25 percent of the screen, and vice versa
+
+        if theta >= 0:
+            y_intercept = 0.5 - tan(radians(theta))*fov_constant
+        elif theta < 0:
+            theta = -theta
+            y_intercept = 0.5 + tan(radians(theta))*fov_constant
+
+        x_intercept = -y_intercept / slope
+
+        fusion[k]['y_intercept'] = y_intercept
+        fusion[k]['x_intercept'] = x_intercept
+        fusion[k]['slope'] = slope
+
+    return fusion

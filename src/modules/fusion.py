@@ -1,4 +1,4 @@
-from math import sqrt, atan2, asin, degrees, radians, tan
+from math import sqrt, atan2, asin, degrees, radians
 
 from modules.regressor import RegressionMagnetometerModel
 
@@ -167,43 +167,4 @@ class Fusion():
                 'q': self.q,
             }
 
-    def get_mean_roll(self) -> float:
-        roll_vals = [v['roll'] for v in self.results.values()]
-        avg_roll = int((sum(roll_vals) / len(roll_vals)))
-        roll_offset = -90 - avg_roll
-        return roll_offset
-
-    def calc_horizon_line(self, roll_offset: int, pitch_multi) -> None:
-        for k, v in self.results.items():
-            roll = v['roll'] + roll_offset
-            pitch = v['pitch'] * pitch_multi
-            # calculate slope based off head tilt
-            theta = roll + 90
-            if theta != 90 or theta != -90:
-                slope = tan(radians(theta))
-            else:
-                slope = float('inf')
-
-            # calculate intercepts as percentage of screen based off head pitch and slope
-            theta = -pitch
-
-            fov_constant = 0.25  # determined so that looking up 45 degrees would move the slope down 25 percent of the screen, and vice versa
-
-            if theta >= 0:
-                y_intercept = 0.5 - tan(radians(theta))*fov_constant
-            elif theta < 0:
-                theta = -theta
-                y_intercept = 0.5 + tan(radians(theta))*fov_constant
-
-            x_intercept = -y_intercept / slope
-
-            self.results[k]['y_intercept'] = y_intercept
-            self.results[k]['x_intercept'] = x_intercept
-            self.results[k]['slope'] = slope
-
-    def get_results(self) -> dict:
         return self.results
-
-
-def main():
-    pass
