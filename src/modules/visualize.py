@@ -256,3 +256,52 @@ class GazeLive(BasicCanvas):
 
     def stop(self) -> None:
         self.ax.clear()
+
+
+class OverallUpAndDown(BasicCanvas):
+    def __init__(self, width: int, height: int, dpi: float):
+        super().__init__(width, height, dpi)
+
+    def plot(self, up_down_list: list[dict]) -> None:
+        self.ax.clear()
+        num_runs = len(up_down_list)
+        percent_down = sum([d['percent_down']
+                           for d in up_down_list]) / num_runs
+        percent_up = sum([d['percent_up'] for d in up_down_list]) / num_runs
+        x = ['Up/Down']
+        y1 = [percent_down]
+        y1_2 = [percent_up]
+        self.ax.set_ybound(0.0, 1.0)
+        self.ax.set_title(
+            'Proportion of Time Looking Up/Down ({} runs)'.format(num_runs))
+        self.ax.bar(x[0], y1, color='firebrick')
+        self.ax.bar(x[0], y1_2, bottom=y1, color='mediumseagreen')
+        self.ax.set_yticklabels([])
+        self.ax.text(0, y1[0] + 0.05,
+                     str(round(y1[0] * 100, 2)) + '%', ha='center')
+        self.ax.text(0, y1[0] + y1_2[0] + 0.05,
+                     str(round(y1_2[0] * 100, 2)) + '%', ha='center')
+        self.fig.canvas.draw()
+
+
+# create a class that takes data from mean_pitch and make a binned histogram with database query
+class PitchHistogram(BasicCanvas):
+    def __init__(self, width: int, height: int, dpi: float):
+        super().__init__(width, height, dpi)
+
+    def plot(self, mean_pitch: float) -> None:
+        self.ax.clear()
+        self.ax.set_title('Pitch Histogram')
+        self.ax.set_xlabel('Pitch')
+        self.ax.set_ylabel('Frequency')
+        self.ax.hist(mean_pitch, bins=20, color='darkviolet')
+        self.fig.canvas.draw()
+
+    # create a function with database query to get the mean pitch for all the runs
+    def get_mean_pitch(self):
+        mean_pitch = []
+        for i in range(1, 11):
+            query = "SELECT mean_pitch FROM run WHERE run_id = {}".format(i)
+            cursor.execute(query)
+            mean_pitch.append(cursor.fetchall()[0][0])
+        return mean_pitch
