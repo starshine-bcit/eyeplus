@@ -350,6 +350,8 @@ class EyeMainWindow(Ui_MainWindow):
         original_index = self._title_filter_model.mapToSource(index)
         runid_index = self._runs_model.index(original_index.row(), 0)
         self._selected_run = int(self._runs_model.itemData(runid_index)[0])
+        self._roll_offset, self._pitch_multi, self._horizon_offset = self._db.get_parameters(
+            self._selected_run)
         self._load_summary_data()
         self._display_summary_visuals()
         self._display_summary_text()
@@ -358,8 +360,6 @@ class EyeMainWindow(Ui_MainWindow):
 
     def _open_review_clicked(self) -> None:
         self._gaze = self._db.get_gaze_data(self._selected_run)
-        self._roll_offset, self._pitch_multi, self._horizon_offset = self._db.get_parameters(
-            self._selected_run)
         self._setup_video()
         self.actionPlay.setEnabled(True)
         self.tabWidgetMain.tabBar().setHidden(False)
@@ -584,7 +584,7 @@ class EyeMainWindow(Ui_MainWindow):
 
     def _show_parameter_window(self) -> None:
         self.parameter_window.set_values(
-            self._roll_offset, self._pitch_multi, -self._horizon_offset)
+            int(self._roll_offset), self._pitch_multi, -self._horizon_offset)
         self.parameter_window.show()
         self.parameter_window.setFocus()
         self.parameter_window.move(250, 600)
@@ -659,7 +659,9 @@ class EyeMainWindow(Ui_MainWindow):
             f'Horizon, {self._horizon[last_horizon]["total"]} Observations\n'
             f'  Count / Proportion\n'
             f'  Looking Up: {self._horizon[last_horizon]["up_count"]} / {self._horizon[last_horizon]["percent_up"]:.4f}\n'
-            f'  Looking Down: {self._horizon[last_horizon]["down_count"]} / {self._horizon[last_horizon]["percent_down"]:.4f}'
+            f'  Looking Down: {self._horizon[last_horizon]["down_count"]} / {self._horizon[last_horizon]["percent_down"]:.4f}\n\n'
+            f'Offsets\n'
+            f'  Horizon: {-self._horizon_offset:.2f}, Roll: {self._roll_offset}, Pitch: {self._pitch_multi:.2f}'
         )
 
     def _setup_visual_widgets(self) -> None:

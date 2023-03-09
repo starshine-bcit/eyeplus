@@ -13,7 +13,7 @@ class IngestWorkerSignals(QtCore.QObject):
 
 
 class IngestWorker(QtCore.QRunnable):
-    def __init__(self, db_path: Path, paths: list[Path], type: str = 'zip', horizon_offset: float = 0.0) -> None:
+    def __init__(self, db_path: Path, paths: list[Path], type: str = 'zip', horizon_offset: float = 0.15) -> None:
         super().__init__()
         self.signals = IngestWorkerSignals()
         self.db_path = db_path

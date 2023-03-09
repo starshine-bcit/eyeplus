@@ -21,10 +21,8 @@ class Fusion():
     # Optional offset for true north. A +ve value adds to heading
     declination = 0
 
-    def __init__(self, imu_data: dict, mag_data: dict, roll_offset: int = 90, pitch_multi: float = 1.0) -> None:
+    def __init__(self, imu_data: dict, mag_data: dict) -> None:
         # local magnetic bias factors: set from calibration
-        self.roll_diff = roll_offset - 90
-        self.pitch_multi = pitch_multi
         self.magbias = (0, 0, 0)
         self.expect_ts = True
         self.q = [1.0, 0.0, 0.0, 0.0]
@@ -50,7 +48,7 @@ class Fusion():
                 'magnetometer': predicted_mag[k]
             }
 
-    def run(self):
+    def run(self) -> None:
         for k, v in self.all_data.items():
             accel = v['accelerometer']
             gyro = v['gyroscope']
@@ -162,39 +160,48 @@ class Fusion():
             self.roll = degrees(atan2(2.0 * (self.q[0] * self.q[1] + self.q[2] * self.q[3]),
                                       self.q[0] * self.q[0] - self.q[1] * self.q[1] - self.q[2] * self.q[2] + self.q[3] * self.q[3]))
 
-            self.roll += self.roll_diff
-            self.pitch *= self.pitch_multi
-
-            # calculate slope based off head tilt
-            theta = self.roll + 90
-            if theta != 90 or theta != -90:
-                self.slope = tan(radians(theta))
-            else:
-                self.slope = float('inf')
-
-            # calculate intercepts as percentage of screen based off head pitch and slope
-            theta = self.pitch
-
-            fov_constant = 0.25  # determined so that looking up 45 degrees would move the slope down 25 percent of the screen, and vice versa
-
-            if theta >= 0:
-                self.y_intercept = 0.5 - tan(radians(theta))*fov_constant
-            elif theta < 0:
-                theta = -theta
-                self.y_intercept = 0.5 + tan(radians(theta))*fov_constant
-
-            self.x_intercept = -self.y_intercept/self.slope
-
             self.results[ts] = {
                 'heading': self.heading,
                 'pitch': self.pitch,
                 'roll': self.roll,
                 'q': self.q,
-                'y_intercept': self.y_intercept,
-                'x_intercept': self.x_intercept,
-                'slope': self.slope
             }
 
+    def get_mean_roll(self) -> float:
+        roll_vals = [v['roll'] for v in self.results.values()]
+        avg_roll = int((sum(roll_vals) / len(roll_vals)))
+        roll_offset = -90 - avg_roll
+        return roll_offset
+
+    def calc_horizon_line(self, roll_offset: int, pitch_multi) -> None:
+        for k, v in self.results.items():
+            v['roll'] += roll_offset
+            v['pitch'] *= pitch_multi
+            # calculate slope based off head tilt
+            theta = v['roll'] + 90
+            if theta != 90 or theta != -90:
+                slope = tan(radians(theta))
+            else:
+                slope = float('inf')
+
+            # calculate intercepts as percentage of screen based off head pitch and slope
+            theta = v['pitch']
+
+            fov_constant = 0.25  # determined so that looking up 45 degrees would move the slope down 25 percent of the screen, and vice versa
+
+            if theta >= 0:
+                y_intercept = 0.5 - tan(radians(theta))*fov_constant
+            elif theta < 0:
+                theta = -theta
+                y_intercept = 0.5 + tan(radians(theta))*fov_constant
+
+            x_intercept = -y_intercept / slope
+
+            self.results[k]['y_intercept'] = y_intercept
+            self.results[k]['x_intercept'] = x_intercept
+            self.results[k]['slope'] = slope
+
+    def get_results(self) -> dict:
         return self.results
 
 
