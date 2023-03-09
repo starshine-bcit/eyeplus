@@ -675,7 +675,7 @@ class EyeDB():
         drop_view_query = '''DROP VIEW IF EXISTS overall_percentage_view;'''
         view_query = '''
                 CREATE VIEW overall_percentage_view
-                AS SELECT a.runid, a.percentup, a.percentdown
+                AS SELECT a.runid, a.percentup, a.percentdown, a.upcount, a.downcount, a.totalcount
                 FROM processed a
                 INNER JOIN (
                     SELECT runid, MAX(totalcount) totalcount

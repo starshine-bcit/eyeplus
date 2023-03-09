@@ -168,19 +168,43 @@ class EyeMainWindow(Ui_MainWindow):
             self._visual_review_gaze_live.current_timestamp = curr_timestamp
             if self.player.duration - self.player.time_pos <= 2:
                 curr_timestamp = curr_timestamp - 2
-            closest_fusion = self._fusion_timestamps[-1]
-            for time in self._fusion_timestamps:
-                if time >= curr_timestamp:
-                    closest_fusion = time
-                    break
-            for time in self._gaze_distance_timestamps:
-                if time >= curr_timestamp:
-                    if curr_timestamp - time <= 0.05 and self._gaze_distance[time] is not None:
-                        closest_distance = f'{self._gaze_distance[time]:.4f}'
+            closest_fusion = -1
+            length = len(self._fusion_timestamps)
+            mid = length / 2
+            count = 1
+            while closest_fusion < 0:
+                count += 1
+                diff = length / 2**count
+                mid_point1 = self._fusion_timestamps_dict[int(mid)]
+                mid_point2 = self._fusion_timestamps_dict[int(mid+1)]
+                if curr_timestamp >= mid_point1 and curr_timestamp < mid_point2:
+                    closest_fusion = mid_point1
+                elif curr_timestamp < mid_point1:
+                    mid -= diff
+                else:
+                    mid += diff
+            
+            length = len(self._gaze_distance_timestamps)
+            mid = length / 2
+            closest_distance = -1
+            count = 1
+            while closest_distance < 0:
+                count += 1
+                diff = length / 2**count
+                mid_point1 = self._gaze_distance_timestamps_dict[int(mid)]
+                mid_point2 = self._gaze_distance_timestamps_dict[int(mid+1)]
+                if curr_timestamp >= mid_point1 and curr_timestamp < mid_point2:
+                    if curr_timestamp - mid_point1 <= 0.05 and self._gaze_distance[mid_point1] is not None:
+                        closest_distance = f'{self._gaze_distance[mid_point1]:.4f}'
                         break
                     else:
                         closest_distance = None
                         break
+                elif curr_timestamp < mid_point1:
+                    mid -= diff
+                else:
+                    mid += diff
+
             if self._overlay.overlay_id:
                 self._overlay.remove()
 
@@ -211,24 +235,27 @@ class EyeMainWindow(Ui_MainWindow):
             self._visual_review_up_down.plot(
                 self._horizon[curr_timestamp], curr_timestamp)
 
-            self.plainTextEditStats.setPlainText(
-                f'RunID      : {self._selected_run}\n'
-                f'Title      : {self._all_runs_list[self._selected_run -1]["tags"]}\n'
-                f'Timestamp  : {self.player.time_pos:.2f}\n'
-                f'Duration   : {self.player.duration:.2f}\n\n'
-                f'Gaze X     : {gaze_x:.4f}\n'
-                f'Gaze Y     : {gaze_y:.4f}\n\n'
-                f'Roll       : {roll:.4f}\n'
-                f'Pitch      : {pitch:.4f}\n\n'
-                f'x_intercept: {x_intercept:.4f}\n'
-                f'y_intercept: {y_intercept:.4f}\n'
-                f'slope      : {slope:.4f}\n\n'
-                f'Gaze3d Z   : {closest_distance if closest_distance is not None else "None"}\n\n'
-                f'Obervation : {"Looking Up" if currently_up else "Looking Down"}\n'
-                f'Up %       : {percent_up:.4f}\n'
-                f'Down %     : {percent_down:.4f}\n'
-                f'Total Calcs: {total_count}\n'
-            )
+            if self.player.time_pos == None or self.player.duration == None: #catch timer having None type at end of video
+                self._playing_complete_callback()
+            else:
+                self.plainTextEditStats.setPlainText(
+                    f'RunID      : {self._selected_run}\n'
+                    f'Title      : {self._all_runs_list[self._selected_run -1]["tags"]}\n'
+                    f'Timestamp  : {self.player.time_pos:.2f}\n'
+                    f'Duration   : {self.player.duration:.2f}\n\n'
+                    f'Gaze X     : {gaze_x:.4f}\n'
+                    f'Gaze Y     : {gaze_y:.4f}\n\n'
+                    f'Roll       : {roll:.4f}\n'
+                    f'Pitch      : {pitch:.4f}\n\n'
+                    f'x_intercept: {x_intercept:.4f}\n'
+                    f'y_intercept: {y_intercept:.4f}\n'
+                    f'slope      : {slope:.4f}\n\n'
+                    f'Gaze3d Z   : {closest_distance if closest_distance is not None else "None"}\n\n'
+                    f'Obervation : {"Looking Up" if currently_up else "Looking Down"}\n'
+                    f'Up %       : {percent_up:.4f}\n'
+                    f'Down %     : {percent_down:.4f}\n'
+                    f'Total Calcs: {total_count}\n'
+                )
 
     def _playing_complete_callback(self):
         if self._overlay.overlay_id:
@@ -629,8 +656,14 @@ class EyeMainWindow(Ui_MainWindow):
         self._tree_predicted2d = self._db.get_pgazed2d_data(self._selected_run)
         self._gaze_distance = self._db.get_gaze3d_z(self._selected_run)
         self._gaze_distance_timestamps = list(self._gaze_distance.keys())
+        self._gaze_distance_timestamps_dict = {}
+        for i,j in enumerate(self._gaze_distance_timestamps):
+            self._gaze_distance_timestamps_dict[i] = j
         self._fusion_data = self._db.get_fusion_data(self._selected_run)
         self._fusion_timestamps = list(self._fusion_data.keys())
+        self._fusion_timestamps_dict = {}
+        for i,j in enumerate(self._fusion_timestamps):
+            self._fusion_timestamps_dict[i] = j
         self._horizon = self._db.get_processed_data(self._selected_run)
         self._horizon_timestamps = list(self._horizon.keys())
         self.parameter_window.set_values(
