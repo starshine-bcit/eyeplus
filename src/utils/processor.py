@@ -49,9 +49,7 @@ def ingest_and_process(cb_progress, eyedb: EyeDB, paths: list[Path], type: str =
 
 
 def reprocess(cb_progress, eyedb: EyeDB, runids: list[int], roll_offset: int, pitch_multi: float, horizon_offset: float) -> None:
-    print(roll_offset)
-    print(pitch_multi)
-    print(horizon_offset)
+    roll_offset += -90
     progress = 0.0
     cb_progress('Beginning to reprocess data...', progress)
     max_run = len(runids)
@@ -67,6 +65,7 @@ def reprocess(cb_progress, eyedb: EyeDB, runids: list[int], roll_offset: int, pi
         fused = calc_horizon_line(fused, roll_offset, pitch_multi)
         for k, v in fused.items():
             new_data[runid][k] = v
+        roll_offset -= -90
         eyedb.update_parameters(
             runid, roll_offset=roll_offset, pitch_multi=pitch_multi, horizon_offset=horizon_offset)
         predicted_gaze = eyedb.get_pgazed2d_data(runid)

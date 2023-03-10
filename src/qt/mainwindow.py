@@ -183,7 +183,7 @@ class EyeMainWindow(Ui_MainWindow):
                     mid -= diff
                 else:
                     mid += diff
-            
+
             length = len(self._gaze_distance_timestamps)
             mid = length / 2
             closest_distance = -1
@@ -222,9 +222,6 @@ class EyeMainWindow(Ui_MainWindow):
             percent_down = self._horizon[curr_timestamp]['percent_down']
             currently_up = self._horizon[curr_timestamp]['currently_up']
 
-            # roll_diff = self._loaded_roll_offset - self._roll_offset
-            # pitch_diff = self._loaded_roll_offset- self._pitch_multi
-
             roll += self._roll_offset
             pitch *= self._pitch_multi
 
@@ -235,7 +232,8 @@ class EyeMainWindow(Ui_MainWindow):
             self._visual_review_up_down.plot(
                 self._horizon[curr_timestamp], curr_timestamp)
 
-            if self.player.time_pos == None or self.player.duration == None: #catch timer having None type at end of video
+            # catch timer having None type at end of video
+            if self.player.time_pos == None or self.player.duration == None:
                 self._playing_complete_callback()
             else:
                 self.plainTextEditStats.setPlainText(
@@ -657,12 +655,12 @@ class EyeMainWindow(Ui_MainWindow):
         self._gaze_distance = self._db.get_gaze3d_z(self._selected_run)
         self._gaze_distance_timestamps = list(self._gaze_distance.keys())
         self._gaze_distance_timestamps_dict = {}
-        for i,j in enumerate(self._gaze_distance_timestamps):
+        for i, j in enumerate(self._gaze_distance_timestamps):
             self._gaze_distance_timestamps_dict[i] = j
         self._fusion_data = self._db.get_fusion_data(self._selected_run)
         self._fusion_timestamps = list(self._fusion_data.keys())
         self._fusion_timestamps_dict = {}
-        for i,j in enumerate(self._fusion_timestamps):
+        for i, j in enumerate(self._fusion_timestamps):
             self._fusion_timestamps_dict[i] = j
         self._horizon = self._db.get_processed_data(self._selected_run)
         self._horizon_timestamps = list(self._horizon.keys())
