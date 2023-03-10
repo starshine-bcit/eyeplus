@@ -499,7 +499,8 @@ class EyeDB():
         fusion_data = [{'runid': runid, 'timestamp': k, 'heading': v['heading'], 'pitch': v['pitch'], 'roll': v['roll'],
                         'q0': v['q'][0], 'q1': v['q'][1], 'q2': v['q'][2], 'q3': v['q'][3], 'yinter': v['y_intercept'], 'xinter': v['x_intercept'], 'slope': v['slope']} for k, v in fusion.items()]
         fusion_insert_query = '''INSERT INTO fusion
-            (runid, timestamp, heading, pitch, roll, q0, q1, q2, q3, yinter, xinter, slope)
+            (runid, timestamp, heading, pitch, roll,
+             q0, q1, q2, q3, yinter, xinter, slope)
             VALUES(:runid, :timestamp, :heading, :pitch, :roll, :q0, :q1, :q2, :q3, :yinter, :xinter, :slope);'''
         self._cur.executemany(fusion_insert_query, fusion_data)
         self._con.commit()
@@ -685,15 +686,6 @@ class EyeDB():
         self._cur.execute(drop_view_query)
         self._cur.execute(view_query)
 
-    def get_mean_pitch(self, runid: int) -> float:
-        if self.check_existing_runid(runid):
-            self._cur.execute('''SELECT avg(pitch)
-                        FROM fusion WHERE runid=(?);''', (runid,))
-            return self._cur.fetchone()[0]
-        else:
-            raise RuntimeError(
-                f'Trying to select a non-existant ID: {runid}')
-
     def get_overall_up_down(self) -> dict:
         self._cur.execute('''SELECT id from run;''')
         res = self._cur.fetchall()
@@ -732,6 +724,25 @@ class EyeDB():
                 gaze_data[runid]['ts'].append(line[0])
                 gaze_data[runid]['y'].append(line[1])
         return gaze_data
+
+    def get_raw_fusion_data(self, runid: int) -> dict:
+        if self.check_existing_runid(runid):
+            fusion_dict = {}
+            self._cur.execute('''SELECT timestamp, heading, pitch,
+                                roll, q0, q1, q2, q3
+                            FROM fusion where runid=(?)
+                            ORDER BY id ASC;''', (runid,))
+            res = self._cur.fetchall()
+            for line in res:
+                fusion_dict[line[0]] = {
+                    'heading': line[1],
+                    'pitch': line[2],
+                    'roll': line[3],
+                    'q': (line[4], line[5], line[6], line[7])
+                }
+            return fusion_dict
+        else:
+            raise RuntimeError(f'Trying to select a non-existant ID: {runid}')
 
 
 if __name__ == '__main__':

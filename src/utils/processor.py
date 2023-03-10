@@ -4,9 +4,10 @@ from modules.eyedb import EyeDB
 from modules.regressor import Regression2dGazeModel
 from modules.fusion import Fusion
 from modules.analyze import HorizonGaze
+from utils.statutils import calc_horizon_line, get_roll_offset
 
 
-def ingest_and_process(cb_progress, eyedb: EyeDB, paths: list[Path], type: str = 'zip', horizon_offset: float = 0.15, pitch_multi: float = 1.5) -> None:
+def ingest_and_process(cb_progress, eyedb: EyeDB, paths: list[Path], type: str = 'zip', horizon_offset: float = 0.13, pitch_multi: float = 1.6) -> None:
     progress = 0.0
     cb_progress('Beginning to ingest data...', progress)
     runs_to_process = eyedb.ingest_data(paths, type)
@@ -28,10 +29,9 @@ def ingest_and_process(cb_progress, eyedb: EyeDB, paths: list[Path], type: str =
         cb_progress(
             f'Run {current_run} of {max_run}: Fusing imu and magnetometer data...', progress)
         fuser = Fusion(imu_data, mag_data)
-        fuser.run()
-        roll_offset = fuser.get_mean_roll()
-        fuser.calc_horizon_line(roll_offset, pitch_multi)
-        fused = fuser.get_results()
+        fused = fuser.run()
+        roll_offset = get_roll_offset(fused)
+        fused = calc_horizon_line(fused, roll_offset, pitch_multi)
         progress += 0.20 / len(runs_to_process)
         cb_progress(
             f'Run {current_run} of {max_run}: Calculating predicted up/down...', progress)
@@ -49,6 +49,7 @@ def ingest_and_process(cb_progress, eyedb: EyeDB, paths: list[Path], type: str =
 
 
 def reprocess(cb_progress, eyedb: EyeDB, runids: list[int], roll_offset: int, pitch_multi: float, horizon_offset: float) -> None:
+    roll_offset += -90
     progress = 0.0
     cb_progress('Beginning to reprocess data...', progress)
     max_run = len(runids)
@@ -57,17 +58,14 @@ def reprocess(cb_progress, eyedb: EyeDB, runids: list[int], roll_offset: int, pi
         new_data[runid] = {}
     for index, runid in enumerate(runids):
         current_run = index + 1
-        imu_data = eyedb.get_imu_data(runid)
-        mag_data = eyedb.get_mag_data(runid)
+        fused = eyedb.get_raw_fusion_data(runid)
         progress += 0.50 / max_run
         cb_progress(
             f'Run {current_run} of {max_run}: Redoing calculations...', progress)
-        fuser = Fusion(imu_data, mag_data)
-        fuser.run()
-        fuser.calc_horizon_line(roll_offset, pitch_multi)
-        fused = fuser.get_results()
+        fused = calc_horizon_line(fused, roll_offset, pitch_multi)
         for k, v in fused.items():
             new_data[runid][k] = v
+        roll_offset -= -90
         eyedb.update_parameters(
             runid, roll_offset=roll_offset, pitch_multi=pitch_multi, horizon_offset=horizon_offset)
         predicted_gaze = eyedb.get_pgazed2d_data(runid)
