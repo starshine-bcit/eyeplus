@@ -682,19 +682,19 @@ class EyeMainWindow(Ui_MainWindow):
         last_horizon = self._horizon_timestamps[-1]
         self.plainTextEditSummary.setPlainText(
             f'Gaze 2D, {gaze_stats["num_samples"]} Observations\n'
-            f'  Mean / Median / Standard Deviation\n'
-            f'  X: {gaze_stats["x"]["mean"]:.4f} / {gaze_stats["x"]["median"]:.4f} / {gaze_stats["x"]["stdev"]:.4f}\n'
-            f'  Y: {gaze_stats["y"]["mean"]:.4f} / {gaze_stats["y"]["median"]:.4f} / {gaze_stats["y"]["stdev"]:.4f}\n\n'
+            f'     Mean     Median   Std. Dev.\n'
+            f'  X: {gaze_stats["x"]["mean"]:>2.4f} | {gaze_stats["x"]["median"]:.4f} | {gaze_stats["x"]["stdev"]:>2.4f}\n'
+            f'  Y: {gaze_stats["y"]["mean"]:>2.4f} | {gaze_stats["y"]["median"]:.4f} | {gaze_stats["y"]["stdev"]:>2.4f}\n\n'
             f'Sensor Fusion, {fusion_stats["num_samples"]} Observations\n'
-            f'  Mean / Median / Standard Deviation\n'
-            f'  Pitch: {fusion_stats["pitch"]["mean"]:.4f} / {fusion_stats["pitch"]["median"]:.4f} / {fusion_stats["pitch"]["stdev"]:.4f}\n'
-            f'  Roll: {fusion_stats["roll"]["mean"]:.4f} / {fusion_stats["roll"]["median"]:.4f} / {fusion_stats["roll"]["stdev"]:.4f}\n\n'
+            f'         Mean      Median    Std. Dev.\n'
+            f'  Pitch: {fusion_stats["pitch"]["mean"]:>7.4f} | {fusion_stats["pitch"]["median"]:>7.4f} | {fusion_stats["pitch"]["stdev"]:>7.4f}\n'
+            f'  Roll : {fusion_stats["roll"]["mean"]:.4f} | {fusion_stats["roll"]["median"]:>7.4f} | {fusion_stats["roll"]["stdev"]:>7.4f}\n\n'
             f'Horizon, {self._horizon[last_horizon]["total"]} Observations\n'
-            f'  Count / Proportion\n'
-            f'  Looking Up: {self._horizon[last_horizon]["up_count"]} / {self._horizon[last_horizon]["percent_up"]:.4f}\n'
-            f'  Looking Down: {self._horizon[last_horizon]["down_count"]} / {self._horizon[last_horizon]["percent_down"]:.4f}\n\n'
+            f'                Count   Prop.\n'
+            f'  Looking Up  : {self._horizon[last_horizon]["up_count"]} | {self._horizon[last_horizon]["percent_up"]:>7.4}\n'
+            f'  Looking Down: {self._horizon[last_horizon]["down_count"]} | {self._horizon[last_horizon]["percent_down"]:>7.4f}\n\n'
             f'Offsets\n'
-            f'  Horizon: {-self._horizon_offset:.2f}, Roll: {self._roll_offset}, Pitch: {self._pitch_multi:.2f}'
+            f'  Horizon: {-self._horizon_offset:>5.2f}, Roll: {self._roll_offset}, Pitch: {self._pitch_multi:>5.2f}'
         )
 
     def _setup_visual_widgets(self) -> None:

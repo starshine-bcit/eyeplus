@@ -13,8 +13,8 @@ You may install either using the binary Windows installer, available under relea
 ### Hardware Requirements
 
 - Quad-Core x86_64 Processor
-- 4 GiB RAM
-- 720p+ Display
+- 6 GiB RAM
+- 720p+ Display (1080p recommended)
 
 #### How To Install From Source
 
