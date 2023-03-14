@@ -6,6 +6,7 @@ import shutil
 import gzip
 import json
 from hashlib import file_digest
+from typing import Tuple
 
 
 class EyeDB():
@@ -335,6 +336,9 @@ class EyeDB():
 
         self._cur.execute('''CREATE INDEX idx_fusion_timestamp
                 ON fusion (runid, timestamp);''')
+
+        self._cur.execute('''CREATE INDEX idx_fusion_pitch 
+                ON fusion (pitch, runid, id);''')
 
         self._con.commit()
 
@@ -724,6 +728,19 @@ class EyeDB():
                 gaze_data[runid]['ts'].append(line[0])
                 gaze_data[runid]['y'].append(line[1])
         return gaze_data
+
+    def get_binned_pitch_data(self, runids: list[int]) -> Tuple[dict, int]:
+        binned_data = {}
+        ranges = [-45 + (4.5 * x) for x in range(20)]
+        query2 = f'SELECT COUNT (id) FROM fusion WHERE runid in ({",".join(["?" for _ in range(len(runids))])});'
+        self._cur.execute(query2, [*runids])
+        total_count = self._cur.fetchone()[0]
+        query = f'SELECT COUNT(pitch) FROM fusion WHERE runid IN ({",".join(["?" for _ in range(len(runids))])}) AND pitch >= (?) AND pitch < (?);'
+        for x in ranges:
+            self._cur.execute(query, (*runids, x, x + 4.5))
+            res = self._cur.fetchone()[0] / total_count
+            binned_data[x] = res
+        return total_count, binned_data
 
     def get_raw_fusion_data(self, runid: int) -> dict:
         if self.check_existing_runid(runid):

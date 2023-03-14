@@ -296,3 +296,48 @@ class OverallGaze2DY(BasicCanvas):
     def update_scroll(self, val: int) -> None:
         self.ax.set_xlim(float(val - 30), float(val))
         self.fig.canvas.draw_idle()
+
+
+class OverallUpAndDown(BasicCanvas):
+    def __init__(self, width: int, height: int, dpi: float):
+        super().__init__(width, height, dpi)
+
+    def plot(self, up_down: dict) -> None:
+        self.ax.clear()
+        num_runs = up_down['run_count']
+        x = ['Up', 'Down']
+        y = [up_down['total_up'], up_down['total_down']]
+        y_ticks = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+        self.ax.set_ybound(0.0, 1.0)
+        self.ax.set_title(f'Total Up/Down Proportion over {num_runs} runs')
+        bars = self.ax.bar(x, y, color=['mediumseagreen', 'firebrick'])
+        self.ax.set_yticks(y_ticks)
+        self.ax.set_yticklabels([str(x) for x in y_ticks])
+        self.ax.bar_label(bars, [str(round(z, 2)) for z in y])
+        self.fig.canvas.draw()
+
+
+class PitchHistogram(BasicCanvas):
+    def __init__(self, width: int, height: int, dpi: float):
+        super().__init__(width, height, dpi)
+
+    def plot(self, total_observations: int, pitch_binned: dict) -> None:
+        self.ax.clear()
+        x = []
+        y = []
+        for k, v in pitch_binned.items():
+            x.append(k)
+            y.append(v)
+        bars = self.ax.bar(x, y, [4.5] * len(pitch_binned),
+                           align='edge', color='darkviolet', edgecolor='deeppink')
+        y_max = round(max(y), 1) + 0.1
+        y_marks = np.linspace(0, y_max, int(y_max * 20 + 1))
+        self.ax.set_yticks(y_marks)
+        self.ax.set_yticklabels([str(round(x, 2)) for x in y_marks])
+        x_marks = np.arange(-40, 40, 5)
+        self.ax.set_xticks(x_marks)
+        self.ax.set_xticklabels([str(x) for x in x_marks])
+        self.ax.set_title(
+            f'Proportion of Pitch over {total_observations} observations')
+        self.ax.set_xlim(-30, 30)
+        self.fig.canvas.draw()
