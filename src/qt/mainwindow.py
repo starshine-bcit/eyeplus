@@ -1,6 +1,7 @@
 from pathlib import Path
 import sys
 import os
+import re
 
 from PyQt6 import QtCore, QtGui, QtWidgets
 
@@ -52,6 +53,7 @@ class EyeMainWindow(Ui_MainWindow):
         self.actionAdjust.setEnabled(False)
         self.actionRecalculate.setEnabled(False)
         self._videos = {}
+        self._overall_selected_runs = []
         self._selected_run = 0
         self._roll_offset = 90
         self._pitch_multi = 1.0
@@ -102,6 +104,8 @@ class EyeMainWindow(Ui_MainWindow):
             self._update_fusion)
         self.horizontalScrollBarLongChart.sliderMoved.connect(
             self._overall_graphic_slider_moved)
+        self.listWidgetOverallSelectRuns.itemSelectionChanged.connect(
+            self._overall_run_selection_changed)
 
     def _setup_video(self):
         if 'playback_worker' in self.__dict__:
@@ -349,6 +353,10 @@ class EyeMainWindow(Ui_MainWindow):
                 self._runs_model.setItem(index, 1, new_import_date)
                 self._runs_model.setItem(index, 2, new_process_date)
                 self._runs_model.setItem(index, 3, new_title)
+                new_item = QtWidgets.QListWidgetItem(
+                    f'{run["id"]} - {run["tags"]}', self.listWidgetOverallSelectRuns)
+                self.listWidgetOverallSelectRuns.addItem(new_item)
+                self._overall_selected_runs.append(run['id'])
             self._title_filter_model = QtCore.QSortFilterProxyModel()
             self._title_filter_model.setSourceModel(self._runs_model)
             self._title_filter_model.setFilterKeyColumn(3)
@@ -363,6 +371,7 @@ class EyeMainWindow(Ui_MainWindow):
             self.tableViewRuns.selectRow(0)
             self._table_item_single_clicked(
                 self._title_filter_model.index(0, 0))
+            self.listWidgetOverallSelectRuns.selectAll()
             self._display_overall_visuals()
         else:
             self.tabWidgetMain.setEnabled(False)
@@ -741,16 +750,32 @@ class EyeMainWindow(Ui_MainWindow):
 
     def _display_overall_visuals(self) -> None:
         self._longest_run = self._visual_overall_gaze2d.plot(
-            self._db.get_all_gaze_2dy())
+            self._db.get_all_gaze_2dy(self._overall_selected_runs))
         self.horizontalScrollBarLongChart.setMaximum(self._longest_run)
         self.horizontalScrollBarLongChart.setValue(30)
         self.horizontalScrollBarLongChart.setMinimum(30)
-        overall_up_down = self._db.get_overall_up_down()
+        overall_up_down = self._db.get_overall_up_down(
+            self._overall_selected_runs)
         self._visual_overall_up_down.plot(overall_up_down)
-        total_pitch_observations, binned_pitch = self._db.get_binned_pitch_data([
-                                                                                1, 2, 3, 4, 5])
+        total_pitch_observations, binned_pitch = self._db.get_binned_pitch_data(
+            self._overall_selected_runs)
         self._visual_overall_pitch_hist.plot(
             total_pitch_observations, binned_pitch)
 
     def _overall_graphic_slider_moved(self, val: int) -> None:
         self._visual_overall_gaze2d.update_scroll(val)
+
+    def _overall_run_selection_changed(self) -> None:
+        self._overall_selected_runs.clear()
+        indexes = self.listWidgetOverallSelectRuns.selectedIndexes()
+        for index in indexes:
+            run_data = self.listWidgetOverallSelectRuns.itemFromIndex(
+                index).text()
+            runid = int(re.search(r'^\d+', run_data).group(0))
+            self._overall_selected_runs.append(runid)
+        if not self._overall_selected_runs:
+            self._overall_selected_runs.append(
+                int(self._all_runs_list[0]['id']))
+            self.listWidgetOverallSelectRuns.setCurrentRow(0)
+        self._overall_selected_runs.sort()
+        self._display_overall_visuals()

@@ -7,6 +7,7 @@ from matplotlib.animation import FuncAnimation
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import matplotlib.colors as colours
+import matplotlib.patches as mpatches
 import numpy as np
 
 plt.style.use('ggplot')
@@ -268,6 +269,8 @@ class OverallGaze2DY(BasicCanvas):
         self.colours = [x for x in colours.XKCD_COLORS]
         shuffle(self.colours)
         self.colour_index = 0
+        nothing_patch = mpatches.Patch(color='purple', label=' ')
+        self.legend = self.fig.legend(handles=[nothing_patch])
 
     def plot(self, gaze_data: dict) -> int:
         self.ax.clear()
@@ -285,11 +288,12 @@ class OverallGaze2DY(BasicCanvas):
         self.ax.set_yticks(
             [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.0])
         self.ax.set_xticks(np.arange(0, max_len, 2))
-        self.ax.set_title('2D Eye Y Over Time For All Runs')
+        self.ax.set_title('2D Eye Y Over Time For Selected Runs')
         self.ax.set_ylim(0.0, 1.0)
         self.ax.set_xlim(0.0, 30.0)
         self.ax.invert_yaxis()
-        self.fig.legend()
+        self.legend.remove()
+        self.legend = self.fig.legend()
         self.fig.canvas.draw()
         return int(max_len)
 

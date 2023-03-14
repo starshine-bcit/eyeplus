@@ -690,31 +690,28 @@ class EyeDB():
         self._cur.execute(drop_view_query)
         self._cur.execute(view_query)
 
-    def get_overall_up_down(self) -> dict:
-        self._cur.execute('''SELECT id from run;''')
-        res = self._cur.fetchall()
+    def get_overall_up_down(self, runids: list[int]) -> dict:
         p_up = []
         p_down = []
-        for runid in res:
+        for runid in runids:
             self._cur.execute('''SELECT id, runid, percentup, percentdown
                             FROM processed
                             WHERE runid=(?)
                             ORDER BY id DESC
-                            LIMIT 1;''', runid)
+                            LIMIT 1;''', str(runid))
             line = self._cur.fetchone()
             p_up.append(line[2])
             p_down.append(line[3])
         return {
-            'run_count': len(res),
+            'run_count': len(runids),
             'total_up': sum(p_up) / len(p_up),
             'total_down': sum(p_down) / len(p_down)
         }
 
-    def get_all_gaze_2dy(self) -> dict:
-        self._cur.execute('''SELECT id from run;''')
-        res = self._cur.fetchall()
+    def get_all_gaze_2dy(self, runids: list[int]) -> dict:
+        runids = [str(x) for x in runids]
         gaze_data = {}
-        for runid in res:
+        for runid in runids:
             self._cur.execute('''SELECT timestamp, pgaze2dy
                             FROM pgaze2d
                             WHERE runid=(?)
