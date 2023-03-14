@@ -299,46 +299,42 @@ class OverallUpAndDown(BasicCanvas):
     def __init__(self, width: int, height: int, dpi: float):
         super().__init__(width, height, dpi)
 
-    def plot(self, up_down_list: list[dict]) -> None:
+    def plot(self, up_down: dict) -> None:
         self.ax.clear()
-        num_runs = len(up_down_list)
-        percent_down = sum([d['percent_down']
-                           for d in up_down_list]) / num_runs
-        percent_up = sum([d['percent_up'] for d in up_down_list]) / num_runs
-        x = ['Up/Down']
-        y1 = [percent_down]
-        y1_2 = [percent_up]
+        num_runs = up_down['run_count']
+        x = ['Up', 'Down']
+        y = [up_down['total_up'], up_down['total_down']]
+        y_ticks = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
         self.ax.set_ybound(0.0, 1.0)
-        self.ax.set_title(
-            'Proportion of Time Looking Up/Down ({} runs)'.format(num_runs))
-        self.ax.bar(x[0], y1, color='firebrick')
-        self.ax.bar(x[0], y1_2, bottom=y1, color='mediumseagreen')
-        self.ax.set_yticklabels([])
-        self.ax.text(0, y1[0] + 0.05,
-                     str(round(y1[0] * 100, 2)) + '%', ha='center')
-        self.ax.text(0, y1[0] + y1_2[0] + 0.05,
-                     str(round(y1_2[0] * 100, 2)) + '%', ha='center')
+        self.ax.set_title(f'Total Up/Down Proportion over {num_runs} runs')
+        bars = self.ax.bar(x, y, color=['mediumseagreen', 'firebrick'])
+        self.ax.set_yticks(y_ticks)
+        self.ax.set_yticklabels([str(x) for x in y_ticks])
+        self.ax.bar_label(bars, [str(round(z, 2)) for z in y])
         self.fig.canvas.draw()
 
 
-# create a class that takes data from mean_pitch and make a binned histogram with database query
 class PitchHistogram(BasicCanvas):
     def __init__(self, width: int, height: int, dpi: float):
         super().__init__(width, height, dpi)
 
-    def plot(self, mean_pitch: float) -> None:
+    def plot(self, total_observations: int, pitch_binned: dict) -> None:
         self.ax.clear()
-        self.ax.set_title('Pitch Histogram')
-        self.ax.set_xlabel('Pitch')
-        self.ax.set_ylabel('Frequency')
-        self.ax.hist(mean_pitch, bins=20, color='darkviolet')
+        x = []
+        y = []
+        for k, v in pitch_binned.items():
+            x.append(k)
+            y.append(v)
+        bars = self.ax.bar(x, y, [4.5] * len(pitch_binned),
+                           align='edge', color='darkviolet', edgecolor='deeppink')
+        y_max = round(max(y), 1) + 0.1
+        y_marks = np.linspace(0, y_max, int(y_max * 20 + 1))
+        self.ax.set_yticks(y_marks)
+        self.ax.set_yticklabels([str(round(x, 2)) for x in y_marks])
+        x_marks = np.arange(-40, 40, 5)
+        self.ax.set_xticks(x_marks)
+        self.ax.set_xticklabels([str(x) for x in x_marks])
+        self.ax.set_title(
+            f'Proportion of Pitch over {total_observations} observations')
+        self.ax.set_xlim(-30, 30)
         self.fig.canvas.draw()
-
-    # create a function with database query to get the mean pitch for all the runs
-    def get_mean_pitch(self):
-        mean_pitch = []
-        for i in range(1, 11):
-            query = "SELECT mean_pitch FROM run WHERE run_id = {}".format(i)
-            cursor.execute(query)
-            mean_pitch.append(cursor.fetchall()[0][0])
-        return mean_pitch

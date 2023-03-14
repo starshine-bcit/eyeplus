@@ -14,7 +14,7 @@ from qt.processui import Ui_dialogProcessing
 from qt.helpwindow import Ui_helpDialog
 from qt.parameterwindow import ParameterWindow
 from modules.export import DataExporter
-from modules.visualize import TotalUpDown, CumulativeUpDown, PitchLive, HeatMap, TotalUpDownStacked, GazeLive, OverallGaze2DY
+from modules.visualize import TotalUpDown, CumulativeUpDown, PitchLive, HeatMap, TotalUpDownStacked, GazeLive, OverallGaze2DY, OverallUpAndDown, PitchHistogram
 from utils.fileutils import validate_import_folder
 from utils.imageutils import create_video_overlay
 from utils.statutils import get_gaze_stats, get_fusion_stats
@@ -690,8 +690,13 @@ class EyeMainWindow(Ui_MainWindow):
         self._visual_review_gaze_live = GazeLive(500, 500, self._dpi)
         g3_review_parent.addWidget(self._visual_review_gaze_live)
         g1_overall_parent = self.widgetOverallGraphic1.parentWidget().layout()
+        self._visual_overall_up_down = OverallUpAndDown(500, 500, self._dpi)
+        g1_overall_parent.removeWidget(self.widgetOverallGraphic1)
+        g1_overall_parent.addWidget(self._visual_overall_up_down)
         g2_overall_parent = self.widgetOverallGraphic2.parentWidget().layout()
-
+        self._visual_overall_pitch_hist = PitchHistogram(500, 500, self._dpi)
+        g2_overall_parent.removeWidget(self.widgetOverallGraphic2)
+        g2_overall_parent.addWidget(self._visual_overall_pitch_hist)
         g3_overall_parent = self.widgetOverallGraphic3.parentWidget().layout()
         self._visual_overall_gaze2d = OverallGaze2DY(10000, 500, self._dpi)
         g3_overall_parent.removeWidget(self.widgetOverallGraphic3)
@@ -705,6 +710,12 @@ class EyeMainWindow(Ui_MainWindow):
         self.horizontalScrollBarLongChart.setMaximum(self._longest_run)
         self.horizontalScrollBarLongChart.setValue(30)
         self.horizontalScrollBarLongChart.setMinimum(30)
+        overall_up_down = self._db.get_overall_up_down()
+        self._visual_overall_up_down.plot(overall_up_down)
+        total_pitch_observations, binned_pitch = self._db.get_binned_pitch_data([
+                                                                                1, 2, 3, 4, 5])
+        self._visual_overall_pitch_hist.plot(
+            total_pitch_observations, binned_pitch)
 
     def _overall_graphic_slider_moved(self, val: int) -> None:
         self._visual_overall_gaze2d.update_scroll(val)
