@@ -389,6 +389,8 @@ class EyeMainWindow(Ui_MainWindow):
         self._selected_run = int(self._runs_model.itemData(runid_index)[0])
         self._roll_offset, self._pitch_multi, self._horizon_offset = self._db.get_parameters(
             self._selected_run)
+        if 'player' in self.__dict__:
+            self._stop_clicked()
         self._load_summary_data()
         self._display_summary_visuals()
         self._display_summary_text()
@@ -397,6 +399,8 @@ class EyeMainWindow(Ui_MainWindow):
 
     def _open_review_clicked(self) -> None:
         self._gaze = self._db.get_gaze_data(self._selected_run)
+        if 'player' in self.__dict__:
+            self._stop_clicked()
         self._setup_video()
         self.actionPlay.setEnabled(True)
         self.tabWidgetMain.tabBar().setHidden(False)
