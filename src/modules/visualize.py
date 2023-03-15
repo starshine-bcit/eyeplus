@@ -152,6 +152,7 @@ class HeatMap(BasicCanvas):
                     v_max = self.z[y_round][x_round]
         self.heat_map = self.ax.pcolormesh(
             self.x, self.y, self.z, shading='gouraud', cmap='plasma', vmin=v_min, vmax=v_max)
+        self.ax.invert_yaxis()
         self.ax.set_title('Heatmap of 2d Gaze')
         self.fig.canvas.draw()
 

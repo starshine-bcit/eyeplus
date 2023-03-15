@@ -93,8 +93,6 @@ class EyeMainWindow(Ui_MainWindow):
         self.actionAbout.triggered.connect(self._about_clicked)
         self.actionUsage.triggered.connect(self._usage_clicked)
         self.actionReadme.triggered.connect(self._readme_clicked)
-        self.pushButtonRecalculateOne.clicked.connect(
-            self._redo_single_calc_clicked)
         self.actionAdjust.triggered.connect(self._show_parameter_window)
         self.parameter_window.ui.pushButtonApply.clicked.connect(
             self._update_parameters)
@@ -592,18 +590,6 @@ class EyeMainWindow(Ui_MainWindow):
         self.help_display.textBrowserDisplay.setMarkdown(about.read_text())
         self.help_window.resize(400, 300)
         self.help_window.show()
-
-    def _redo_single_calc_clicked(self) -> None:
-        runs_to_redo = [self._selected_run]
-        ingest_worker = ReprocessWorker(
-            self._db_path, runs_to_redo, self._roll_offset, self._pitch_multi, self._horizon_offset)
-        ingest_worker.signals.started.connect(
-            self._reprocess_started)
-        ingest_worker.signals.progress.connect(
-            self._reprocess_dialog_update)
-        ingest_worker.signals.finished.connect(
-            self._reprocess_finished)
-        self._thread_pool.start(ingest_worker)
 
     def _reprocess_started(self) -> None:
         self._update_status('Beginning to reprocess data')

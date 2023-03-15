@@ -18,7 +18,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidgetMain">
       <property name="currentIndex">
-       <number>2</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="tabDataList">
        <attribute name="title">
@@ -255,20 +255,6 @@
                 </size>
                </property>
               </spacer>
-             </item>
-             <item>
-              <widget class="QPushButton" name="pushButtonRecalculateOne">
-               <property name="toolTip">
-                <string>Developer Use Only - Will be Removed</string>
-               </property>
-               <property name="text">
-                <string>Redo Calculations</string>
-               </property>
-               <property name="icon">
-                <iconset resource="icons.qrc">
-                 <normaloff>:/icons/function-square.svg</normaloff>:/icons/function-square.svg</iconset>
-               </property>
-              </widget>
              </item>
              <item>
               <widget class="QPushButton" name="pushButtonExportDisplayed">
