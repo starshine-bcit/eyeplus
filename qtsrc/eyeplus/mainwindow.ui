@@ -18,7 +18,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidgetMain">
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="tabDataList">
        <attribute name="title">
@@ -769,7 +769,6 @@
    <addaction name="actionPlay"/>
    <addaction name="separator"/>
    <addaction name="actionAdjust"/>
-   <addaction name="actionRecalculate"/>
   </widget>
   <action name="actionImport_Zip">
    <property name="icon">
@@ -931,18 +930,6 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+T</string>
-   </property>
-  </action>
-  <action name="actionRecalculate">
-   <property name="icon">
-    <iconset resource="icons.qrc">
-     <normaloff>:/icons/function-square.svg</normaloff>:/icons/function-square.svg</iconset>
-   </property>
-   <property name="text">
-    <string>Recalculate</string>
-   </property>
-   <property name="toolTip">
-    <string>Recalculate and store data based on provided parameter changes</string>
    </property>
   </action>
  </widget>

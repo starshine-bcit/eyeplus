@@ -51,7 +51,6 @@ class EyeMainWindow(Ui_MainWindow):
         self.actionMute.setEnabled(False)
         self.actionMute.setEnabled(False)
         self.actionAdjust.setEnabled(False)
-        self.actionRecalculate.setEnabled(False)
         self._videos = {}
         self._overall_selected_runs = []
         self._selected_run = 0
@@ -98,7 +97,7 @@ class EyeMainWindow(Ui_MainWindow):
             self._update_parameters)
         self.lineEditFilter.textChanged.connect(
             self._filter_runs)
-        self.actionRecalculate.triggered.connect(
+        self.parameter_window.ui.pushButtonRecalculate.clicked.connect(
             self._update_fusion)
         self.horizontalScrollBarLongChart.sliderMoved.connect(
             self._overall_graphic_slider_moved)
@@ -151,7 +150,6 @@ class EyeMainWindow(Ui_MainWindow):
         self.actionStop.setEnabled(True)
         self.actionMute.setEnabled(True)
         self.actionAdjust.setEnabled(True)
-        self.actionRecalculate.setEnabled(True)
         self.horizontalSliderVolume.setEnabled(True)
         self.actionMute.setEnabled(True)
         self._overlay = self.player.create_image_overlay()
@@ -268,7 +266,6 @@ class EyeMainWindow(Ui_MainWindow):
         self.actionStop.setEnabled(False)
         self.actionMute.setEnabled(False)
         self.actionAdjust.setEnabled(False)
-        self.actionRecalculate.setEnabled(False)
         self.horizontalSliderVolume.setEnabled(False)
         self.actionMute.setEnabled(False)
         self._visual_review_pitch.stop()

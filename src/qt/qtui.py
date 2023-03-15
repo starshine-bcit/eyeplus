@@ -430,11 +430,6 @@ class Ui_MainWindow(object):
         icon13.addPixmap(QtGui.QPixmap(":/icons/sliders.svg"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
         self.actionAdjust.setIcon(icon13)
         self.actionAdjust.setObjectName("actionAdjust")
-        self.actionRecalculate = QtGui.QAction(MainWindow)
-        icon14 = QtGui.QIcon()
-        icon14.addPixmap(QtGui.QPixmap(":/icons/function-square.svg"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
-        self.actionRecalculate.setIcon(icon14)
-        self.actionRecalculate.setObjectName("actionRecalculate")
         self.menuFile.addAction(self.actionImport_Zip)
         self.menuFile.addAction(self.actionImport_Folder)
         self.menuFile.addSeparator()
@@ -453,10 +448,9 @@ class Ui_MainWindow(object):
         self.toolBar.addAction(self.actionPlay)
         self.toolBar.addSeparator()
         self.toolBar.addAction(self.actionAdjust)
-        self.toolBar.addAction(self.actionRecalculate)
 
         self.retranslateUi(MainWindow)
-        self.tabWidgetMain.setCurrentIndex(0)
+        self.tabWidgetMain.setCurrentIndex(1)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -511,8 +505,6 @@ class Ui_MainWindow(object):
         self.actionAdjust.setText(_translate("MainWindow", "Adjust"))
         self.actionAdjust.setToolTip(_translate("MainWindow", "Adjust parameters for this run"))
         self.actionAdjust.setShortcut(_translate("MainWindow", "Ctrl+T"))
-        self.actionRecalculate.setText(_translate("MainWindow", "Recalculate"))
-        self.actionRecalculate.setToolTip(_translate("MainWindow", "Recalculate and store data based on provided parameter changes"))
 
 
 if __name__ == "__main__":
