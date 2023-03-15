@@ -113,6 +113,7 @@ class PitchLive(BasicCanvas):
         self.ani = FuncAnimation(
             self.fig, self._draw_next_frame, frames=self.frames_range, init_func=self._init_line, interval=100)
         self.draw()
+        self.ax.set_xlim(0, 10)
         self._pause = True
         self.ani.pause()
 
@@ -241,14 +242,13 @@ class GazeLive(BasicCanvas):
         self.ax.set_xlim(-2, len(self.frames_range) + 2)
         self.ax.set_ylim(0, 1)
         self.ax.set_title('Gaze 2d Y Over Time')
-        # self.ax.set_xlabel('Timestamp')
-        # self.ax.set_ylabel('Gaze 2d Y')
         self.ax.set_yticks(
             [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.0])
         self.ax.invert_yaxis()
         self.ani = FuncAnimation(self.fig, self._draw_next_frame,
                                  frames=self.frames_range, init_func=self._init_line, interval=100)
         self.draw()
+        self.ax.set_xlim(0, 10)
         self._pause = True
         self.ani.pause()
 
@@ -334,12 +334,13 @@ class PitchHistogram(BasicCanvas):
             x.append(k)
             y.append(v)
         bars = self.ax.bar(x, y, [4.5] * len(pitch_binned),
-                           align='edge', color='darkviolet', edgecolor='deeppink')
+                           align='edge', edgecolor='black')
         y_max = round(max(y), 1) + 0.1
         y_marks = np.linspace(0, y_max, int(y_max * 20 + 1))
         self.ax.set_yticks(y_marks)
         self.ax.set_yticklabels([str(round(x, 2)) for x in y_marks])
-        x_marks = np.arange(-40, 40, 5)
+        x_marks = [-36, -31.5, -27, -22.5, -18, -13.5, -
+                   9, -4.5, 0, 4.5, 9, 13.5, 18, 22.5, 27, 31.5, 36]
         self.ax.set_xticks(x_marks)
         self.ax.set_xticklabels([str(x) for x in x_marks])
         self.ax.set_title(
