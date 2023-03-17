@@ -5,10 +5,23 @@ from modules.regressor import RegressionMagnetometerModel
 
 class DeltaT():
     def __init__(self, first_timestamp: float) -> None:
+        """Finds time delta from timestamp.
+
+        Args:
+            first_timestamp (float): The starting point for the time delta.
+        """
         self.first_timestamp = first_timestamp
         self.start_time = None
 
-    def __call__(self, timestamp: float):
+    def __call__(self, timestamp: float) -> float:
+        """Each time DeltaT is called it returns the delta point from the last provided timestamp.
+
+        Args:
+            timestamp (float): The current timestamp.
+
+        Returns:
+            float: The diff between current time and previous (last call).
+        """
         if self.start_time is None:
             self.start_time = self.first_timestamp
             return self.start_time
@@ -22,6 +35,12 @@ class Fusion():
     declination = 0
 
     def __init__(self, imu_data: dict, mag_data: dict) -> None:
+        """Fuses gyro, accelerometer, and magnetometer data from Tobii Eye Pro 3 glasses, providing pitch, heading, and roll values.
+
+        Args:
+            imu_data (dict): Contains gyro and accelerometer data from Tobii ndjson file.
+            mag_data (dict): Contains magnetometer data from Tobii ndjson file.
+        """
         # local magnetic bias factors: set from calibration
         self.magbias = (0, 0, 0)
         self.expect_ts = True
@@ -48,7 +67,12 @@ class Fusion():
                 'magnetometer': predicted_mag[k]
             }
 
-    def run(self) -> None:
+    def run(self) -> dict:
+        """For each timestamp, calculate and store the heading, roll, and pitch, alonside the quaternion represting it's supposed point in space.
+
+        Returns:
+            dict: Contains processed data for each timestamp.
+        """
         for k, v in self.all_data.items():
             accel = v['accelerometer']
             gyro = v['gyroscope']

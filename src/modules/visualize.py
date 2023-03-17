@@ -20,6 +20,13 @@ mpl.rcParams['legend.fontsize'] = 'small'
 
 class BasicCanvas(FigureCanvasQTAgg):
     def __init__(self, width: int, height: int, dpi: float):
+        """BasicCanvas is used to subclass individual plots off of.
+
+        Args:
+            width (int): Width of the plot to make in pixels.
+            height (int): Height of the plot to make in pixels.
+            dpi (float): DPI of the plot to make.
+        """
         px = 1/dpi
         self.fig = Figure(figsize=(width*px, height*px), dpi=dpi)
         super().__init__(self.fig)
@@ -28,9 +35,21 @@ class BasicCanvas(FigureCanvasQTAgg):
 
 class TotalUpDown(BasicCanvas):
     def __init__(self, width: int, height: int, dpi: float):
+        """Visual bar plot for time spent looking down versus up for a single run.
+
+        Args:
+            width (int): Width of the plot to make in pixels.
+            height (int): Height of the plot to make in pixels.
+            dpi (float): DPI of the plot to make.
+        """
         super().__init__(width, height, dpi)
 
     def plot(self, data: dict):
+        """Plots time spent looking up versus down and draws it on canvas.
+
+        Args:
+            data (dict): Contains cumulative up/down data for a single run.
+        """
         self.ax.clear()
         self.data = data
         y_ticks = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
@@ -48,10 +67,23 @@ class TotalUpDown(BasicCanvas):
 
 class CumulativeUpDown(BasicCanvas):
     def __init__(self, width: int, height: int, dpi: float):
+        """Much like TotalUpDown, but is meant to be called on each screen update in playback review.
+
+        Args:
+            width (int): Width of the plot to make in pixels.
+            height (int): Height of the plot to make in pixels.
+            dpi (float): DPI of the plot to make.
+        """
         super().__init__(width, height, dpi)
         self.ax.margins(0.5)
 
     def plot(self, data: dict, timestamp: float):
+        """Plots the up/down cumulative data at a given timestamp.
+
+        Args:
+            data (dict): Contains all processed up/down data.
+            timestamp (float): Timestamp we wish to plot for.
+        """
         self.ax.clear()
         self.data = data
         y_ticks = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
