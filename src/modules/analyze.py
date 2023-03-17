@@ -16,11 +16,11 @@ class HorizonGaze():
         self._length = len(self._gaze2d_ts) - 2
         self._fused_ts = list(self._fused.keys())
         self._fused_ts_dict = {}
-        for i,j in enumerate(self._fused_ts):
+        for i, j in enumerate(self._fused_ts):
             self._fused_ts_dict[i] = j
         self._gaze3d_ts = list(self._gaze3d.keys())
         self._gaze3d_ts_dict = {}
-        for i,j in enumerate(self._gaze3d_ts):
+        for i, j in enumerate(self._gaze3d_ts):
             self._gaze3d_ts_dict[i] = j
 
     def calculates_all(self) -> dict:
@@ -74,7 +74,7 @@ class HorizonGaze():
             try:
                 mid_point2 = self._gaze3d_ts_dict[int(mid+1)]
             except KeyError:
-                return self._gaze3d_ts_dict[length -1]
+                return self._gaze3d_ts_dict[length - 1]
             if timestamp >= mid_point1 and timestamp <= mid_point2:
                 left = timestamp - mid_point1
                 right = mid_point2 - timestamp
@@ -115,7 +115,6 @@ class HorizonGaze():
                 mid += diff
 
     def _calculate_up(self, slope: float, y_intercept: float, gaze_x: float, gaze_y: float, gaze_distance: float | None) -> bool:
-        # make horizon fuzzy somehow
         y_intercept += self._horizon_offset
         if gaze_distance is not None and gaze_distance < 200:
             return False

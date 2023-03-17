@@ -4,6 +4,14 @@ import numpy as np
 
 
 def get_gaze_stats(gaze2d: dict) -> dict:
+    """Get mean, median, and stdev from gaze2d data.
+
+    Args:
+        gaze2d (dict): All 2d gaze data from selected run.
+
+    Returns:
+        dict: Compiled statistics, including total number of samples.
+    """
     gaze_stats = {}
     vals = np.array(list(gaze2d.values())).transpose()
     gaze_stats['x'] = {
@@ -21,6 +29,14 @@ def get_gaze_stats(gaze2d: dict) -> dict:
 
 
 def get_fusion_stats(fusion: dict) -> dict:
+    """Get mean, median, and stdev of pitch and roll from fusion data.
+
+    Args:
+        fusion (dict): All fusion data from selected run.
+
+    Returns:
+        dict: Compiled statistics, including number of samples.
+    """
     fusion_stats = {}
     pitch = np.array([v['pitch'] for v in fusion.values()])
     roll = np.array([v['roll'] + 90 for v in fusion.values()])
@@ -39,6 +55,14 @@ def get_fusion_stats(fusion: dict) -> dict:
 
 
 def get_roll_offset(fusion: dict) -> float:
+    """Find average average roll throughout a run, in an attempt to provide a sane default value.
+
+    Args:
+        fusion (dict): All fusion data from the currently processing run.
+
+    Returns:
+        float: The calculated roll offset to store and use.
+    """
     roll_vals = [v['roll'] for v in fusion.values()]
     avg_roll = int((sum(roll_vals) / len(roll_vals)))
     roll_offset = -90 - avg_roll
@@ -46,6 +70,16 @@ def get_roll_offset(fusion: dict) -> float:
 
 
 def calc_horizon_line(fusion: dict, roll_offset: int, pitch_multi: float) -> dict:
+    """Determines the horizon line for each timestamp in the given fusion data.
+
+    Args:
+        fusion (dict): Processed sensor fusion data, including roll and pitch.
+        roll_offset (int): Static roll offset to apply.
+        pitch_multi (float): Static pitch multiplier to apply.
+
+    Returns:
+        dict: Returns original fusion data with the horizon line now included per timestamp.
+    """
     for k, v in fusion.items():
         roll = v['roll'] + roll_offset
         pitch = v['pitch'] * pitch_multi
