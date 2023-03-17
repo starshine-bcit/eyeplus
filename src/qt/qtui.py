@@ -87,7 +87,7 @@ class Ui_MainWindow(object):
         self.horizontalLayoutSummaryTextGraphic.setObjectName("horizontalLayoutSummaryTextGraphic")
         self.plainTextEditSummary = QtWidgets.QPlainTextEdit(self.frameSummary)
         font = QtGui.QFont()
-        font.setFamily("Lucida Sans Typewriter")
+        font.setFamily("Consolas")
         self.plainTextEditSummary.setFont(font)
         self.plainTextEditSummary.setObjectName("plainTextEditSummary")
         self.horizontalLayoutSummaryTextGraphic.addWidget(self.plainTextEditSummary)
@@ -165,7 +165,7 @@ class Ui_MainWindow(object):
         self.verticalLayoutReviewLeft.setObjectName("verticalLayoutReviewLeft")
         self.plainTextEditStats = QtWidgets.QPlainTextEdit(self.tabReviewData)
         font = QtGui.QFont()
-        font.setFamily("Lucida Sans Typewriter")
+        font.setFamily("Consolas")
         self.plainTextEditStats.setFont(font)
         self.plainTextEditStats.setFrameShadow(QtWidgets.QFrame.Shadow.Plain)
         self.plainTextEditStats.setLineWrapMode(QtWidgets.QPlainTextEdit.LineWrapMode.NoWrap)
@@ -270,6 +270,9 @@ class Ui_MainWindow(object):
         self.labelOverallTitle.setObjectName("labelOverallTitle")
         self.verticalLayoutOverallLeft.addWidget(self.labelOverallTitle)
         self.plainTextEditOverallStats = QtWidgets.QPlainTextEdit(self.tabOverallSummary)
+        font = QtGui.QFont()
+        font.setFamily("Consolas")
+        self.plainTextEditOverallStats.setFont(font)
         self.plainTextEditOverallStats.setFrameShadow(QtWidgets.QFrame.Shadow.Sunken)
         self.plainTextEditOverallStats.setReadOnly(True)
         self.plainTextEditOverallStats.setObjectName("plainTextEditOverallStats")
@@ -450,7 +453,7 @@ class Ui_MainWindow(object):
         self.toolBar.addAction(self.actionAdjust)
 
         self.retranslateUi(MainWindow)
-        self.tabWidgetMain.setCurrentIndex(1)
+        self.tabWidgetMain.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):

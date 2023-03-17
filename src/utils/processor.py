@@ -27,7 +27,7 @@ def ingest_and_process(cb_progress, eyedb: EyeDB, paths: list[Path], type: str =
         mag_data = eyedb.get_mag_data(runid)
         progress += 0.20 / len(runs_to_process)
         cb_progress(
-            f'Run {current_run} of {max_run}: Fusing imu and magnetometer data...', progress)
+            f'Run {current_run} of {max_run}: Fusing imu data...', progress)
         fuser = Fusion(imu_data, mag_data)
         fused = fuser.run()
         roll_offset = get_roll_offset(fused)

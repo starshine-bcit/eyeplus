@@ -18,7 +18,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidgetMain">
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="tabDataList">
        <attribute name="title">
@@ -146,7 +146,7 @@
               <widget class="QPlainTextEdit" name="plainTextEditSummary">
                <property name="font">
                 <font>
-                 <family>Lucida Sans Typewriter</family>
+                 <family>Consolas</family>
                 </font>
                </property>
               </widget>
@@ -308,7 +308,7 @@
            <widget class="QPlainTextEdit" name="plainTextEditStats">
             <property name="font">
              <font>
-              <family>Lucida Sans Typewriter</family>
+              <family>Consolas</family>
              </font>
             </property>
             <property name="frameShadow">
@@ -530,6 +530,11 @@
             </item>
             <item>
              <widget class="QPlainTextEdit" name="plainTextEditOverallStats">
+              <property name="font">
+               <font>
+                <family>Consolas</family>
+               </font>
+              </property>
               <property name="frameShadow">
                <enum>QFrame::Sunken</enum>
               </property>
