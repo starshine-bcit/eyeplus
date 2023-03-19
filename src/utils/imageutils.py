@@ -3,6 +3,22 @@ from PIL import Image, ImageDraw
 
 
 def create_video_overlay(dims: tuple, predict_x: float, predict_y: float,  y_intercept: float, x_intercept: float, slope: float, roll: float, pitch: float, horizon_offset: float) -> Tuple:
+    """Creates a transparent overlay for the video based on data at the given timestamp.
+
+    Args:
+        dims (tuple): Dimensions of the mpv player object.
+        predict_x (float): The predicted x position of gaze.
+        predict_y (float): The predicted y position of gaze.
+        y_intercept (float): Y intercept of the horizon line.
+        x_intercept (float): X intercept of the horizon line
+        slope (float): Slope of the horizon line.
+        roll (float): Calculated roll value at the time.
+        pitch (float): Calculated pitch value at the time.
+        horizon_offset (float): Vertical offset to apply to the horizon line.
+
+    Returns:
+        Tuple: Returns a PIL Image object, alongside the offsets of where to display it.
+    """
     true_width = int(dims['w'] - dims['ml'] - dims['mr'])
     true_height = int(dims['h'] - dims['mt'] - dims['mb'])
     half_width = int(true_width / 2)

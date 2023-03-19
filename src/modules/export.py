@@ -35,6 +35,11 @@ class DataExporter:
             csv_writer.writerows(pgaze)
 
     def export_all(self, out_path: Path) -> None:
+        """Gets list of all runs from database and exports everything to the specified directory.
+
+        Args:
+            out_path (Path): Path to folder to write all csv files.
+        """
         all_runs = self._db.get_all_runs()
         for run in all_runs:
             now = datetime.now()

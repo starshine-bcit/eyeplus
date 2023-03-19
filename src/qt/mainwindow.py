@@ -1,6 +1,7 @@
 from pathlib import Path
 import sys
 import os
+import re
 
 from PyQt6 import QtCore, QtGui, QtWidgets
 
@@ -14,7 +15,7 @@ from qt.processui import Ui_dialogProcessing
 from qt.helpwindow import Ui_helpDialog
 from qt.parameterwindow import ParameterWindow
 from modules.export import DataExporter
-from modules.visualize import TotalUpDown, CumulativeUpDown, PitchLive, HeatMap, TotalUpDownStacked, GazeLive, OverallGaze2DY
+from modules.visualize import TotalUpDown, CumulativeUpDown, PitchLive, HeatMap, TotalUpDownStacked, GazeLive, OverallGaze2DY, OverallUpAndDown, PitchHistogram
 from utils.fileutils import validate_import_folder
 from utils.imageutils import create_video_overlay
 from utils.statutils import get_gaze_stats, get_fusion_stats
@@ -50,8 +51,8 @@ class EyeMainWindow(Ui_MainWindow):
         self.actionMute.setEnabled(False)
         self.actionMute.setEnabled(False)
         self.actionAdjust.setEnabled(False)
-        self.actionRecalculate.setEnabled(False)
         self._videos = {}
+        self._overall_selected_runs = []
         self._selected_run = 0
         self._roll_offset = 90
         self._pitch_multi = 1.0
@@ -91,17 +92,17 @@ class EyeMainWindow(Ui_MainWindow):
         self.actionAbout.triggered.connect(self._about_clicked)
         self.actionUsage.triggered.connect(self._usage_clicked)
         self.actionReadme.triggered.connect(self._readme_clicked)
-        self.pushButtonRecalculateOne.clicked.connect(
-            self._redo_single_calc_clicked)
         self.actionAdjust.triggered.connect(self._show_parameter_window)
         self.parameter_window.ui.pushButtonApply.clicked.connect(
             self._update_parameters)
         self.lineEditFilter.textChanged.connect(
             self._filter_runs)
-        self.actionRecalculate.triggered.connect(
+        self.parameter_window.ui.pushButtonRecalculate.clicked.connect(
             self._update_fusion)
         self.horizontalScrollBarLongChart.sliderMoved.connect(
             self._overall_graphic_slider_moved)
+        self.listWidgetOverallSelectRuns.itemSelectionChanged.connect(
+            self._overall_run_selection_changed)
 
     def _setup_video(self):
         if 'playback_worker' in self.__dict__:
@@ -149,7 +150,6 @@ class EyeMainWindow(Ui_MainWindow):
         self.actionStop.setEnabled(True)
         self.actionMute.setEnabled(True)
         self.actionAdjust.setEnabled(True)
-        self.actionRecalculate.setEnabled(True)
         self.horizontalSliderVolume.setEnabled(True)
         self.actionMute.setEnabled(True)
         self._overlay = self.player.create_image_overlay()
@@ -266,7 +266,6 @@ class EyeMainWindow(Ui_MainWindow):
         self.actionStop.setEnabled(False)
         self.actionMute.setEnabled(False)
         self.actionAdjust.setEnabled(False)
-        self.actionRecalculate.setEnabled(False)
         self.horizontalSliderVolume.setEnabled(False)
         self.actionMute.setEnabled(False)
         self._visual_review_pitch.stop()
@@ -349,6 +348,10 @@ class EyeMainWindow(Ui_MainWindow):
                 self._runs_model.setItem(index, 1, new_import_date)
                 self._runs_model.setItem(index, 2, new_process_date)
                 self._runs_model.setItem(index, 3, new_title)
+                new_item = QtWidgets.QListWidgetItem(
+                    f'{run["id"]} - {run["tags"]}', self.listWidgetOverallSelectRuns)
+                self.listWidgetOverallSelectRuns.addItem(new_item)
+                self._overall_selected_runs.append(run['id'])
             self._title_filter_model = QtCore.QSortFilterProxyModel()
             self._title_filter_model.setSourceModel(self._runs_model)
             self._title_filter_model.setFilterKeyColumn(3)
@@ -363,6 +366,7 @@ class EyeMainWindow(Ui_MainWindow):
             self.tableViewRuns.selectRow(0)
             self._table_item_single_clicked(
                 self._title_filter_model.index(0, 0))
+            self.listWidgetOverallSelectRuns.selectAll()
             self._display_overall_visuals()
         else:
             self.tabWidgetMain.setEnabled(False)
@@ -380,6 +384,8 @@ class EyeMainWindow(Ui_MainWindow):
         self._selected_run = int(self._runs_model.itemData(runid_index)[0])
         self._roll_offset, self._pitch_multi, self._horizon_offset = self._db.get_parameters(
             self._selected_run)
+        if 'player' in self.__dict__:
+            self._stop_clicked()
         self._load_summary_data()
         self._display_summary_visuals()
         self._display_summary_text()
@@ -388,6 +394,8 @@ class EyeMainWindow(Ui_MainWindow):
 
     def _open_review_clicked(self) -> None:
         self._gaze = self._db.get_gaze_data(self._selected_run)
+        if 'player' in self.__dict__:
+            self._stop_clicked()
         self._setup_video()
         self.actionPlay.setEnabled(True)
         self.tabWidgetMain.tabBar().setHidden(False)
@@ -580,18 +588,6 @@ class EyeMainWindow(Ui_MainWindow):
         self.help_window.resize(400, 300)
         self.help_window.show()
 
-    def _redo_single_calc_clicked(self) -> None:
-        runs_to_redo = [self._selected_run]
-        ingest_worker = ReprocessWorker(
-            self._db_path, runs_to_redo, self._roll_offset, self._pitch_multi, self._horizon_offset)
-        ingest_worker.signals.started.connect(
-            self._reprocess_started)
-        ingest_worker.signals.progress.connect(
-            self._reprocess_dialog_update)
-        ingest_worker.signals.finished.connect(
-            self._reprocess_finished)
-        self._thread_pool.start(ingest_worker)
-
     def _reprocess_started(self) -> None:
         self._update_status('Beginning to reprocess data')
         self.process_ui.labelProcessing.setText('Warming up...')
@@ -681,20 +677,20 @@ class EyeMainWindow(Ui_MainWindow):
         fusion_stats = get_fusion_stats(self._fusion_data)
         last_horizon = self._horizon_timestamps[-1]
         self.plainTextEditSummary.setPlainText(
-            f'Gaze 2D, {gaze_stats["num_samples"]} Observations\n'
-            f'  Mean / Median / Standard Deviation\n'
-            f'  X: {gaze_stats["x"]["mean"]:.4f} / {gaze_stats["x"]["median"]:.4f} / {gaze_stats["x"]["stdev"]:.4f}\n'
-            f'  Y: {gaze_stats["y"]["mean"]:.4f} / {gaze_stats["y"]["median"]:.4f} / {gaze_stats["y"]["stdev"]:.4f}\n\n'
-            f'Sensor Fusion, {fusion_stats["num_samples"]} Observations\n'
-            f'  Mean / Median / Standard Deviation\n'
-            f'  Pitch: {fusion_stats["pitch"]["mean"]:.4f} / {fusion_stats["pitch"]["median"]:.4f} / {fusion_stats["pitch"]["stdev"]:.4f}\n'
-            f'  Roll: {fusion_stats["roll"]["mean"]:.4f} / {fusion_stats["roll"]["median"]:.4f} / {fusion_stats["roll"]["stdev"]:.4f}\n\n'
-            f'Horizon, {self._horizon[last_horizon]["total"]} Observations\n'
-            f'  Count / Proportion\n'
-            f'  Looking Up: {self._horizon[last_horizon]["up_count"]} / {self._horizon[last_horizon]["percent_up"]:.4f}\n'
-            f'  Looking Down: {self._horizon[last_horizon]["down_count"]} / {self._horizon[last_horizon]["percent_down"]:.4f}\n\n'
+            f'Gaze 2D: {gaze_stats["num_samples"]} Observations\n'
+            f'     Mean     Median   Std. Dev.\n'
+            f'  X: {gaze_stats["x"]["mean"]:>2.4f} | {gaze_stats["x"]["median"]:.4f} | {gaze_stats["x"]["stdev"]:>2.4f}\n'
+            f'  Y: {gaze_stats["y"]["mean"]:>2.4f} | {gaze_stats["y"]["median"]:.4f} | {gaze_stats["y"]["stdev"]:>2.4f}\n\n'
+            f'Sensor Fusion: {fusion_stats["num_samples"]} Observations\n'
+            f'         Mean      Median    Std. Dev.\n'
+            f'  Pitch: {fusion_stats["pitch"]["mean"]:>7.4f} | {fusion_stats["pitch"]["median"]:>7.4f} | {fusion_stats["pitch"]["stdev"]:>7.4f}\n'
+            f'  Roll : {fusion_stats["roll"]["mean"]:.4f} | {fusion_stats["roll"]["median"]:>7.4f} | {fusion_stats["roll"]["stdev"]:>7.4f}\n\n'
+            f'Horizon: {self._horizon[last_horizon]["total"]} Observations\n'
+            f'                  Count   Prop.\n'
+            f'  Looking Up  : {self._horizon[last_horizon]["up_count"]:>6} | {self._horizon[last_horizon]["percent_up"]:>7.4}\n'
+            f'  Looking Down: {self._horizon[last_horizon]["down_count"]:>6} | {self._horizon[last_horizon]["percent_down"]:>7.4f}\n\n'
             f'Offsets\n'
-            f'  Horizon: {-self._horizon_offset:.2f}, Roll: {self._roll_offset}, Pitch: {self._pitch_multi:.2f}'
+            f'  Horizon: {-self._horizon_offset:>5.2f}, Roll: {self._roll_offset}, Pitch: {self._pitch_multi:>5.2f}'
         )
 
     def _setup_visual_widgets(self) -> None:
@@ -725,8 +721,13 @@ class EyeMainWindow(Ui_MainWindow):
         self._visual_review_gaze_live = GazeLive(500, 500, self._dpi)
         g3_review_parent.addWidget(self._visual_review_gaze_live)
         g1_overall_parent = self.widgetOverallGraphic1.parentWidget().layout()
+        self._visual_overall_up_down = OverallUpAndDown(500, 500, self._dpi)
+        g1_overall_parent.removeWidget(self.widgetOverallGraphic1)
+        g1_overall_parent.addWidget(self._visual_overall_up_down)
         g2_overall_parent = self.widgetOverallGraphic2.parentWidget().layout()
-
+        self._visual_overall_pitch_hist = PitchHistogram(500, 500, self._dpi)
+        g2_overall_parent.removeWidget(self.widgetOverallGraphic2)
+        g2_overall_parent.addWidget(self._visual_overall_pitch_hist)
         g3_overall_parent = self.widgetOverallGraphic3.parentWidget().layout()
         self._visual_overall_gaze2d = OverallGaze2DY(10000, 500, self._dpi)
         g3_overall_parent.removeWidget(self.widgetOverallGraphic3)
@@ -736,10 +737,32 @@ class EyeMainWindow(Ui_MainWindow):
 
     def _display_overall_visuals(self) -> None:
         self._longest_run = self._visual_overall_gaze2d.plot(
-            self._db.get_all_gaze_2dy())
+            self._db.get_all_gaze_2dy(self._overall_selected_runs))
         self.horizontalScrollBarLongChart.setMaximum(self._longest_run)
         self.horizontalScrollBarLongChart.setValue(30)
         self.horizontalScrollBarLongChart.setMinimum(30)
+        overall_up_down = self._db.get_overall_up_down(
+            self._overall_selected_runs)
+        self._visual_overall_up_down.plot(overall_up_down)
+        total_pitch_observations, binned_pitch = self._db.get_binned_pitch_data(
+            self._overall_selected_runs)
+        self._visual_overall_pitch_hist.plot(
+            total_pitch_observations, binned_pitch)
 
     def _overall_graphic_slider_moved(self, val: int) -> None:
         self._visual_overall_gaze2d.update_scroll(val)
+
+    def _overall_run_selection_changed(self) -> None:
+        self._overall_selected_runs.clear()
+        indexes = self.listWidgetOverallSelectRuns.selectedIndexes()
+        for index in indexes:
+            run_data = self.listWidgetOverallSelectRuns.itemFromIndex(
+                index).text()
+            runid = int(re.search(r'^\d+', run_data).group(0))
+            self._overall_selected_runs.append(runid)
+        if not self._overall_selected_runs:
+            self._overall_selected_runs.append(
+                int(self._all_runs_list[0]['id']))
+            self.listWidgetOverallSelectRuns.setCurrentRow(0)
+        self._overall_selected_runs.sort()
+        self._display_overall_visuals()

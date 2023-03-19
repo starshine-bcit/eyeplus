@@ -4,6 +4,11 @@ import numpy as np
 
 class Regression2dGazeModel():
     def __init__(self, run_data: dict) -> None:
+        """Uses a regression model to predict the gaze2d data at evenly spaced intervals of 0.05 seconds.
+
+        Args:
+            run_data (dict): The raw input gaze2d values from Tobii ndjson file.
+        """
         y = []
         x = []
         for key, val in run_data.items():
@@ -21,6 +26,11 @@ class Regression2dGazeModel():
         self._length = int(round(x[-1] + 0.05, 2) * 20)
 
     def get_predicted_2d(self) -> dict:
+        """Predicts and returns the values for each timestamp at 0.05 second intervals.
+
+        Returns:
+            dict: Processed 2dgaze data for later use.
+        """
         vals = [round(x / 20, 2) for x in range(self._length)]
         predicted_pos = self._trees.predict(
             np.array(vals).reshape(-1, 1))
@@ -33,6 +43,12 @@ class Regression2dGazeModel():
 
 class RegressionMagnetometerModel():
     def __init__(self, mag_data: dict, predict_timestamps: list[float]) -> None:
+        """Uses a regression model in order to predict magnetometer data such that it lines up gyro and accelerometer timestamps.
+
+        Args:
+            mag_data (dict): Raw magnetometer data from Tobii ndjson file.
+            predict_timestamps (list[float]): List of timestamps to predict for.
+        """
         y = []
         x = []
         self._p = np.array(predict_timestamps)
@@ -47,6 +63,11 @@ class RegressionMagnetometerModel():
         self._trees.fit(self._x, self._y)
 
     def get_predicted_mag(self) -> dict:
+        """Predicts magnetometer data for each timestamp provided.
+
+        Returns:
+            dict: Predicted magnetometer data for each timestamp.
+        """
         predicted_mag = self._trees.predict(self._p)
         # explained_variance_score on sparse input: 0.9968204315587093
         predicted_dict = {}

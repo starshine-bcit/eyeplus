@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 import sys
 
+# adds the folder containing mpv-2.dll to system path, if not there already
 mlib_path = str(Path(__file__).parent.parent / 'mlib')
 if mlib_path not in os.environ['PATH']:
     os.environ['PATH'] = str(Path(__file__).parent.parent / 'mlib') + os.pathsep + os.environ['PATH']

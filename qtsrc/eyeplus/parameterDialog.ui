@@ -181,15 +181,15 @@
     </widget>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,1,0">
+    <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,1,0,0">
      <item>
-      <widget class="QPushButton" name="pushButtonReset">
+      <widget class="QPushButton" name="pushButtonRecalculate">
        <property name="text">
-        <string>Reset</string>
+        <string>Recalculate</string>
        </property>
        <property name="icon">
         <iconset resource="icons.qrc">
-         <normaloff>:/icons/refresh-ccw.svg</normaloff>:/icons/refresh-ccw.svg</iconset>
+         <normaloff>:/icons/function-square.svg</normaloff>:/icons/function-square.svg</iconset>
        </property>
       </widget>
      </item>
@@ -205,6 +205,17 @@
         </size>
        </property>
       </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="pushButtonReset">
+       <property name="text">
+        <string>Reset</string>
+       </property>
+       <property name="icon">
+        <iconset resource="icons.qrc">
+         <normaloff>:/icons/refresh-ccw.svg</normaloff>:/icons/refresh-ccw.svg</iconset>
+       </property>
+      </widget>
      </item>
      <item>
       <widget class="QPushButton" name="pushButtonApply">

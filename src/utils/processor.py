@@ -8,6 +8,16 @@ from utils.statutils import calc_horizon_line, get_roll_offset
 
 
 def ingest_and_process(cb_progress, eyedb: EyeDB, paths: list[Path], type: str = 'zip', horizon_offset: float = 0.13, pitch_multi: float = 1.6) -> None:
+    """Master function which handles the ingesting and processing of input data.
+
+    Args:
+        cb_progress (function): Takes a (str, float) argument to display progress to user.
+        eyedb (EyeDB): Instance of the database class used to store data.
+        paths (list[Path]): List of Path object to attempt and process.
+        type (str, optional): Type of input, either zip or dir. Defaults to 'zip'.
+        horizon_offset (float, optional): Default horizon_offset to apply. Defaults to 0.13.
+        pitch_multi (float, optional): Default pitch multiplier to apply. Defaults to 1.6.
+    """
     progress = 0.0
     cb_progress('Beginning to ingest data...', progress)
     runs_to_process = eyedb.ingest_data(paths, type)
@@ -27,7 +37,7 @@ def ingest_and_process(cb_progress, eyedb: EyeDB, paths: list[Path], type: str =
         mag_data = eyedb.get_mag_data(runid)
         progress += 0.20 / len(runs_to_process)
         cb_progress(
-            f'Run {current_run} of {max_run}: Fusing imu and magnetometer data...', progress)
+            f'Run {current_run} of {max_run}: Fusing imu data...', progress)
         fuser = Fusion(imu_data, mag_data)
         fused = fuser.run()
         roll_offset = get_roll_offset(fused)
@@ -49,6 +59,16 @@ def ingest_and_process(cb_progress, eyedb: EyeDB, paths: list[Path], type: str =
 
 
 def reprocess(cb_progress, eyedb: EyeDB, runids: list[int], roll_offset: int, pitch_multi: float, horizon_offset: float) -> None:
+    """Master function which handles the reprocessing of data based on tweakable parameters.
+
+    Args:
+        cb_progress (function): Takes a (str, float) argument to display progress to user.
+        eyedb (EyeDB): Instance of database class used to store data.
+        runids (list[int]): List of runids to process.
+        roll_offset (int): User-provided roll_offset.
+        pitch_multi (float): User-provided pitch multiplier.
+        horizon_offset (float): User-provided horizon offset.
+    """
     roll_offset += -90
     progress = 0.0
     cb_progress('Beginning to reprocess data...', progress)

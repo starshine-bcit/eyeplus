@@ -6,6 +6,7 @@ import shutil
 import gzip
 import json
 from hashlib import file_digest
+from typing import Tuple
 
 
 class EyeDB():
@@ -336,6 +337,9 @@ class EyeDB():
         self._cur.execute('''CREATE INDEX idx_fusion_timestamp
                 ON fusion (runid, timestamp);''')
 
+        self._cur.execute('''CREATE INDEX idx_fusion_pitch 
+                ON fusion (pitch, runid, id);''')
+
         self._con.commit()
 
     def disconnect_db(self) -> None:
@@ -575,6 +579,17 @@ class EyeDB():
         self._con.commit()
 
     def get_gaze3d_z(self, runid: int) -> dict:
+        """Gets all gaze_distance data for a specific run.
+
+        Args:
+            runid (int): runid we wish to grab gaze data for.
+
+        Raises:
+            RuntimeError: If there was an attempt to select a non-existant runid.
+
+        Returns:
+            dict: Contains all gaze3d distance data for the given run.
+        """
         if self.check_existing_runid(runid):
             gaze_distance_dict = {}
             self._cur.execute('''SELECT timestamp, gaze3d2
@@ -587,6 +602,17 @@ class EyeDB():
             raise RuntimeError(f'Trying to select a non-existant ID: {runid}')
 
     def update_parameters(self, runid: int, roll_offset: int, pitch_multi: float, horizon_offset: float) -> None:
+        """Updates the tweakable parameters in the database (run table).
+
+        Args:
+            runid (int): The runid that is being updated.
+            roll_offset (int): New roll offset value.
+            pitch_multi (float): New pitch multiplier value.
+            horizon_offset (float): New horizon offset value.
+
+        Raises:
+            RuntimeError: If there was an attempt to select a non-existant runid.
+        """
         if self.check_existing_runid(runid):
             self._cur.execute('''UPDATE run
                             SET(rolloffset, pitchmulti, horizonoffset) = (?, ?, ?)
@@ -595,6 +621,17 @@ class EyeDB():
             raise RuntimeError(f'Trying to select a non-existant ID: {runid}')
 
     def get_parameters(self, runid: int) -> tuple:
+        """Gets the tweakable parameters that were previously stored (run table).
+
+        Args:
+            runid (int): The runid to get parameters for.
+
+        Raises:
+            RuntimeError: If there was an attempt to select a non-existant runid.
+
+        Returns:
+            tuple: Contains the roll_offset, pitch_multi, and horizon_offset values.
+        """
         if self.check_existing_runid(runid):
             self._cur.execute('''SELECT rolloffset, pitchmulti, horizonoffset
                             FROM run where id=(?);''', (runid,))
@@ -604,11 +641,24 @@ class EyeDB():
             raise RuntimeError(f'Trying to select a non-existant ID: {runid}')
 
     def write_process_date(self, runid: int) -> None:
+        """Writes out the date the data was processed/reprocessed.
+
+        Args:
+            runid (int): runid which we are updating the processed date of.
+        """
         self._cur.execute('''UPDATE run SET(processdate)=(?)
                         WHERE id=(?);''', (str(datetime.now().date()), runid))
         self._con.commit()
 
     def check_existing_runid(self, runid: int) -> bool:
+        """Quickly check if the given runid exists in the database.
+
+        Args:
+            runid (int): runid to search for.
+
+        Returns:
+            bool: True if runid exists in run table.
+        """
         self._cur.execute('''SELECT id FROM run WHERE id=(?);''', (runid,))
         res = self._cur.fetchall()
         if res:
@@ -617,6 +667,15 @@ class EyeDB():
             return False
 
     def write_processed_data(self, runid: int, processed: dict) -> None:
+        """Writes out all data processed by HorizonGaze.
+
+        Args:
+            runid (int): The runid of the data to be written out.
+            processed (dict): Processed HorizonGaze data.
+
+        Raises:
+            RuntimeError: If there was an attempt to select a non-existant runid.
+        """
         processed_data = [{'runid': runid, 'timestamp': k, 'totalcount': v['total'], 'upcount': v['up_count'], 'downcount': v['down_count'],
                            'percentup': v['percent_up'], 'percentdown': v['percent_down'], 'currentup': 1 if v['currently_up'] else 0} for k, v in processed.items()]
         processed_query = '''INSERT INTO processed (runid, timestamp, totalcount, upcount, downcount, percentup, percentdown, currentup) VALUES(:runid, :timestamp, :totalcount, :upcount, :downcount, :percentup, :percentdown, :currentup);'''
@@ -629,6 +688,17 @@ class EyeDB():
         self.update_processed_view()
 
     def get_processed_data(self, runid: int) -> dict:
+        """Gets all data previously stored from HorizonGaze class.
+
+        Args:
+            runid (int): runid of which we wish to get data.
+
+        Raises:
+            RuntimeError: If there was an attempt to select a non-existant runid.
+
+        Returns:
+            dict: All processed up/down data.
+        """
         processed_dict = {}
         self._cur.execute(
             '''SELECT * FROM processed WHERE runid=(?) ORDER BY id ASC;''', (runid,))
@@ -648,6 +718,15 @@ class EyeDB():
             raise RuntimeError(f'Trying to select a non-existant ID: {runid}')
 
     def update_processed_data(self, runid: int, processed: dict) -> None:
+        """Updates existing up/down data, recalculated with HorizonGaze instance.
+
+        Args:
+            runid (int): runid of data we wish to update.
+            processed (dict): All processed data from HorizonGaze.
+
+        Raises:
+            RuntimeError: If there was an attempt to select a non-existant runid.
+        """
         update_query = '''UPDATE processed
                         SET (totalcount, upcount, downcount, percentup, percentdown, currentup) = (:totalcount, :upcount, :downcount, :percentup, :percentdown, :currentup)
                         WHERE runid = (:runid) AND timestamp = (:timestamp);'''
@@ -672,6 +751,8 @@ class EyeDB():
         self._con.commit()
 
     def update_processed_view(self) -> None:
+        """Creates a view representing processed data grouped by runid.
+        """
         drop_view_query = '''DROP VIEW IF EXISTS overall_percentage_view;'''
         view_query = '''
                 CREATE VIEW overall_percentage_view
@@ -686,31 +767,44 @@ class EyeDB():
         self._cur.execute(drop_view_query)
         self._cur.execute(view_query)
 
-    def get_overall_up_down(self) -> dict:
-        self._cur.execute('''SELECT id from run;''')
-        res = self._cur.fetchall()
+    def get_overall_up_down(self, runids: list[int]) -> dict:
+        """Gets the final cumulative calculated up/down for any number of runs.
+
+        Args:
+            runids (list[int]): List of runids to get data for.
+
+        Returns:
+            dict: Contains averaged up/down values for all input runids.
+        """
         p_up = []
         p_down = []
-        for runid in res:
+        for runid in runids:
             self._cur.execute('''SELECT id, runid, percentup, percentdown
                             FROM processed
                             WHERE runid=(?)
                             ORDER BY id DESC
-                            LIMIT 1;''', runid)
+                            LIMIT 1;''', str(runid))
             line = self._cur.fetchone()
             p_up.append(line[2])
             p_down.append(line[3])
         return {
-            'run_count': len(res),
+            'run_count': len(runids),
             'total_up': sum(p_up) / len(p_up),
             'total_down': sum(p_down) / len(p_down)
         }
 
-    def get_all_gaze_2dy(self) -> dict:
-        self._cur.execute('''SELECT id from run;''')
-        res = self._cur.fetchall()
+    def get_all_gaze_2dy(self, runids: list[int]) -> dict:
+        """Gets all processed gaze2d y data for any number of runids.
+
+        Args:
+            runids (list[int]): List of runids we wish to get data for.
+
+        Returns:
+            dict: Contains all gaze2d eye y data for each input run.
+        """
+        runids = [str(x) for x in runids]
         gaze_data = {}
-        for runid in res:
+        for runid in runids:
             self._cur.execute('''SELECT timestamp, pgaze2dy
                             FROM pgaze2d
                             WHERE runid=(?)
@@ -725,7 +819,39 @@ class EyeDB():
                 gaze_data[runid]['y'].append(line[1])
         return gaze_data
 
+    def get_binned_pitch_data(self, runids: list[int]) -> Tuple[dict, int]:
+        """Gets agregate binned pitch data from any number of input runs.
+
+        Args:
+            runids (list[int]): List of runids to get data for.
+
+        Returns:
+            Tuple[dict, int]: Contains total count of samples alongside the aggregate binned data.
+        """
+        binned_data = {}
+        ranges = [-45 + (4.5 * x) for x in range(20)]
+        query2 = f'SELECT COUNT (id) FROM fusion WHERE runid in ({",".join(["?" for _ in range(len(runids))])});'
+        self._cur.execute(query2, [*runids])
+        total_count = self._cur.fetchone()[0]
+        query = f'SELECT COUNT(pitch) FROM fusion WHERE runid IN ({",".join(["?" for _ in range(len(runids))])}) AND pitch >= (?) AND pitch < (?);'
+        for x in ranges:
+            self._cur.execute(query, (*runids, x, x + 4.5))
+            res = self._cur.fetchone()[0] / total_count
+            binned_data[x] = res
+        return total_count, binned_data
+
     def get_raw_fusion_data(self, runid: int) -> dict:
+        """Gets the heading, pitch, roll, and quaternion values for the given runid.
+
+        Args:
+            runid (int): runid of item to get data for.
+
+        Raises:
+            RuntimeError: If there was an attempt to select a non-existant runid.
+
+        Returns:
+            dict: Contains heading, roll, pitch, and quaternion at each timestamp.
+        """
         if self.check_existing_runid(runid):
             fusion_dict = {}
             self._cur.execute('''SELECT timestamp, heading, pitch,

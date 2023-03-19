@@ -18,7 +18,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidgetMain">
       <property name="currentIndex">
-       <number>2</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="tabDataList">
        <attribute name="title">
@@ -146,7 +146,7 @@
               <widget class="QPlainTextEdit" name="plainTextEditSummary">
                <property name="font">
                 <font>
-                 <family>Lucida Sans Typewriter</family>
+                 <family>Consolas</family>
                 </font>
                </property>
               </widget>
@@ -257,20 +257,6 @@
               </spacer>
              </item>
              <item>
-              <widget class="QPushButton" name="pushButtonRecalculateOne">
-               <property name="toolTip">
-                <string>Developer Use Only - Will be Removed</string>
-               </property>
-               <property name="text">
-                <string>Redo Calculations</string>
-               </property>
-               <property name="icon">
-                <iconset resource="icons.qrc">
-                 <normaloff>:/icons/function-square.svg</normaloff>:/icons/function-square.svg</iconset>
-               </property>
-              </widget>
-             </item>
-             <item>
               <widget class="QPushButton" name="pushButtonExportDisplayed">
                <property name="minimumSize">
                 <size>
@@ -322,7 +308,7 @@
            <widget class="QPlainTextEdit" name="plainTextEditStats">
             <property name="font">
              <font>
-              <family>Lucida Sans Typewriter</family>
+              <family>Consolas</family>
              </font>
             </property>
             <property name="frameShadow">
@@ -525,7 +511,7 @@
            <number>4</number>
           </property>
           <item>
-           <layout class="QVBoxLayout" name="verticalLayoutOverallLeft" stretch="0,1">
+           <layout class="QVBoxLayout" name="verticalLayoutOverallLeft" stretch="0,2,1">
             <item>
              <widget class="QLabel" name="labelOverallTitle">
               <property name="font">
@@ -544,8 +530,35 @@
             </item>
             <item>
              <widget class="QPlainTextEdit" name="plainTextEditOverallStats">
+              <property name="font">
+               <font>
+                <family>Consolas</family>
+               </font>
+              </property>
+              <property name="frameShadow">
+               <enum>QFrame::Sunken</enum>
+              </property>
               <property name="readOnly">
                <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QListWidget" name="listWidgetOverallSelectRuns">
+              <property name="frameShadow">
+               <enum>QFrame::Sunken</enum>
+              </property>
+              <property name="editTriggers">
+               <set>QAbstractItemView::NoEditTriggers</set>
+              </property>
+              <property name="defaultDropAction">
+               <enum>Qt::IgnoreAction</enum>
+              </property>
+              <property name="alternatingRowColors">
+               <bool>true</bool>
+              </property>
+              <property name="selectionMode">
+               <enum>QAbstractItemView::MultiSelection</enum>
               </property>
              </widget>
             </item>
@@ -761,7 +774,6 @@
    <addaction name="actionPlay"/>
    <addaction name="separator"/>
    <addaction name="actionAdjust"/>
-   <addaction name="actionRecalculate"/>
   </widget>
   <action name="actionImport_Zip">
    <property name="icon">
@@ -923,18 +935,6 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+T</string>
-   </property>
-  </action>
-  <action name="actionRecalculate">
-   <property name="icon">
-    <iconset resource="icons.qrc">
-     <normaloff>:/icons/function-square.svg</normaloff>:/icons/function-square.svg</iconset>
-   </property>
-   <property name="text">
-    <string>Recalculate</string>
-   </property>
-   <property name="toolTip">
-    <string>Recalculate and store data based on provided parameter changes</string>
    </property>
   </action>
  </widget>
