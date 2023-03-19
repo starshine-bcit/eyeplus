@@ -93,7 +93,7 @@ def calc_horizon_line(fusion: dict, roll_offset: int, pitch_multi: float) -> dic
         # calculate intercepts as percentage of screen based off head pitch and slope
         theta = -pitch
 
-        fov_constant = 0.34  # determined so that looking up 45 degrees would move the slope down 25 percent of the screen, and vice versa
+        fov_constant = 0.45  # determined so that looking up 45 degrees would move the slope down 25 percent of the screen, and vice versa
 
         if theta >= 0:
             y_intercept = 0.5 - tan(radians(theta))*fov_constant

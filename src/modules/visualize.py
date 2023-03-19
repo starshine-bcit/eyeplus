@@ -102,6 +102,13 @@ class CumulativeUpDown(BasicCanvas):
 
 class PitchLive(BasicCanvas):
     def __init__(self, width: int, height: int, dpi: float):
+        """Displays a live plot of the rolling calculated pitch over time.
+
+        Args:
+            width (int): Width of the plot to make in pixels.
+            height (int): Height of the plot to make in pixels.
+            dpi (float): DPI of the plot to make.
+        """
         super().__init__(width, height, dpi)
         self._pause = False
         self.current_timestamp = 0.0
@@ -115,6 +122,14 @@ class PitchLive(BasicCanvas):
         return self.line,
 
     def _draw_next_frame(self, frame: float):
+        """Adjusts the xlim of the plot based on currently playing timestamp.
+
+        Args:
+            frame (float): The frame number provided by funcAnimation.
+
+        Returns:
+            Tuple: Tuple containing the line object.
+        """
         if self.current_timestamp > 10:
             x_low = self.current_timestamp - 10
             x_high = self.current_timestamp
@@ -125,6 +140,12 @@ class PitchLive(BasicCanvas):
         return self.line,
 
     def plot(self, fusion: dict, fusion_timestamps: list) -> None:
+        """Extracts the pitch data from the fusion data, and plots a
+            line covering the entire length of the run.
+        Args:
+            fusion (dict): Fusion data, grabbed from the database.
+            fusion_timestamps (list): A list of the keys from the fusion data.
+        """
         self.ax.clear()
         self.current_timestamp = 0.0
         self.fusion_timestamps = fusion_timestamps
@@ -163,9 +184,21 @@ class PitchLive(BasicCanvas):
 
 class HeatMap(BasicCanvas):
     def __init__(self, width: int, height: int, dpi: float):
+        """Displays a heatmap indicating how much a user was looking at
+            a given 2d gaze point.
+        Args:
+            width (int): Width of the plot to make in pixels.
+            height (int): Height of the plot to make in pixels.
+            dpi (float): DPI of the plot to make.
+        """
         super().__init__(width, height, dpi)
 
     def plot(self, gaze2d: dict) -> None:
+        """Creates a 2d heatmap based on the 2d gaze data from Tobii.
+
+        Args:
+            gaze2d (dict): Processed 2d gaze data from the database.
+        """
         self.ax.clear()
         arr_min = 0
         arr_max = 1
@@ -192,9 +225,24 @@ class HeatMap(BasicCanvas):
 
 class TotalUpDownStacked(BasicCanvas):
     def __init__(self, width: int, height: int, dpi: float):
+        """Displays a comparison bar chart between calculated looking
+            up/down versus mean pitch for a given run.
+
+        Args:
+            width (int): Width of the plot to make in pixels.
+            height (int): Height of the plot to make in pixels.
+            dpi (float): DPI of the plot to make.
+        """
         super().__init__(width, height, dpi)
 
     def plot(self, up_down: dict, fusion: dict, pitch_multi: float) -> None:
+        """Plots a chart with two bars, one of them stack up/down data,
+            the other the mean pitch (accounting for pitch_multi).
+        Args:
+            up_down (dict): Contains the final cumulative up/down data.
+            fusion (dict): Sensor fusion data from the database.
+            pitch_multi (float): The pitch multi to apply to each pitch value.
+        """
         self.ax.clear()
         self.up_down = up_down
         pitch_data = [v['pitch'] * pitch_multi for v in fusion.values()]
@@ -216,6 +264,14 @@ class TotalUpDownStacked(BasicCanvas):
 
 class GazeLive(BasicCanvas):
     def __init__(self, width: int, height: int, dpi: float):
+        """Gaze live shows the 2d eye Y values, changing colour
+            depending on whether the user is calculated to be looking
+            up or down at the given time.
+        Args:
+            width (int): Width of the plot to make in pixels.
+            height (int): Height of the plot to make in pixels.
+            dpi (float): DPI of the plot to make.
+        """
         super().__init__(width, height, dpi)
 
     @property
@@ -226,6 +282,10 @@ class GazeLive(BasicCanvas):
         self.ax.plot(x, y, color=colour)
 
     def _init_line(self) -> None:
+        """Creates and draws any number of lines that continous
+            on the plot, green if a user is looking "up", red
+            if a user is looking "down".
+        """
         current_up = self.processed[self.processed_timestamps[0]
                                     ]['currently_up']
         inner_x = []
@@ -249,6 +309,11 @@ class GazeLive(BasicCanvas):
             self._draw_single_line(inner_x, inner_y, colour)
 
     def _draw_next_frame(self, frame: float):
+        """Adjusts the xlim of the plot based on currently playing timestamp.
+
+        Args:
+            frame (float): The frame number provided by funcAnimation.
+        """
         if self.current_timestamp > 10:
             x_low = self.current_timestamp - 10
             x_high = self.current_timestamp
@@ -258,6 +323,14 @@ class GazeLive(BasicCanvas):
         self.ax.set_xlim(x_low, x_high)
 
     def plot(self, gaze2d: dict, processed: dict) -> None:
+        """Plots the 2d gaze y over time, with the colour changing
+            based on whether a user is observed to be looking up
+            or down.
+
+        Args:
+            gaze2d (dict): Processed 2d gaze values from database.
+            processed (dict): Processed horizon data from database.
+        """
         self.fig.clear()
         self.ax = self.fig.add_subplot()
         self.current_timestamp = 0.0
@@ -298,6 +371,14 @@ class GazeLive(BasicCanvas):
 
 class OverallGaze2DY(BasicCanvas):
     def __init__(self, width: int, height: int, dpi: float):
+        """Displays line plot of gaze 2d y points over time, for one
+            or more runs at once.
+
+        Args:
+            width (int): Width of the plot to make in pixels.
+            height (int): Height of the plot to make in pixels.
+            dpi (float): DPI of the plot to make.
+        """
         super().__init__(width, height, dpi)
         self.colours = [x for x in colours.XKCD_COLORS]
         shuffle(self.colours)
@@ -306,6 +387,15 @@ class OverallGaze2DY(BasicCanvas):
         self.legend = self.fig.legend(handles=[nothing_patch])
 
     def plot(self, gaze_data: dict) -> int:
+        """Plots a line indicating 2d gaze y over time for each run present in input.
+            Colours are randomly chosen from XKCD colours.
+
+        Args:
+            gaze_data (dict): Contains processed gaze data for one or more runs.
+
+        Returns:
+            int: The max timestamp plotted by this method.
+        """
         self.ax.clear()
         max_len = 0
         for runid, v in gaze_data.items():
@@ -331,15 +421,33 @@ class OverallGaze2DY(BasicCanvas):
         return int(max_len)
 
     def update_scroll(self, val: int) -> None:
+        """Called by the gui to update the xlim on Qt scrollbar update.
+
+        Args:
+            val (int): The value indicating the furthest right bound of the plot to display.
+        """
         self.ax.set_xlim(float(val - 30), float(val))
         self.fig.canvas.draw_idle()
 
 
 class OverallUpAndDown(BasicCanvas):
     def __init__(self, width: int, height: int, dpi: float):
+        """Plots mean Up/Down statistics over multiple runs.
+
+        Args:
+            width (int): Width of the plot to make in pixels.
+            height (int): Height of the plot to make in pixels.
+            dpi (float): DPI of the plot to make.
+        """
         super().__init__(width, height, dpi)
 
     def plot(self, up_down: dict) -> None:
+        """A simple bar chart comparing time spent looking up or down
+            for one or more runs.
+        Args:
+            up_down (dict): Contains mean up/down values, as well as number
+                of runs being displayed.
+        """
         self.ax.clear()
         num_runs = up_down['run_count']
         x = ['Up', 'Down']
@@ -356,9 +464,23 @@ class OverallUpAndDown(BasicCanvas):
 
 class PitchHistogram(BasicCanvas):
     def __init__(self, width: int, height: int, dpi: float):
+        """Displays a histogram of already binned calculated pitch values.
+
+        Args:
+            width (int): Width of the plot to make in pixels.
+            height (int): Height of the plot to make in pixels.
+            dpi (float): DPI of the plot to make.
+        """
         super().__init__(width, height, dpi)
 
     def plot(self, total_observations: int, pitch_binned: dict) -> None:
+        """Plots the already binned pitch values, along with regular
+            x and y ticks, including total observations included in title.
+
+        Args:
+            total_observations (int): Total number of observations that were binned.
+            pitch_binned (dict): Contains relative frequency of each bin.
+        """
         self.ax.clear()
         x = []
         y = []

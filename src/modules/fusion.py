@@ -51,9 +51,6 @@ class Fusion():
         self.pitch = 0
         self.heading = 0
         self.roll = 0
-        self.y_intercept = 0
-        self.x_intercept = 0
-        self.slope = 0
         self.results = {}
         self.deltat = DeltaT(list(imu_data.keys())[0])
         mag_model = RegressionMagnetometerModel(
