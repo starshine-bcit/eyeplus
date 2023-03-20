@@ -1,4 +1,5 @@
 from math import tan, radians
+import bisect
 
 import numpy as np
 
@@ -108,3 +109,8 @@ def calc_horizon_line(fusion: dict, roll_offset: int, pitch_multi: float) -> dic
         fusion[k]['slope'] = slope
 
     return fusion
+
+
+def next_greatest_element(target: float, timestamps: list[float]) -> float | None:
+    idx = bisect.bisect_left(timestamps, target)
+    return timestamps[idx]

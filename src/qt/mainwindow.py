@@ -19,7 +19,7 @@ from modules.export import DataExporter
 from modules.visualize import TotalUpDown, CumulativeUpDown, PitchLive, HeatMap, TotalUpDownStacked, GazeLive, OverallGaze2DY, OverallUpAndDown, PitchHistogram
 from utils.fileutils import validate_import_folder
 from utils.imageutils import create_video_overlay
-from utils.statutils import get_gaze_stats, get_fusion_stats
+from utils.statutils import get_gaze_stats, get_fusion_stats, next_greatest_element
 
 
 class EyeMainWindow(Ui_MainWindow):
@@ -121,7 +121,7 @@ class EyeMainWindow(Ui_MainWindow):
                               background="#FFFFFF")
         current_video = self._videos[self._selected_run]
         self.playback_worker = PlaybackWorker(
-            player=self.player, video=current_video)
+            player=self.player, video=current_video, start=self._selected_start_time, end=self._selected_end_time)
         self.playback_worker.signals.playing.connect(
             self._playing_started_callback)
         self.playback_worker.signals.progress.connect(
@@ -167,6 +167,8 @@ class EyeMainWindow(Ui_MainWindow):
             self.horizontalSliderSeek.setSliderPosition(progress)
         if not self.player.pause:
             curr_timestamp = round(self.player.time_pos, 1)
+            if curr_timestamp < self._first_timestamp:
+                curr_timestamp = self._first_timestamp
             if self._visual_review_pitch.is_paused:
                 self._visual_review_pitch.start()
             if self._visual_review_gaze_live.is_paused:
@@ -175,42 +177,10 @@ class EyeMainWindow(Ui_MainWindow):
             self._visual_review_gaze_live.current_timestamp = curr_timestamp
             if self.player.duration - self.player.time_pos <= 2:
                 curr_timestamp = curr_timestamp - 2
-            closest_fusion = -1
-            length = len(self._fusion_timestamps)
-            mid = length / 2
-            count = 1
-            while closest_fusion < 0:
-                count += 1
-                diff = length / 2**count
-                mid_point1 = self._fusion_timestamps_dict[int(mid)]
-                mid_point2 = self._fusion_timestamps_dict[int(mid+1)]
-                if curr_timestamp >= mid_point1 and curr_timestamp < mid_point2:
-                    closest_fusion = mid_point1
-                elif curr_timestamp < mid_point1:
-                    mid -= diff
-                else:
-                    mid += diff
-
-            length = len(self._gaze_distance_timestamps)
-            mid = length / 2
-            closest_distance = -1
-            count = 1
-            while closest_distance < 0:
-                count += 1
-                diff = length / 2**count
-                mid_point1 = self._gaze_distance_timestamps_dict[int(mid)]
-                mid_point2 = self._gaze_distance_timestamps_dict[int(mid+1)]
-                if curr_timestamp >= mid_point1 and curr_timestamp < mid_point2:
-                    if curr_timestamp - mid_point1 <= 0.05 and self._gaze_distance[mid_point1] is not None:
-                        closest_distance = f'{self._gaze_distance[mid_point1]:.4f}'
-                        break
-                    else:
-                        closest_distance = None
-                        break
-                elif curr_timestamp < mid_point1:
-                    mid -= diff
-                else:
-                    mid += diff
+            closest_fusion = next_greatest_element(
+                curr_timestamp, self._fusion_timestamps)
+            closest_distance = next_greatest_element(
+                curr_timestamp, self._gaze_distance_timestamps)
 
             if self._overlay.overlay_id:
                 self._overlay.remove()
@@ -247,8 +217,8 @@ class EyeMainWindow(Ui_MainWindow):
                     f'RunID      : {self._selected_run}\n'
                     f'Title      : {self._all_runs_list[self._selected_run -1]["tags"]}\n'
                     f'Timestamp  : {self.player.time_pos:.2f}\n'
-                    f'Human Time : {self._get_string_from_timestamp(self.player.time_pos)}'
                     f'Duration   : {self.player.duration:.2f}\n\n'
+                    f'Human Time : {self._get_string_from_timestamp(self.player.time_pos)}\n\n'
                     f'Gaze X     : {gaze_x:.4f}\n'
                     f'Gaze Y     : {gaze_y:.4f}\n\n'
                     f'Roll       : {roll:.4f}\n'
@@ -283,8 +253,9 @@ class EyeMainWindow(Ui_MainWindow):
 
     def _seekbar_moved(self):
         time_to_seek = self.horizontalSliderSeek.sliderPosition() * \
-            self.player.duration / 1000
-        self.player.seek(max(time_to_seek, 1), reference='absolute')
+            (self._selected_end_time - self._selected_start_time) / 1000
+        self.player.seek(
+            max(time_to_seek, self._selected_start_time), reference='absolute')
 
     def _safe_quit_x(self, event):
         if 'player' in self.__dict__:
@@ -380,7 +351,7 @@ class EyeMainWindow(Ui_MainWindow):
             self.tabWidgetMain.setEnabled(False)
             QtWidgets.QMessageBox
             message_box = QtWidgets.QMessageBox(
-                text='It looks like this is your first time using eyeplus. Head over to File > Import... to get started, or check the documentation under Help.', parent=self.main_window)
+                text='It looks like this is your first time using eyeplus. \nHead over to File > Import... to get started, or check the documentation under Help.', parent=self.main_window)
             message_box.setWindowIcon(QtGui.QIcon(
                 QtGui.QPixmap(':/icons/info.svg')))
             message_box.setWindowTitle('Welcome to eyeplus!')
@@ -675,14 +646,9 @@ class EyeMainWindow(Ui_MainWindow):
             self._fusion_data = self._db.get_fusion_data(self._selected_run)
         self._gaze_distance = self._db.get_gaze3d_z(self._selected_run)
         self._gaze_distance_timestamps = list(self._gaze_distance.keys())
-        self._gaze_distance_timestamps_dict = {}
-        for i, j in enumerate(self._gaze_distance_timestamps):
-            self._gaze_distance_timestamps_dict[i] = j
-        self._fusion_timestamps = list(self._fusion_data.keys())
-        self._fusion_timestamps_dict = {}
-        for i, j in enumerate(self._fusion_timestamps):
-            self._fusion_timestamps_dict[i] = j
         self._horizon_timestamps = list(self._horizon.keys())
+        self._fusion_timestamps = list(self._fusion_data.keys())
+        self._first_timestamp = next(iter(self._tree_predicted2d.keys()))
         self.parameter_window.set_values(
             self._roll_offset, self._pitch_multi, self._horizon_offset)
 
@@ -791,6 +757,8 @@ class EyeMainWindow(Ui_MainWindow):
         self._display_overall_visuals()
 
     def _verify_start_time(self) -> None:
+        if self._selected_end_time == -1.0:
+            self._selected_end_time = self._horizon_timestamps[-1]
         new_time = self._get_timestamp_from_string(
             self.lineEditStartTime.text())
         if new_time + 60 > self._selected_end_time:
@@ -801,6 +769,8 @@ class EyeMainWindow(Ui_MainWindow):
             self._get_string_from_timestamp(self._selected_start_time))
 
     def _verify_end_time(self) -> None:
+        if self._selected_start_time == -1.0:
+            self._selected_start_time = 0.0
         new_time = self._get_timestamp_from_string(self.lineEditEndTime.text())
         if new_time > self._horizon_timestamps[-1]:
             self._selected_end_time = self._horizon_timestamps[-1]

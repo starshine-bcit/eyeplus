@@ -125,19 +125,15 @@ class PitchLive(BasicCanvas):
         """Adjusts the xlim of the plot based on currently playing timestamp.
 
         Args:
-            frame (float): The frame number provided by funcAnimation.
-
-        Returns:
-            Tuple: Tuple containing the line object.
+            frame (float): The frame number provided by funcAnimation..
         """
-        if self.current_timestamp > 10:
+        if self.current_timestamp + 10 > self.fusion_timestamps[0]:
             x_low = self.current_timestamp - 10
             x_high = self.current_timestamp
         else:
-            x_low = 0
-            x_high = 10
+            x_low = self.current_timestamp
+            x_high = self.current_timestamp + 10
         self.ax.set_xlim(x_low, x_high)
-        return self.line,
 
     def plot(self, fusion: dict, fusion_timestamps: list) -> None:
         """Extracts the pitch data from the fusion data, and plots a
@@ -147,7 +143,7 @@ class PitchLive(BasicCanvas):
             fusion_timestamps (list): A list of the keys from the fusion data.
         """
         self.ax.clear()
-        self.current_timestamp = 0.0
+        self.current_timestamp = fusion_timestamps[0]
         self.fusion_timestamps = fusion_timestamps
         play_range = int(
             (self.fusion_timestamps[-1] - self.fusion_timestamps[0]) * 10)
@@ -155,8 +151,6 @@ class PitchLive(BasicCanvas):
             round(0.1 * x + self.fusion_timestamps[0], 1) for x in range(play_range)]
         self.x = self.fusion_timestamps
         self.y = [v['pitch'] for v in fusion.values()]
-        # self.ax.set_xlabel('Timestamp')
-        # self.ax.set_ylabel('Pitch')
         self.ax.set_title('Calculated Head Pitch Over Time')
         self.ax.set_xlim(-2, len(self.frames_range) + 2)
         ymax = max(abs(max(self.y)), abs(min(self.y)))
@@ -166,7 +160,7 @@ class PitchLive(BasicCanvas):
         self.ani = FuncAnimation(
             self.fig, self._draw_next_frame, frames=self.frames_range, init_func=self._init_line, interval=100)
         self.draw()
-        self.ax.set_xlim(0, 10)
+        self.ax.set_xlim(self.current_timestamp, self.current_timestamp + 10)
         self._pause = True
         self.ani.pause()
 
@@ -314,12 +308,12 @@ class GazeLive(BasicCanvas):
         Args:
             frame (float): The frame number provided by funcAnimation.
         """
-        if self.current_timestamp > 10:
+        if self.current_timestamp + 10 > self.processed_timestamps[0]:
             x_low = self.current_timestamp - 10
             x_high = self.current_timestamp
         else:
-            x_low = 0
-            x_high = 10
+            x_low = self.current_timestamp
+            x_high = self.current_timestamp + 10
         self.ax.set_xlim(x_low, x_high)
 
     def plot(self, gaze2d: dict, processed: dict) -> None:
@@ -333,11 +327,10 @@ class GazeLive(BasicCanvas):
         """
         self.fig.clear()
         self.ax = self.fig.add_subplot()
-        self.current_timestamp = 0.0
         self.processed = processed
         self.gaze2d = gaze2d
         self.processed_timestamps = list(processed.keys())
-        self.current_timestamp = 0.0
+        self.current_timestamp = self.processed_timestamps[0]
         play_range = int(
             (self.processed_timestamps[-1] - self.processed_timestamps[0]) * 10)
         self.frames_range = [
@@ -353,7 +346,7 @@ class GazeLive(BasicCanvas):
         self.ani = FuncAnimation(self.fig, self._draw_next_frame,
                                  frames=self.frames_range, init_func=self._init_line, interval=100)
         self.draw()
-        self.ax.set_xlim(0, 10)
+        self.ax.set_xlim(self.current_timestamp, self.current_timestamp + 10)
         self._pause = True
         self.ani.pause()
 
