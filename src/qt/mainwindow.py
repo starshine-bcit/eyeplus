@@ -485,18 +485,20 @@ class EyeMainWindow(Ui_MainWindow):
                 'Error: You selected no zip file to import.')
 
     def _ingest_data(self, found_items: list[Path], ftype: str):
-        try:
-            ingest_worker = IngestWorker(self._db_path, found_items, ftype)
-            ingest_worker.signals.started.connect(
-                self._progress_dialog_start)
-            ingest_worker.signals.progress.connect(
-                self._progress_dialog_update)
-            ingest_worker.signals.finished.connect(
-                self._progress_dialog_finish)
-            self._thread_pool.start(ingest_worker)
-        except FileExistsError:
-            self._error_box.showMessage(
-                'Error: You have attempted to import one or more runs which already have been imported.')
+        ingest_worker = IngestWorker(self._db_path, found_items, ftype)
+        ingest_worker.signals.started.connect(
+            self._progress_dialog_start)
+        ingest_worker.signals.progress.connect(
+            self._progress_dialog_update)
+        ingest_worker.signals.finished.connect(
+            self._progress_dialog_finish)
+        ingest_worker.signals.error.connect(self._ingest_error)
+        self._thread_pool.start(ingest_worker)
+
+    def _ingest_error(self, error: str) -> None:
+        self.main_window.show()
+        self.processing_dialog.hide()
+        self._error_box.showMessage(error)
 
     def _init_status_bar(self) -> None:
         """Initializes status bar widgets, since Qt Creator doesn't allow

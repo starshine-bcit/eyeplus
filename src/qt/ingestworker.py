@@ -10,6 +10,7 @@ class IngestWorkerSignals(QtCore.QObject):
     started = QtCore.pyqtSignal()
     finished = QtCore.pyqtSignal()
     progress = QtCore.pyqtSignal((str, float))
+    error = QtCore.pyqtSignal(str)
 
 
 class IngestWorker(QtCore.QRunnable):
@@ -25,9 +26,14 @@ class IngestWorker(QtCore.QRunnable):
     def run(self):
         self.signals.started.emit()
         eyedb = EyeDB(self.db_path)
-        ingest_and_process(self.cb_progress, eyedb, self.paths,
-                           self.type)
-        self.signals.finished.emit()
+        try:
+            ingest_and_process(self.cb_progress, eyedb, self.paths,
+                               self.type)
+        except FileExistsError:
+            self.signals.error.emit(
+                'Error: You have attempted to import one or more runs which already have been imported.')
+        else:
+            self.signals.finished.emit()
 
     def cb_progress(self, message: str, progress: float) -> None:
         self.signals.progress.emit(message, progress)
