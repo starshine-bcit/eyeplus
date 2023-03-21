@@ -54,8 +54,8 @@ class EyeDB():
         # Create backup here
 
         run_query = '''INSERT INTO run
-        (importdate, tags, video, hash, rolloffset, pitchmulti, horizonoffset)
-        VALUES(:importdate, :tags, :video, :hash, :rolloffset, :pitchmulti, :horizonoffset);'''
+        (importdate, tags, video, hash, pitchoffset, pitchmulti, horizonoffset)
+        VALUES(:importdate, :tags, :video, :hash, :pitchoffset, :pitchmulti, :horizonoffset);'''
 
         imu_query = '''INSERT INTO imu
         (runid, timestamp, accelerometer0, accelerometer1,
@@ -124,7 +124,7 @@ class EyeDB():
                 'tags': participant_data['name'],
                 'video': new_video_name,
                 'hash': hash,
-                'rolloffset': 90,
+                'pitchoffset': 0,
                 'pitchmulti': 1.0,
                 'horizonoffset': 0.0
             }
@@ -230,7 +230,7 @@ class EyeDB():
                 video TEXT NOT NULL,
                 hash TEXT NOT NULL,
                 tags TEXT,
-                rolloffset INTEGER NOT NULL,
+                pitchoffset INTEGER NOT NULL,
                 pitchmulti REAL NOT NULL,
                 horizonoffset REAL NOT NULL);''')
 
@@ -351,7 +351,7 @@ class EyeDB():
         Returns:
             list[dict]: Information from the 'run' table that is deemed relevant.
         """
-        self._cur.execute('''SELECT id, importdate, processdate, video, tags, rolloffset, pitchmulti, horizonoffset
+        self._cur.execute('''SELECT id, importdate, processdate, video, tags, pitchoffset, pitchmulti, horizonoffset
         FROM run;''')
         all_runs = self._cur.fetchall()
         ret_runs = []
@@ -362,7 +362,7 @@ class EyeDB():
                 'processdate': run[2],
                 'video': self._video_dir / run[3],
                 'tags': run[4],
-                'roll_offset': run[5],
+                'pitch_offset': run[5],
                 'pitch_multi': run[6],
                 'horizon_offset': run[7]
             })
@@ -618,12 +618,12 @@ class EyeDB():
         else:
             raise RuntimeError(f'Trying to select a non-existant ID: {runid}')
 
-    def update_parameters(self, runid: int, roll_offset: int, pitch_multi: float, horizon_offset: float) -> None:
+    def update_parameters(self, runid: int, pitch_offset: int, pitch_multi: float, horizon_offset: float) -> None:
         """Updates the tweakable parameters in the database (run table).
 
         Args:
             runid (int): The runid that is being updated.
-            roll_offset (int): New roll offset value.
+            pitch_offset (int): New roll offset value.
             pitch_multi (float): New pitch multiplier value.
             horizon_offset (float): New horizon offset value.
 
@@ -632,8 +632,8 @@ class EyeDB():
         """
         if self.check_existing_runid(runid):
             self._cur.execute('''UPDATE run
-                            SET(rolloffset, pitchmulti, horizonoffset) = (?, ?, ?)
-                            WHERE id=(?);''', (roll_offset, pitch_multi, horizon_offset, runid))
+                            SET(pitchoffset, pitchmulti, horizonoffset) = (?, ?, ?)
+                            WHERE id=(?);''', (pitch_offset, pitch_multi, horizon_offset, runid))
         else:
             raise RuntimeError(f'Trying to select a non-existant ID: {runid}')
 
@@ -647,10 +647,10 @@ class EyeDB():
             RuntimeError: If there was an attempt to select a non-existant runid.
 
         Returns:
-            tuple: Contains the roll_offset, pitch_multi, and horizon_offset values.
+            tuple: Contains the pitch_offset, pitch_multi, and horizon_offset values.
         """
         if self.check_existing_runid(runid):
-            self._cur.execute('''SELECT rolloffset, pitchmulti, horizonoffset
+            self._cur.execute('''SELECT pitchoffset, pitchmulti, horizonoffset
                             FROM run where id=(?);''', (runid,))
             parameters = self._cur.fetchone()
             return parameters

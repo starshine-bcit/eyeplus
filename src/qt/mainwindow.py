@@ -55,7 +55,7 @@ class EyeMainWindow(Ui_MainWindow):
         self._videos = {}
         self._overall_selected_runs = []
         self._selected_run = 0
-        self._roll_offset = 90
+        self._pitch_offset = 0
         self._pitch_multi = 1.0
         self._horizon_offset = 0.0
         self._part_selection_enabled = False
@@ -199,7 +199,7 @@ class EyeMainWindow(Ui_MainWindow):
             percent_down = self._horizon[curr_timestamp]['percent_down']
             currently_up = self._horizon[curr_timestamp]['currently_up']
 
-            roll += self._roll_offset
+            pitch -= self._pitch_offset
             pitch *= self._pitch_multi
 
             img, pos_x, pos_y = create_video_overlay(
@@ -361,8 +361,9 @@ class EyeMainWindow(Ui_MainWindow):
         original_index = self._title_filter_model.mapToSource(index)
         runid_index = self._runs_model.index(original_index.row(), 0)
         self._selected_run = int(self._runs_model.itemData(runid_index)[0])
-        self._roll_offset, self._pitch_multi, self._horizon_offset = self._db.get_parameters(
+        self._pitch_offset, self._pitch_multi, self._horizon_offset = self._db.get_parameters(
             self._selected_run)
+        self._pitch_offset = int(self._pitch_offset)
         if 'player' in self.__dict__:
             self._stop_clicked()
         self._part_selection_enabled = False
@@ -595,17 +596,18 @@ class EyeMainWindow(Ui_MainWindow):
 
     def _show_parameter_window(self) -> None:
         self.parameter_window.set_values(
-            int(self._roll_offset), self._pitch_multi, -self._horizon_offset)
+            int(self._pitch_offset), self._pitch_multi, -self._horizon_offset)
         self.parameter_window.show()
         self.parameter_window.setFocus()
         self.parameter_window.move(250, 600)
 
     def _update_parameters(self) -> None:
-        self._roll_offset = self.parameter_window.ui.horizontalSliderRollOffset.value()
+        self._pitch_offset = self.parameter_window.ui.horizontalSliderPitchOffset.value()
         self._pitch_multi = float(
             self.parameter_window.ui.horizontalSliderPitchMulti.value() / 1000)
         self._horizon_offset = float(
-            -self.parameter_window.ui.horizontalSliderHorizonFuzzy.value() / 1000)
+            -self.parameter_window.ui.horizontalSliderHorizonFuzzy.value() / 100)
+        print(self._horizon_offset)
 
     def _filter_runs(self, text: str) -> None:
         self._title_filter_model.setFilterRegularExpression(text)
@@ -616,7 +618,7 @@ class EyeMainWindow(Ui_MainWindow):
         self._stop_clicked()
         runs_to_redo = [self._selected_run]
         ingest_worker = ReprocessWorker(
-            self._db_path, runs_to_redo, self._roll_offset, self._pitch_multi, self._horizon_offset)
+            self._db_path, runs_to_redo, self._pitch_offset, self._pitch_multi, self._horizon_offset)
         ingest_worker.signals.started.connect(
             self._reprocess_started)
         ingest_worker.signals.progress.connect(
@@ -652,7 +654,7 @@ class EyeMainWindow(Ui_MainWindow):
         self._fusion_timestamps = list(self._fusion_data.keys())
         self._first_timestamp = next(iter(self._tree_predicted2d.keys()))
         self.parameter_window.set_values(
-            self._roll_offset, self._pitch_multi, self._horizon_offset)
+            self._pitch_offset, self._pitch_multi, self._horizon_offset)
 
     def _display_summary_visuals(self) -> None:
         self._visual_summary_up_down.plot(
@@ -681,7 +683,7 @@ class EyeMainWindow(Ui_MainWindow):
             f'  Looking Up  : {self._horizon[last_horizon]["up_count"]:>6} | {self._horizon[last_horizon]["percent_up"]:>7.4}\n'
             f'  Looking Down: {self._horizon[last_horizon]["down_count"]:>6} | {self._horizon[last_horizon]["percent_down"]:>7.4f}\n\n'
             f'Offsets\n'
-            f'  Horizon: {-self._horizon_offset:>5.2f}, Roll: {self._roll_offset}, Pitch: {self._pitch_multi:>5.2f}'
+            f'  Horizon: {-self._horizon_offset:>5.2f}, Roll: {self._pitch_offset}, Pitch: {self._pitch_multi:>5.2f}'
         )
 
     def _setup_visual_widgets(self) -> None:
