@@ -59,9 +59,9 @@ class HorizonGaze():
             slope = self._fused[closest_fuse]['slope']
             y_intercept = self._fused[closest_fuse]['y_intercept']
             closest_gaze3d = next_greatest_element(timestamp, self._gaze3d_ts)
-            if closest_gaze3d:
-                if self._gaze3d_ts[closest_gaze3d] - timestamp < 0.05:
-                    distance = self._gaze3d[closest_gaze3d]
+            if self._gaze3d[closest_gaze3d]:
+                if self._gaze3d[closest_gaze3d] - timestamp < 0.05:
+                    distance = closest_gaze3d
                 else:
                     distance = None
             else:

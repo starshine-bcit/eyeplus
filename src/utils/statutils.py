@@ -85,7 +85,8 @@ def calc_horizon_line(fusion: dict, roll_offset: int, pitch_multi: float) -> dic
         roll = v['roll'] + roll_offset
         pitch = v['pitch'] * pitch_multi
         # calculate slope based off head tilt
-        theta = roll + 90
+        theta = roll
+        # theta = roll + 90
         if theta != 90 or theta != -90:
             slope = tan(radians(theta))
         else:
@@ -94,7 +95,7 @@ def calc_horizon_line(fusion: dict, roll_offset: int, pitch_multi: float) -> dic
         # calculate intercepts as percentage of screen based off head pitch and slope
         theta = -pitch
 
-        fov_constant = 0.45  # determined so that looking up 45 degrees would move the slope down 25 percent of the screen, and vice versa
+        fov_constant = 0.40  # determined so that looking up 45 degrees would move the slope down 25 percent of the screen, and vice versa
 
         if theta >= 0:
             y_intercept = 0.5 - tan(radians(theta))*fov_constant
@@ -113,4 +114,6 @@ def calc_horizon_line(fusion: dict, roll_offset: int, pitch_multi: float) -> dic
 
 def next_greatest_element(target: float, timestamps: list[float]) -> float | None:
     idx = bisect.bisect_left(timestamps, target)
+    if idx >= len(timestamps):
+        return timestamps[-1]
     return timestamps[idx]

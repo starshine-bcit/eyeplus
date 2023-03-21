@@ -176,10 +176,12 @@ class Fusion():
             self.q = q1 * norm, q2 * norm, q3 * norm, q4 * norm
             self.heading = self.declination + degrees(atan2(2.0 * (self.q[1] * self.q[2] + self.q[0] * self.q[3]),
                                                             self.q[0] * self.q[0] + self.q[1] * self.q[1] - self.q[2] * self.q[2] - self.q[3] * self.q[3]))
-            self.pitch = degrees(-asin(2.0 *
-                                 (self.q[1] * self.q[3] - self.q[0] * self.q[2])))
-            self.roll = degrees(atan2(2.0 * (self.q[0] * self.q[1] + self.q[2] * self.q[3]),
-                                      self.q[0] * self.q[0] - self.q[1] * self.q[1] - self.q[2] * self.q[2] + self.q[3] * self.q[3]))
+            self.roll = degrees(-asin(2.0 *
+                                      (self.q[1] * self.q[3] - self.q[0] * self.q[2])))
+            self.pitch = degrees(atan2(2.0 * (self.q[0] * self.q[1] + self.q[2] * self.q[3]),
+                                       self.q[0] * self.q[0] - self.q[1] * self.q[1] - self.q[2] * self.q[2] + self.q[3] * self.q[3]))
+
+            self.pitch += 90
 
             self.results[ts] = {
                 'heading': self.heading,
