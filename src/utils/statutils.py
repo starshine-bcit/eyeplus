@@ -40,7 +40,7 @@ def get_fusion_stats(fusion: dict) -> dict:
     """
     fusion_stats = {}
     pitch = np.array([v['pitch'] for v in fusion.values()])
-    roll = np.array([v['roll'] + 90 for v in fusion.values()])
+    roll = np.array([v['roll'] for v in fusion.values()])
     fusion_stats['pitch'] = {
         'mean': np.mean(pitch),
         'median': np.median(pitch),

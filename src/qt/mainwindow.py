@@ -314,6 +314,7 @@ class EyeMainWindow(Ui_MainWindow):
         run_count = len(self._all_runs_list)
         if run_count > 0:
             self.tabWidgetMain.setEnabled(True)
+            self.listWidgetOverallSelectRuns.clear()
             self._runs_model = QtGui.QStandardItemModel(run_count, 4)
             self._runs_model.setHorizontalHeaderLabels(
                 ['ID', 'Date', 'Processed', 'Title'])
@@ -345,8 +346,13 @@ class EyeMainWindow(Ui_MainWindow):
             self.tableViewRuns.selectRow(0)
             self._table_item_single_clicked(
                 self._title_filter_model.index(0, 0))
-            self.listWidgetOverallSelectRuns.selectAll()
-            self._display_overall_visuals()
+            if len(self._all_runs_list) in [1, 2]:
+                self.listWidgetOverallSelectRuns.selectAll()
+                self._display_overall_visuals()
+                self._display_overall_text()
+            else:
+                self.plainTextEditOverallStats.setPlainText(
+                    'Select one or more runs below to view statistics.')
         else:
             self.tabWidgetMain.setEnabled(False)
             QtWidgets.QMessageBox
@@ -368,8 +374,8 @@ class EyeMainWindow(Ui_MainWindow):
             self._stop_clicked()
         self._part_selection_enabled = False
         self._load_summary_data()
-        self._display_summary_visuals()
         self._display_summary_text()
+        self._display_summary_visuals()
         self.lineEditStartTime.setText('00:00:00')
         self.lineEditEndTime.setText(
             self._get_string_from_timestamp(self._horizon_timestamps[-1]))
@@ -683,7 +689,7 @@ class EyeMainWindow(Ui_MainWindow):
             f'  Looking Up  : {self._horizon[last_horizon]["up_count"]:>6} | {self._horizon[last_horizon]["percent_up"]:>7.4}\n'
             f'  Looking Down: {self._horizon[last_horizon]["down_count"]:>6} | {self._horizon[last_horizon]["percent_down"]:>7.4f}\n\n'
             f'Offsets\n'
-            f'  Horizon: {-self._horizon_offset:>5.2f}, Roll: {self._pitch_offset}, Pitch: {self._pitch_multi:>5.2f}'
+            f'  Horizon: {-self._horizon_offset:>5.2f}, Pitch: {self._pitch_offset}, Pitch Multi: {self._pitch_multi:>5.2f}'
         )
 
     def _setup_visual_widgets(self) -> None:
@@ -759,6 +765,7 @@ class EyeMainWindow(Ui_MainWindow):
             self.listWidgetOverallSelectRuns.setCurrentRow(0)
         self._overall_selected_runs.sort()
         self._display_overall_visuals()
+        self._display_overall_text()
 
     def _verify_start_time(self) -> None:
         if self._selected_end_time == -1.0:
@@ -810,3 +817,8 @@ class EyeMainWindow(Ui_MainWindow):
         self._display_summary_text()
         self._update_status(
             f'Successfully applied active time for runid {self._selected_run}')
+
+    def _display_overall_text(self) -> None:
+        self.plainTextEditOverallStats.setPlainText(
+            f'Number of selected runs: {len(self._overall_selected_runs)}\n'
+        )
