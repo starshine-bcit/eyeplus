@@ -819,6 +819,42 @@ class EyeMainWindow(Ui_MainWindow):
             f'Successfully applied active time for runid {self._selected_run}')
 
     def _display_overall_text(self) -> None:
+        overall_data = self._db.get_processed_view()
+
+        greatest_up_time = overall_data[self._overall_selected_runs[0]][0]
+        greatest_up_time_run = self._overall_selected_runs[0]
+
+        greatest_down_time = overall_data[self._overall_selected_runs[0]][1]
+        greatest_down_time_run = self._overall_selected_runs[0]
+
+        greatest_pitch_mean = get_fusion_stats(self._db.get_fusion_data(self._overall_selected_runs[0]))['pitch']['mean']
+        greatest_pitch_mean_run = self._overall_selected_runs[0]
+
+        lowest_pitch_mean = greatest_pitch_mean
+        lowest_pitch_mean_run = greatest_pitch_mean_run
+
+        for run in self._overall_selected_runs:
+            if overall_data[run][0] > greatest_up_time:
+                greatest_up_time = overall_data[run][0]
+                greatest_up_time_run = run
+
+            if overall_data[run][1] > greatest_down_time:
+                greatest_down_time = overall_data[run][1]
+                greatest_down_time_run = run
+
+            pitch_mean = get_fusion_stats(self._db.get_fusion_data(run))['pitch']['mean']
+            if pitch_mean > greatest_pitch_mean:
+                greatest_pitch_mean = pitch_mean
+                greatest_pitch_mean_run = run
+
+            if lowest_pitch_mean > pitch_mean:
+                lowest_pitch_mean = pitch_mean
+                lowest_pitch_mean_run = run
+
         self.plainTextEditOverallStats.setPlainText(
-            f'Number of selected runs: {len(self._overall_selected_runs)}\n'
+            f'Number of selected runs: {len(self._overall_selected_runs)}\n\n'
+            f'Run {greatest_up_time_run} had the greatest proportion of time looking up\n\n'
+            f'Run {greatest_down_time_run} had the lowest proportion of time looking up\n\n'
+            f'Run {greatest_pitch_mean_run} had the greatest pitch mean\n\n'
+            f'Run {lowest_pitch_mean_run} had the lowest pitch mean\n\n'
         )
