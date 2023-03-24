@@ -613,7 +613,6 @@ class EyeMainWindow(Ui_MainWindow):
             self.parameter_window.ui.horizontalSliderPitchMulti.value() / 1000)
         self._horizon_offset = float(
             -self.parameter_window.ui.horizontalSliderHorizonFuzzy.value() / 100)
-        print(self._horizon_offset)
 
     def _filter_runs(self, text: str) -> None:
         self._title_filter_model.setFilterRegularExpression(text)
