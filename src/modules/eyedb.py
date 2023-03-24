@@ -793,6 +793,20 @@ class EyeDB():
         self._cur.execute(drop_view_query)
         self._cur.execute(view_query)
 
+    def get_processed_view(self) -> dict:
+        """Creates and returns a dictionary containing the contents of the overall_percentage_view view."""
+
+        select_view_query = '''SELECT * FROM overall_percentage_view;'''
+
+        self._cur.execute(select_view_query)
+        data = self._cur.fetchall()
+        view_dict = {}
+
+        for line in data:
+            view_dict[line[0]] = [line[1], line[2], line[3], line[4], line[5]]
+
+        return view_dict
+
     def get_overall_up_down(self, runids: list[int]) -> dict:
         """Gets the final cumulative calculated up/down for any number of runs.
 
