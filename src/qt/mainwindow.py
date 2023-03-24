@@ -689,7 +689,9 @@ class EyeMainWindow(Ui_MainWindow):
             f'  Looking Up  : {self._horizon[last_horizon]["up_count"]:>6} | {self._horizon[last_horizon]["percent_up"]:>7.4}\n'
             f'  Looking Down: {self._horizon[last_horizon]["down_count"]:>6} | {self._horizon[last_horizon]["percent_down"]:>7.4f}\n\n'
             f'Offsets\n'
-            f'  Horizon: {-self._horizon_offset:>5.2f}, Pitch: {self._pitch_offset}, Pitch Multi: {self._pitch_multi:>5.2f}'
+            f'  Horizon    : {-self._horizon_offset:>5.2f}\n'
+            f'  Pitch      : {self._pitch_offset}\n'
+            f'  Pitch Multi: {self._pitch_multi:>5.2f}'
         )
 
     def _setup_visual_widgets(self) -> None:
@@ -827,7 +829,8 @@ class EyeMainWindow(Ui_MainWindow):
         greatest_down_time = overall_data[self._overall_selected_runs[0]][1]
         greatest_down_time_run = self._overall_selected_runs[0]
 
-        greatest_pitch_mean = get_fusion_stats(self._db.get_fusion_data(self._overall_selected_runs[0]))['pitch']['mean']
+        greatest_pitch_mean = get_fusion_stats(self._db.get_fusion_data(
+            self._overall_selected_runs[0]))['pitch']['mean']
         greatest_pitch_mean_run = self._overall_selected_runs[0]
 
         lowest_pitch_mean = greatest_pitch_mean
@@ -842,7 +845,8 @@ class EyeMainWindow(Ui_MainWindow):
                 greatest_down_time = overall_data[run][1]
                 greatest_down_time_run = run
 
-            pitch_mean = get_fusion_stats(self._db.get_fusion_data(run))['pitch']['mean']
+            pitch_mean = get_fusion_stats(self._db.get_fusion_data(run))[
+                'pitch']['mean']
             if pitch_mean > greatest_pitch_mean:
                 greatest_pitch_mean = pitch_mean
                 greatest_pitch_mean_run = run
