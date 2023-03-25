@@ -98,10 +98,12 @@ class EyeDB():
             hashes = self._cur.fetchall()
             for db_hash in hashes:
                 if db_hash[0] == hash:
-                    if type == 'zip':
-                        shutil.rmtree(innertemp)
-                    raise FileExistsError(
-                        'The data you are attempting to import already exists')
+                    # removed at request from sponsor
+                    pass
+                    # if type == 'zip':
+                    #     shutil.rmtree(innertemp)
+                    # raise FileExistsError(
+                    #     'The data you are attempting to import already exists')
 
             with gzip.open(gaze_path, 'r') as gz:
                 gaze_data = gz.read()
