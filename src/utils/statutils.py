@@ -113,7 +113,16 @@ def calc_horizon_line(fusion: dict, pitch_offset: int, pitch_multi: float) -> di
     return fusion
 
 
-def next_greatest_element(target: float, timestamps: list[float]) -> float | None:
+def next_greatest_element(target: float, timestamps: list[float]) -> float:
+    """Finds the next greatest timestamp in a sorted list, based on the target.
+
+    Args:
+        target (float): Timestamp of which we want to find the next greatest in list.
+        timestamps (list[float]): Sorted list of timestamps to search through.
+
+    Returns:
+        float: The found timestamp, or the last one if input list if none was found.
+    """
     idx = bisect.bisect_left(timestamps, target)
     if idx >= len(timestamps):
         return timestamps[-1]

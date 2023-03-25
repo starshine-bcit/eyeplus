@@ -944,6 +944,14 @@ class EyeDB():
             raise RuntimeError(f'Trying to select a non-existant ID: {runid}')
 
     def get_summary_data(self, runid: int) -> Tuple[dict, dict]:
+        """Retrieves the summary data for a single runid.
+
+        Args:
+            runid (int): The runid for which we want to grab data for.
+
+        Returns:
+            Tuple[dict, dict]: Contains fusion_stats and gaze2d_stats.
+        """
         get_summary_query = '''SELECT * FROM summary WHERE runid=(?);'''
         self._cur.execute(get_summary_query, (runid,))
         res = self._cur.fetchone()
@@ -976,6 +984,13 @@ class EyeDB():
         return fusion_stats, gaze2d_stats
 
     def write_summary_data(self, runid: int, fusion_stats: dict, gaze2d_stats: dict) -> None:
+        """Writes out both the fusion and gaze2d statistics to summary table.
+
+        Args:
+            runid (int): The runid to which the stats belong.
+            fusion_stats (dict): Previously calculated fusion statistics.
+            gaze2d_stats (dict): Previously calculated gaze2d statistics.
+        """
         write_summary_query = '''INSERT INTO summary
             (runid, pitchmean, pitchmedian, pitchstdev, rollmean, rollmedian,
                 rollstdev, fusioncount, gaze2dxmean, gaze2dxmedian, gaze2dxstdev,
