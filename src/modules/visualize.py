@@ -499,7 +499,7 @@ class PitchHistogram(BasicCanvas):
             ax.set_xticklabels([str(x) for x in x_marks])
             ax.set_xlim(-40, 40)
             ax.set_title(
-                f'Run ID {k}: {v["count"]} Observations')
+                f'Run {k}: {v["count"]} Observations')
             ax = self.ax2
         self.fig.suptitle(
             f'Proportion of Pitch', fontsize=8)

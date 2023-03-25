@@ -847,6 +847,9 @@ class EyeMainWindow(Ui_MainWindow):
         rolly_run = -1
         eyey = -1
         eyey_run = -1
+        gaze_samples = -1
+        gaze_samples_run = -1
+        fusion_samples = -1
         for runid in self._overall_selected_runs:
             fusion_stats, gaze_stats = self._db.get_summary_data(runid)
             if fusion_stats['pitch']['mean'] > max_pitch_mean:
@@ -861,6 +864,10 @@ class EyeMainWindow(Ui_MainWindow):
             if gaze_stats['x']['stdev'] + gaze_stats['y']['stdev'] > eyey:
                 eyey = gaze_stats['x']['stdev'] + gaze_stats['y']['stdev']
                 eyey_run = runid
+            if gaze_stats['num_samples'] > gaze_samples:
+                gaze_samples = gaze_stats['num_samples']
+                fusion_samples = fusion_stats['num_samples']
+                gaze_samples_run = 1
 
         self.plainTextEditOverallStats.setPlainText(
             f'Selected run quantity : {len(self._overall_selected_runs)}\n\n'
@@ -870,6 +877,9 @@ class EyeMainWindow(Ui_MainWindow):
             f'Pitch:\n'
             f'  Max pitch mean : Run {max_pitch_mean_run} @ {max_pitch_mean:4.2f}\n'
             f'  Min pitch mean : Run {min_pitch_mean_run} @ {min_pitch_mean:4.2f}\n\n'
+            f'Longest run: {gaze_samples_run}\n'
+            f'  Gaze samples   : {gaze_samples}\n'
+            f'  Fusion samples : {fusion_samples}\n\n'
             f'Other:\n'
             f'  Run {rolly_run} had the max roll stdev @ {rolly:0.4f}\n'
             f'  Run {eyey_run} had the max gaze2d stdev @ {eyey:0.4f}'

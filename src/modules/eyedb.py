@@ -828,8 +828,6 @@ class EyeDB():
         for line in data:
             view_dict[line[0]] = [line[1], line[2], line[3], line[4], line[5]]
 
-        print(view_dict)
-
         return view_dict
 
     def get_overall_up_down(self, runids: list[int]) -> dict:
