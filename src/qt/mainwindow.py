@@ -55,7 +55,7 @@ class EyeMainWindow(Ui_MainWindow):
         self._videos = {}
         self._overall_selected_runs = []
         self._selected_run = 0
-        self._roll_offset = 90
+        self._pitch_offset = 0
         self._pitch_multi = 1.0
         self._horizon_offset = 0.0
         self._part_selection_enabled = False
@@ -199,7 +199,7 @@ class EyeMainWindow(Ui_MainWindow):
             percent_down = self._horizon[curr_timestamp]['percent_down']
             currently_up = self._horizon[curr_timestamp]['currently_up']
 
-            roll += self._roll_offset
+            pitch -= self._pitch_offset
             pitch *= self._pitch_multi
 
             img, pos_x, pos_y = create_video_overlay(
@@ -314,6 +314,7 @@ class EyeMainWindow(Ui_MainWindow):
         run_count = len(self._all_runs_list)
         if run_count > 0:
             self.tabWidgetMain.setEnabled(True)
+            self.listWidgetOverallSelectRuns.clear()
             self._runs_model = QtGui.QStandardItemModel(run_count, 4)
             self._runs_model.setHorizontalHeaderLabels(
                 ['ID', 'Date', 'Processed', 'Title'])
@@ -345,8 +346,13 @@ class EyeMainWindow(Ui_MainWindow):
             self.tableViewRuns.selectRow(0)
             self._table_item_single_clicked(
                 self._title_filter_model.index(0, 0))
-            self.listWidgetOverallSelectRuns.selectAll()
-            self._display_overall_visuals()
+            if len(self._all_runs_list) in [1, 2]:
+                self.listWidgetOverallSelectRuns.selectAll()
+                self._display_overall_visuals()
+                self._display_overall_text()
+            else:
+                self.plainTextEditOverallStats.setPlainText(
+                    'Select one or more runs below to view statistics.')
         else:
             self.tabWidgetMain.setEnabled(False)
             QtWidgets.QMessageBox
@@ -361,14 +367,15 @@ class EyeMainWindow(Ui_MainWindow):
         original_index = self._title_filter_model.mapToSource(index)
         runid_index = self._runs_model.index(original_index.row(), 0)
         self._selected_run = int(self._runs_model.itemData(runid_index)[0])
-        self._roll_offset, self._pitch_multi, self._horizon_offset = self._db.get_parameters(
+        self._pitch_offset, self._pitch_multi, self._horizon_offset = self._db.get_parameters(
             self._selected_run)
+        self._pitch_offset = int(self._pitch_offset)
         if 'player' in self.__dict__:
             self._stop_clicked()
         self._part_selection_enabled = False
         self._load_summary_data()
-        self._display_summary_visuals()
         self._display_summary_text()
+        self._display_summary_visuals()
         self.lineEditStartTime.setText('00:00:00')
         self.lineEditEndTime.setText(
             self._get_string_from_timestamp(self._horizon_timestamps[-1]))
@@ -595,17 +602,17 @@ class EyeMainWindow(Ui_MainWindow):
 
     def _show_parameter_window(self) -> None:
         self.parameter_window.set_values(
-            int(self._roll_offset), self._pitch_multi, -self._horizon_offset)
+            int(self._pitch_offset), self._pitch_multi, -self._horizon_offset)
         self.parameter_window.show()
         self.parameter_window.setFocus()
         self.parameter_window.move(250, 600)
 
     def _update_parameters(self) -> None:
-        self._roll_offset = self.parameter_window.ui.horizontalSliderRollOffset.value()
+        self._pitch_offset = self.parameter_window.ui.horizontalSliderPitchOffset.value()
         self._pitch_multi = float(
             self.parameter_window.ui.horizontalSliderPitchMulti.value() / 1000)
         self._horizon_offset = float(
-            -self.parameter_window.ui.horizontalSliderHorizonFuzzy.value() / 1000)
+            -self.parameter_window.ui.horizontalSliderHorizonFuzzy.value() / 100)
 
     def _filter_runs(self, text: str) -> None:
         self._title_filter_model.setFilterRegularExpression(text)
@@ -616,7 +623,7 @@ class EyeMainWindow(Ui_MainWindow):
         self._stop_clicked()
         runs_to_redo = [self._selected_run]
         ingest_worker = ReprocessWorker(
-            self._db_path, runs_to_redo, self._roll_offset, self._pitch_multi, self._horizon_offset)
+            self._db_path, runs_to_redo, self._pitch_offset, self._pitch_multi, self._horizon_offset)
         ingest_worker.signals.started.connect(
             self._reprocess_started)
         ingest_worker.signals.progress.connect(
@@ -652,7 +659,7 @@ class EyeMainWindow(Ui_MainWindow):
         self._fusion_timestamps = list(self._fusion_data.keys())
         self._first_timestamp = next(iter(self._tree_predicted2d.keys()))
         self.parameter_window.set_values(
-            self._roll_offset, self._pitch_multi, self._horizon_offset)
+            self._pitch_offset, self._pitch_multi, self._horizon_offset)
 
     def _display_summary_visuals(self) -> None:
         self._visual_summary_up_down.plot(
@@ -681,7 +688,9 @@ class EyeMainWindow(Ui_MainWindow):
             f'  Looking Up  : {self._horizon[last_horizon]["up_count"]:>6} | {self._horizon[last_horizon]["percent_up"]:>7.4}\n'
             f'  Looking Down: {self._horizon[last_horizon]["down_count"]:>6} | {self._horizon[last_horizon]["percent_down"]:>7.4f}\n\n'
             f'Offsets\n'
-            f'  Horizon: {-self._horizon_offset:>5.2f}, Roll: {self._roll_offset}, Pitch: {self._pitch_multi:>5.2f}'
+            f'  Horizon    : {-self._horizon_offset:>5.2f}\n'
+            f'  Pitch      : {self._pitch_offset}\n'
+            f'  Pitch Multi: {self._pitch_multi:>5.2f}'
         )
 
     def _setup_visual_widgets(self) -> None:
@@ -757,6 +766,7 @@ class EyeMainWindow(Ui_MainWindow):
             self.listWidgetOverallSelectRuns.setCurrentRow(0)
         self._overall_selected_runs.sort()
         self._display_overall_visuals()
+        self._display_overall_text()
 
     def _verify_start_time(self) -> None:
         if self._selected_end_time == -1.0:
@@ -808,3 +818,46 @@ class EyeMainWindow(Ui_MainWindow):
         self._display_summary_text()
         self._update_status(
             f'Successfully applied active time for runid {self._selected_run}')
+
+    def _display_overall_text(self) -> None:
+        overall_data = self._db.get_processed_view()
+
+        greatest_up_time = overall_data[self._overall_selected_runs[0]][0]
+        greatest_up_time_run = self._overall_selected_runs[0]
+
+        greatest_down_time = overall_data[self._overall_selected_runs[0]][1]
+        greatest_down_time_run = self._overall_selected_runs[0]
+
+        greatest_pitch_mean = get_fusion_stats(self._db.get_fusion_data(
+            self._overall_selected_runs[0]))['pitch']['mean']
+        greatest_pitch_mean_run = self._overall_selected_runs[0]
+
+        lowest_pitch_mean = greatest_pitch_mean
+        lowest_pitch_mean_run = greatest_pitch_mean_run
+
+        for run in self._overall_selected_runs:
+            if overall_data[run][0] > greatest_up_time:
+                greatest_up_time = overall_data[run][0]
+                greatest_up_time_run = run
+
+            if overall_data[run][1] > greatest_down_time:
+                greatest_down_time = overall_data[run][1]
+                greatest_down_time_run = run
+
+            pitch_mean = get_fusion_stats(self._db.get_fusion_data(run))[
+                'pitch']['mean']
+            if pitch_mean > greatest_pitch_mean:
+                greatest_pitch_mean = pitch_mean
+                greatest_pitch_mean_run = run
+
+            if lowest_pitch_mean > pitch_mean:
+                lowest_pitch_mean = pitch_mean
+                lowest_pitch_mean_run = run
+
+        self.plainTextEditOverallStats.setPlainText(
+            f'Number of selected runs: {len(self._overall_selected_runs)}\n\n'
+            f'Run {greatest_up_time_run} had the greatest proportion of time looking up\n\n'
+            f'Run {greatest_down_time_run} had the lowest proportion of time looking up\n\n'
+            f'Run {greatest_pitch_mean_run} had the greatest pitch mean\n\n'
+            f'Run {lowest_pitch_mean_run} had the lowest pitch mean\n\n'
+        )

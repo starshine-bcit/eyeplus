@@ -40,7 +40,7 @@ def get_fusion_stats(fusion: dict) -> dict:
     """
     fusion_stats = {}
     pitch = np.array([v['pitch'] for v in fusion.values()])
-    roll = np.array([v['roll'] + 90 for v in fusion.values()])
+    roll = np.array([v['roll'] for v in fusion.values()])
     fusion_stats['pitch'] = {
         'mean': np.mean(pitch),
         'median': np.median(pitch),
@@ -55,7 +55,7 @@ def get_fusion_stats(fusion: dict) -> dict:
     return fusion_stats
 
 
-def get_roll_offset(fusion: dict) -> float:
+def get_pitch_offset(fusion: dict) -> float:
     """Find average average roll throughout a run, in an attempt to provide a sane default value.
 
     Args:
@@ -64,13 +64,12 @@ def get_roll_offset(fusion: dict) -> float:
     Returns:
         float: The calculated roll offset to store and use.
     """
-    roll_vals = [v['roll'] for v in fusion.values()]
-    avg_roll = int((sum(roll_vals) / len(roll_vals)))
-    roll_offset = -90 - avg_roll
-    return roll_offset
+    roll_vals = [v['pitch'] for v in fusion.values()]
+    mean_pitch = np.mean(roll_vals)
+    return int(mean_pitch)
 
 
-def calc_horizon_line(fusion: dict, roll_offset: int, pitch_multi: float) -> dict:
+def calc_horizon_line(fusion: dict, pitch_offset: int, pitch_multi: float) -> dict:
     """Determines the horizon line for each timestamp in the given fusion data.
 
     Args:
@@ -82,10 +81,12 @@ def calc_horizon_line(fusion: dict, roll_offset: int, pitch_multi: float) -> dic
         dict: Returns original fusion data with the horizon line now included per timestamp.
     """
     for k, v in fusion.items():
-        roll = v['roll'] + roll_offset
+        roll = v['roll']
+        pitch = v['pitch'] - pitch_offset
         pitch = v['pitch'] * pitch_multi
         # calculate slope based off head tilt
-        theta = roll + 90
+        theta = roll
+        # theta = roll + 90
         if theta != 90 or theta != -90:
             slope = tan(radians(theta))
         else:
@@ -94,7 +95,7 @@ def calc_horizon_line(fusion: dict, roll_offset: int, pitch_multi: float) -> dic
         # calculate intercepts as percentage of screen based off head pitch and slope
         theta = -pitch
 
-        fov_constant = 0.45  # determined so that looking up 45 degrees would move the slope down 25 percent of the screen, and vice versa
+        fov_constant = 0.40  # determined so that looking up 45 degrees would move the slope down 40 percent of the screen, and vice versa
 
         if theta >= 0:
             y_intercept = 0.5 - tan(radians(theta))*fov_constant
@@ -113,4 +114,6 @@ def calc_horizon_line(fusion: dict, roll_offset: int, pitch_multi: float) -> dic
 
 def next_greatest_element(target: float, timestamps: list[float]) -> float | None:
     idx = bisect.bisect_left(timestamps, target)
+    if idx >= len(timestamps):
+        return timestamps[-1]
     return timestamps[idx]

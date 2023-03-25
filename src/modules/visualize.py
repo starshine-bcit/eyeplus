@@ -244,7 +244,7 @@ class TotalUpDownStacked(BasicCanvas):
         x = ['Up/Down', 'Avg. Pitch']
         y1 = [up_down['percent_down']]
         y1_2 = [up_down['percent_up']]
-        y2 = [(self.mean_pitch + 15) / 30]
+        y2 = [(self.mean_pitch + 30) / 60]
         self.ax.set_ybound(0.0, 1.0)
         self.ax.set_title(
             'Total Up/Down vs. Mean Pitch')

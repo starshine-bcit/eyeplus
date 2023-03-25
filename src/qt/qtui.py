@@ -322,7 +322,7 @@ class Ui_MainWindow(object):
         self.listWidgetOverallSelectRuns.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.MultiSelection)
         self.listWidgetOverallSelectRuns.setObjectName("listWidgetOverallSelectRuns")
         self.verticalLayoutOverallLeft.addWidget(self.listWidgetOverallSelectRuns)
-        self.verticalLayoutOverallLeft.setStretch(1, 2)
+        self.verticalLayoutOverallLeft.setStretch(1, 1)
         self.verticalLayoutOverallLeft.setStretch(2, 1)
         self.horizontalLayoutOverallMain.addLayout(self.verticalLayoutOverallLeft)
         self.verticalLayoutOverallRight = QtWidgets.QVBoxLayout()
@@ -354,6 +354,8 @@ class Ui_MainWindow(object):
         self.widgetOverallGraphic2.setObjectName("widgetOverallGraphic2")
         self.horizontalLayout_11.addWidget(self.widgetOverallGraphic2)
         self.horizontalLayoutOverallTop.addWidget(self.frameOverallGraphic2)
+        self.horizontalLayoutOverallTop.setStretch(0, 1)
+        self.horizontalLayoutOverallTop.setStretch(1, 2)
         self.verticalLayoutOverallRight.addLayout(self.horizontalLayoutOverallTop)
         self.frameOverallGraphic3 = QtWidgets.QFrame(self.tabOverallSummary)
         self.frameOverallGraphic3.setFrameShape(QtWidgets.QFrame.Shape.StyledPanel)
@@ -490,7 +492,7 @@ class Ui_MainWindow(object):
         self.toolBar.addAction(self.actionAdjust)
 
         self.retranslateUi(MainWindow)
-        self.tabWidgetMain.setCurrentIndex(0)
+        self.tabWidgetMain.setCurrentIndex(2)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):

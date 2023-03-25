@@ -40,12 +40,12 @@ class IngestWorker(QtCore.QRunnable):
 
 
 class ReprocessWorker(QtCore.QRunnable):
-    def __init__(self, db_path: Path, runs_to_redo: list[int], roll_offset: int, pitch_multi: float, horizon_offset: float) -> None:
+    def __init__(self, db_path: Path, runs_to_redo: list[int], pitch_offset: int, pitch_multi: float, horizon_offset: float) -> None:
         super().__init__()
         self.signals = IngestWorkerSignals()
         self.db_path = db_path
         self.runs_to_redo = runs_to_redo
-        self.roll_offset = roll_offset
+        self.pitch_offset = pitch_offset
         self.pitch_multi = pitch_multi
         self.horizon_offset = horizon_offset
         self.setAutoDelete(True)
@@ -55,7 +55,7 @@ class ReprocessWorker(QtCore.QRunnable):
         self.signals.started.emit()
         eyedb = EyeDB(self.db_path)
         reprocess(self.cb_progress, eyedb, self.runs_to_redo,
-                  roll_offset=self.roll_offset, pitch_multi=self.pitch_multi, horizon_offset=self.horizon_offset)
+                  pitch_offset=self.pitch_offset, pitch_multi=self.pitch_multi, horizon_offset=self.horizon_offset)
         self.signals.finished.emit()
 
     def cb_progress(self, message: str, progress: float) -> None:

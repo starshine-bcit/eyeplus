@@ -39,10 +39,10 @@
      <item>
       <widget class="QLineEdit" name="lineEditPitchMulti">
        <property name="inputMask">
-        <string>0000</string>
+        <string>#0000</string>
        </property>
        <property name="text">
-        <string>100</string>
+        <string>1000</string>
        </property>
        <property name="alignment">
         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -70,9 +70,9 @@
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="0,1,0">
      <item>
-      <widget class="QLabel" name="labelRollOffset">
+      <widget class="QLabel" name="labelPitchOffset">
        <property name="text">
-        <string>Roll Offset</string>
+        <string>Pitch Offset</string>
        </property>
       </widget>
      </item>
@@ -90,12 +90,12 @@
       </spacer>
      </item>
      <item>
-      <widget class="QLineEdit" name="lineEditRollOffset">
+      <widget class="QLineEdit" name="lineEditPitchOffset">
        <property name="inputMask">
-        <string>009</string>
+        <string>#09</string>
        </property>
        <property name="text">
-        <string>90</string>
+        <string>0</string>
        </property>
        <property name="alignment">
         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -105,18 +105,18 @@
     </layout>
    </item>
    <item>
-    <widget class="QSlider" name="horizontalSliderRollOffset">
+    <widget class="QSlider" name="horizontalSliderPitchOffset">
      <property name="minimum">
-      <number>0</number>
+      <number>-30</number>
      </property>
      <property name="maximum">
-      <number>179</number>
+      <number>30</number>
      </property>
      <property name="value">
-      <number>90</number>
+      <number>0</number>
      </property>
      <property name="sliderPosition">
-      <number>90</number>
+      <number>0</number>
      </property>
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
@@ -148,10 +148,10 @@
      <item>
       <widget class="QLineEdit" name="lineEditHorizonFuzzy">
        <property name="inputMask">
-        <string extracomment="0">#000</string>
+        <string extracomment="0">#09</string>
        </property>
        <property name="text">
-        <string>00</string>
+        <string>0</string>
        </property>
        <property name="alignment">
         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -163,10 +163,16 @@
    <item>
     <widget class="QSlider" name="horizontalSliderHorizonFuzzy">
      <property name="minimum">
-      <number>-500</number>
+      <number>-25</number>
      </property>
      <property name="maximum">
-      <number>500</number>
+      <number>25</number>
+     </property>
+     <property name="singleStep">
+      <number>1</number>
+     </property>
+     <property name="pageStep">
+      <number>5</number>
      </property>
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
