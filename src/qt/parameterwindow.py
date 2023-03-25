@@ -18,10 +18,10 @@ class ParameterWindow(QtWidgets.QDialog):
             self._update_horizon_text)
         self.ui.horizontalSliderPitchMulti.sliderMoved.connect(
             self._update_pitch_text)
-        self.ui.horizontalSliderRollOffset.sliderMoved.connect(
-            self._update_roll_text)
-        self.ui.lineEditRollOffset.editingFinished.connect(
-            self._update_roll_slider)
+        self.ui.horizontalSliderPitchOffset.sliderMoved.connect(
+            self._update_roll_offset_text)
+        self.ui.lineEditPitchOffset.editingFinished.connect(
+            self._update_roll_offset_slider)
         self.ui.lineEditHorizonFuzzy.editingFinished.connect(
             self._update_horizon_slider)
         self.ui.lineEditPitchMulti.editingFinished.connect(
@@ -31,10 +31,10 @@ class ParameterWindow(QtWidgets.QDialog):
     def reset(self) -> None:
         self.ui.lineEditHorizonFuzzy.setText('0')
         self.ui.lineEditPitchMulti.setText('1000')
-        self.ui.lineEditRollOffset.setText('90')
+        self.ui.lineEditPitchOffset.setText('0')
         self.ui.horizontalSliderHorizonFuzzy.setValue(0)
         self.ui.horizontalSliderPitchMulti.setValue(1000)
-        self.ui.horizontalSliderRollOffset.setValue(90)
+        self.ui.horizontalSliderPitchOffset.setValue(0)
         self.resize(524, 212)
         self.ui.pushButtonApply.setFocus()
 
@@ -46,9 +46,9 @@ class ParameterWindow(QtWidgets.QDialog):
         self.ui.lineEditPitchMulti.setText(
             str(self.ui.horizontalSliderPitchMulti.value()))
 
-    def _update_roll_text(self) -> None:
-        self.ui.lineEditRollOffset.setText(
-            str(self.ui.horizontalSliderRollOffset.value()))
+    def _update_roll_offset_text(self) -> None:
+        self.ui.lineEditPitchOffset.setText(
+            str(self.ui.horizontalSliderPitchOffset.value()))
 
     def _update_horizon_slider(self) -> None:
         self.ui.horizontalSliderHorizonFuzzy.setValue(
@@ -58,15 +58,15 @@ class ParameterWindow(QtWidgets.QDialog):
         self.ui.horizontalSliderPitchMulti.setValue(
             int(self.ui.lineEditPitchMulti.text()))
 
-    def _update_roll_slider(self) -> None:
-        self.ui.horizontalSliderRollOffset.setValue(
-            int(self.ui.lineEditRollOffset.text()))
+    def _update_roll_offset_slider(self) -> None:
+        self.ui.horizontalSliderPitchOffset.setValue(
+            int(self.ui.lineEditPitchOffset.text()))
 
-    def set_values(self, roll_offset: int, pitch_multi: float, horizon_offset: float) -> None:
-        self.ui.lineEditRollOffset.setText(str(roll_offset))
-        self.ui.horizontalSliderRollOffset.setValue(roll_offset)
+    def set_values(self, pitch_offset: int, pitch_multi: float, horizon_offset: float) -> None:
+        self.ui.lineEditPitchOffset.setText(str(pitch_offset))
+        self.ui.horizontalSliderPitchOffset.setValue(pitch_offset)
         self.ui.lineEditPitchMulti.setText(str(int(pitch_multi * 1000)))
         self.ui.horizontalSliderPitchMulti.setValue(int(pitch_multi * 1000))
-        self.ui.lineEditHorizonFuzzy.setText(str(int(horizon_offset * 1000)))
+        self.ui.lineEditHorizonFuzzy.setText(str(int(horizon_offset * 100)))
         self.ui.horizontalSliderHorizonFuzzy.setValue(
-            int(horizon_offset * 1000))
+            int(horizon_offset * 100))

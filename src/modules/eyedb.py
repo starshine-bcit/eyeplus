@@ -54,8 +54,8 @@ class EyeDB():
         # Create backup here
 
         run_query = '''INSERT INTO run
-        (importdate, tags, video, hash, rolloffset, pitchmulti, horizonoffset)
-        VALUES(:importdate, :tags, :video, :hash, :rolloffset, :pitchmulti, :horizonoffset);'''
+        (importdate, tags, video, hash, pitchoffset, pitchmulti, horizonoffset)
+        VALUES(:importdate, :tags, :video, :hash, :pitchoffset, :pitchmulti, :horizonoffset);'''
 
         imu_query = '''INSERT INTO imu
         (runid, timestamp, accelerometer0, accelerometer1,
@@ -124,7 +124,7 @@ class EyeDB():
                 'tags': participant_data['name'],
                 'video': new_video_name,
                 'hash': hash,
-                'rolloffset': 90,
+                'pitchoffset': 0,
                 'pitchmulti': 1.0,
                 'horizonoffset': 0.0
             }
@@ -230,7 +230,7 @@ class EyeDB():
                 video TEXT NOT NULL,
                 hash TEXT NOT NULL,
                 tags TEXT,
-                rolloffset INTEGER NOT NULL,
+                pitchoffset INTEGER NOT NULL,
                 pitchmulti REAL NOT NULL,
                 horizonoffset REAL NOT NULL);''')
 
@@ -325,17 +325,14 @@ class EyeDB():
         self._cur.execute('''CREATE INDEX idx_mag_id
                 ON mag (id, runid);''')
 
-        self._cur.execute('''CREATE INDEX idx_pgaze2d_id
-                ON pgaze2d (id, runid);''')
+        self._cur.execute('''CREATE INDEX idx_processed_id 
+                ON processed (timestamp, runid, id);''')
 
-        self._cur.execute('''CREATE INDEX idx_fusion_id
-                ON fusion (id, runid);''')
+        self._cur.execute('''CREATE INDEX idx_pgaze2d_id 
+                ON pgaze2d (timestamp, runid, id);''')
 
-        self._cur.execute('''CREATE INDEX idx_processed_id
-                ON processed (id, runid);''')
-
-        self._cur.execute('''CREATE INDEX idx_fusion_timestamp
-                ON fusion (runid, timestamp);''')
+        self._cur.execute('''CREATE INDEX idx_fusion_id 
+                ON fusion (timestamp, runid, id)''')
 
         self._cur.execute('''CREATE INDEX idx_fusion_pitch 
                 ON fusion (pitch, runid, id);''')
@@ -354,7 +351,7 @@ class EyeDB():
         Returns:
             list[dict]: Information from the 'run' table that is deemed relevant.
         """
-        self._cur.execute('''SELECT id, importdate, processdate, video, tags, rolloffset, pitchmulti, horizonoffset
+        self._cur.execute('''SELECT id, importdate, processdate, video, tags, pitchoffset, pitchmulti, horizonoffset
         FROM run;''')
         all_runs = self._cur.fetchall()
         ret_runs = []
@@ -365,7 +362,7 @@ class EyeDB():
                 'processdate': run[2],
                 'video': self._video_dir / run[3],
                 'tags': run[4],
-                'roll_offset': run[5],
+                'pitch_offset': run[5],
                 'pitch_multi': run[6],
                 'horizon_offset': run[7]
             })
@@ -473,18 +470,29 @@ class EyeDB():
         self._cur.executemany(pgaze_insert_query, pgaze_data)
         self._con.commit()
 
-    def get_pgazed2d_data(self, runid: int) -> None:
-        """Gets all relevant predicted 2d gaze data for the runid
+    def get_pgazed2d_data(self, runid: int, start: float = -1.0, end: float = -1.0) -> dict:
+        """Gets all pgaze2d data for a given run, or just the times between a specific timestamp.
 
         Args:
-            runid (int): The runid of the data we wish to grab
+            runid (int): The runid of which we want to grab data from.
+            start (float, optional): The start time to grab data from. Defaults to -1.0.
+            end (float, optional): The end time to grab data from. Defaults to -1.0.
 
         Raises:
-            RuntimeError: If the runid does not exist
+            RuntimeError: When trying to select a non-existant runid.
+
+        Returns:
+            dict: Contains the processed 2d gaze data for a given runid.
         """
         pgaze2d_dict = {}
-        self._cur.execute(
-            '''SELECT * FROM pgaze2d WHERE runid=(?) ORDER BY id ASC;''', (runid,))
+        if start == -1.0 and end == -1.0:
+            self._cur.execute(
+                '''SELECT * FROM pgaze2d WHERE runid=(?) ORDER BY id ASC;''', (runid,))
+        else:
+            self._cur.execute('''SELECT * FROM pgaze2d
+                                WHERE runid=(?)
+                                    AND timestamp BETWEEN (?) AND (?)
+                                ORDER BY id ASC;''', (runid, start, end,))
         pgaze_data = self._cur.fetchall()
         if pgaze_data:
             for line in pgaze_data:
@@ -509,11 +517,14 @@ class EyeDB():
         self._cur.executemany(fusion_insert_query, fusion_data)
         self._con.commit()
 
-    def get_fusion_data(self, runid: int) -> dict:
-        """Gets all relevant fusion data for the runid
+    def get_fusion_data(self, runid: int, start: float = -1.0, end: float = -1.0) -> dict:
+        """Gets all relevant fusion data for the runid, optionally including
+            only the data between the start and end timestamps.
 
         Args:
-            runid (int): runid of the data we want to grab
+            runid (int): The runid of which we want to grab data from.
+            start (float, optional): The start time to grab data from. Defaults to -1.0.
+            end (float, optional): The end time to grab data from. Defaults to -1.0.
 
         Raises:
             RuntimeError: If the runid does not exist
@@ -522,8 +533,14 @@ class EyeDB():
             dict: fusion data ready for other components
         """
         fusion_dict = {}
-        self._cur.execute(
-            '''SELECT * FROM fusion WHERE runid=(?) ORDER BY id ASC;''', (runid,))
+        if start == -1.0 and end == -1.0:
+            self._cur.execute(
+                '''SELECT * FROM fusion WHERE runid=(?) ORDER BY id ASC;''', (runid,))
+        else:
+            self._cur.execute('''SELECT * FROM fusion
+                                WHERE runid=(?)
+                                    AND timestamp BETWEEN (?) AND (?)
+                                ORDER BY id ASC;''', (runid, start, end,))
         fusion_data = self._cur.fetchall()
         if fusion_data:
             for line in fusion_data:
@@ -601,12 +618,12 @@ class EyeDB():
         else:
             raise RuntimeError(f'Trying to select a non-existant ID: {runid}')
 
-    def update_parameters(self, runid: int, roll_offset: int, pitch_multi: float, horizon_offset: float) -> None:
+    def update_parameters(self, runid: int, pitch_offset: int, pitch_multi: float, horizon_offset: float) -> None:
         """Updates the tweakable parameters in the database (run table).
 
         Args:
             runid (int): The runid that is being updated.
-            roll_offset (int): New roll offset value.
+            pitch_offset (int): New roll offset value.
             pitch_multi (float): New pitch multiplier value.
             horizon_offset (float): New horizon offset value.
 
@@ -615,8 +632,8 @@ class EyeDB():
         """
         if self.check_existing_runid(runid):
             self._cur.execute('''UPDATE run
-                            SET(rolloffset, pitchmulti, horizonoffset) = (?, ?, ?)
-                            WHERE id=(?);''', (roll_offset, pitch_multi, horizon_offset, runid))
+                            SET(pitchoffset, pitchmulti, horizonoffset) = (?, ?, ?)
+                            WHERE id=(?);''', (pitch_offset, pitch_multi, horizon_offset, runid))
         else:
             raise RuntimeError(f'Trying to select a non-existant ID: {runid}')
 
@@ -630,10 +647,10 @@ class EyeDB():
             RuntimeError: If there was an attempt to select a non-existant runid.
 
         Returns:
-            tuple: Contains the roll_offset, pitch_multi, and horizon_offset values.
+            tuple: Contains the pitch_offset, pitch_multi, and horizon_offset values.
         """
         if self.check_existing_runid(runid):
-            self._cur.execute('''SELECT rolloffset, pitchmulti, horizonoffset
+            self._cur.execute('''SELECT pitchoffset, pitchmulti, horizonoffset
                             FROM run where id=(?);''', (runid,))
             parameters = self._cur.fetchone()
             return parameters
@@ -687,11 +704,14 @@ class EyeDB():
 
         self.update_processed_view()
 
-    def get_processed_data(self, runid: int) -> dict:
-        """Gets all data previously stored from HorizonGaze class.
+    def get_processed_data(self, runid: int, start: float = -1, end: float = -1) -> dict:
+        """Gets all data previously stored from HorizonGaze class, optionally
+            only including data between start and end timestamps.
 
         Args:
-            runid (int): runid of which we wish to get data.
+            runid (int): The runid of which we want to grab data from.
+            start (float, optional): The start time to grab data from. Defaults to -1.0.
+            end (float, optional): The end time to grab data from. Defaults to -1.0.
 
         Raises:
             RuntimeError: If there was an attempt to select a non-existant runid.
@@ -700,8 +720,14 @@ class EyeDB():
             dict: All processed up/down data.
         """
         processed_dict = {}
-        self._cur.execute(
-            '''SELECT * FROM processed WHERE runid=(?) ORDER BY id ASC;''', (runid,))
+        if start == -1 and end == -1:
+            self._cur.execute(
+                '''SELECT * FROM processed WHERE runid=(?) ORDER BY id ASC;''', (runid,))
+        else:
+            self._cur.execute('''SELECT * FROM processed
+                                WHERE runid=(?)
+                                    AND timestamp BETWEEN (?) AND (?)
+                                ORDER BY id ASC;''', (runid, start, end,))
         processed_data = self._cur.fetchall()
         if processed_data:
             for line in processed_data:
@@ -766,6 +792,20 @@ class EyeDB():
 
         self._cur.execute(drop_view_query)
         self._cur.execute(view_query)
+
+    def get_processed_view(self) -> dict:
+        """Creates and returns a dictionary containing the contents of the overall_percentage_view view."""
+
+        select_view_query = '''SELECT * FROM overall_percentage_view;'''
+
+        self._cur.execute(select_view_query)
+        data = self._cur.fetchall()
+        view_dict = {}
+
+        for line in data:
+            view_dict[line[0]] = [line[1], line[2], line[3], line[4], line[5]]
+
+        return view_dict
 
     def get_overall_up_down(self, runids: list[int]) -> dict:
         """Gets the final cumulative calculated up/down for any number of runs.

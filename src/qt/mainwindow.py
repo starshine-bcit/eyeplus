@@ -2,6 +2,7 @@ from pathlib import Path
 import sys
 import os
 import re
+from datetime import timedelta, datetime, time
 
 from PyQt6 import QtCore, QtGui, QtWidgets
 
@@ -18,7 +19,7 @@ from modules.export import DataExporter
 from modules.visualize import TotalUpDown, CumulativeUpDown, PitchLive, HeatMap, TotalUpDownStacked, GazeLive, OverallGaze2DY, OverallUpAndDown, PitchHistogram
 from utils.fileutils import validate_import_folder
 from utils.imageutils import create_video_overlay
-from utils.statutils import get_gaze_stats, get_fusion_stats
+from utils.statutils import get_gaze_stats, get_fusion_stats, next_greatest_element
 
 
 class EyeMainWindow(Ui_MainWindow):
@@ -54,9 +55,12 @@ class EyeMainWindow(Ui_MainWindow):
         self._videos = {}
         self._overall_selected_runs = []
         self._selected_run = 0
-        self._roll_offset = 90
+        self._pitch_offset = 0
         self._pitch_multi = 1.0
         self._horizon_offset = 0.0
+        self._part_selection_enabled = False
+        self._selected_start_time = -1.0
+        self._selected_end_time = -1.0
         self._dpi = self.screen.logicalDotsPerInch()
         self._reset_stats_text()
         self._setup_visual_widgets()
@@ -103,6 +107,9 @@ class EyeMainWindow(Ui_MainWindow):
             self._overall_graphic_slider_moved)
         self.listWidgetOverallSelectRuns.itemSelectionChanged.connect(
             self._overall_run_selection_changed)
+        self.lineEditStartTime.editingFinished.connect(self._verify_start_time)
+        self.lineEditEndTime.editingFinished.connect(self._verify_end_time)
+        self.pushButtonApplyParts.clicked.connect(self._apply_parts_clicked)
 
     def _setup_video(self):
         if 'playback_worker' in self.__dict__:
@@ -114,7 +121,7 @@ class EyeMainWindow(Ui_MainWindow):
                               background="#FFFFFF")
         current_video = self._videos[self._selected_run]
         self.playback_worker = PlaybackWorker(
-            player=self.player, video=current_video)
+            player=self.player, video=current_video, start=self._selected_start_time, end=self._selected_end_time)
         self.playback_worker.signals.playing.connect(
             self._playing_started_callback)
         self.playback_worker.signals.progress.connect(
@@ -160,6 +167,8 @@ class EyeMainWindow(Ui_MainWindow):
             self.horizontalSliderSeek.setSliderPosition(progress)
         if not self.player.pause:
             curr_timestamp = round(self.player.time_pos, 1)
+            if curr_timestamp < self._first_timestamp:
+                curr_timestamp = self._first_timestamp
             if self._visual_review_pitch.is_paused:
                 self._visual_review_pitch.start()
             if self._visual_review_gaze_live.is_paused:
@@ -168,42 +177,10 @@ class EyeMainWindow(Ui_MainWindow):
             self._visual_review_gaze_live.current_timestamp = curr_timestamp
             if self.player.duration - self.player.time_pos <= 2:
                 curr_timestamp = curr_timestamp - 2
-            closest_fusion = -1
-            length = len(self._fusion_timestamps)
-            mid = length / 2
-            count = 1
-            while closest_fusion < 0:
-                count += 1
-                diff = length / 2**count
-                mid_point1 = self._fusion_timestamps_dict[int(mid)]
-                mid_point2 = self._fusion_timestamps_dict[int(mid+1)]
-                if curr_timestamp >= mid_point1 and curr_timestamp < mid_point2:
-                    closest_fusion = mid_point1
-                elif curr_timestamp < mid_point1:
-                    mid -= diff
-                else:
-                    mid += diff
-
-            length = len(self._gaze_distance_timestamps)
-            mid = length / 2
-            closest_distance = -1
-            count = 1
-            while closest_distance < 0:
-                count += 1
-                diff = length / 2**count
-                mid_point1 = self._gaze_distance_timestamps_dict[int(mid)]
-                mid_point2 = self._gaze_distance_timestamps_dict[int(mid+1)]
-                if curr_timestamp >= mid_point1 and curr_timestamp < mid_point2:
-                    if curr_timestamp - mid_point1 <= 0.05 and self._gaze_distance[mid_point1] is not None:
-                        closest_distance = f'{self._gaze_distance[mid_point1]:.4f}'
-                        break
-                    else:
-                        closest_distance = None
-                        break
-                elif curr_timestamp < mid_point1:
-                    mid -= diff
-                else:
-                    mid += diff
+            closest_fusion = next_greatest_element(
+                curr_timestamp, self._fusion_timestamps)
+            closest_distance = next_greatest_element(
+                curr_timestamp, self._gaze_distance_timestamps)
 
             if self._overlay.overlay_id:
                 self._overlay.remove()
@@ -222,7 +199,7 @@ class EyeMainWindow(Ui_MainWindow):
             percent_down = self._horizon[curr_timestamp]['percent_down']
             currently_up = self._horizon[curr_timestamp]['currently_up']
 
-            roll += self._roll_offset
+            pitch -= self._pitch_offset
             pitch *= self._pitch_multi
 
             img, pos_x, pos_y = create_video_overlay(
@@ -241,6 +218,7 @@ class EyeMainWindow(Ui_MainWindow):
                     f'Title      : {self._all_runs_list[self._selected_run -1]["tags"]}\n'
                     f'Timestamp  : {self.player.time_pos:.2f}\n'
                     f'Duration   : {self.player.duration:.2f}\n\n'
+                    f'Human Time : {self._get_string_from_timestamp(self.player.time_pos)}\n\n'
                     f'Gaze X     : {gaze_x:.4f}\n'
                     f'Gaze Y     : {gaze_y:.4f}\n\n'
                     f'Roll       : {roll:.4f}\n'
@@ -275,8 +253,9 @@ class EyeMainWindow(Ui_MainWindow):
 
     def _seekbar_moved(self):
         time_to_seek = self.horizontalSliderSeek.sliderPosition() * \
-            self.player.duration / 1000
-        self.player.seek(max(time_to_seek, 1), reference='absolute')
+            (self._selected_end_time - self._selected_start_time) / 1000
+        self.player.seek(
+            max(time_to_seek, self._selected_start_time), reference='absolute')
 
     def _safe_quit_x(self, event):
         if 'player' in self.__dict__:
@@ -335,6 +314,7 @@ class EyeMainWindow(Ui_MainWindow):
         run_count = len(self._all_runs_list)
         if run_count > 0:
             self.tabWidgetMain.setEnabled(True)
+            self.listWidgetOverallSelectRuns.clear()
             self._runs_model = QtGui.QStandardItemModel(run_count, 4)
             self._runs_model.setHorizontalHeaderLabels(
                 ['ID', 'Date', 'Processed', 'Title'])
@@ -366,13 +346,18 @@ class EyeMainWindow(Ui_MainWindow):
             self.tableViewRuns.selectRow(0)
             self._table_item_single_clicked(
                 self._title_filter_model.index(0, 0))
-            self.listWidgetOverallSelectRuns.selectAll()
-            self._display_overall_visuals()
+            if len(self._all_runs_list) in [1, 2]:
+                self.listWidgetOverallSelectRuns.selectAll()
+                self._display_overall_visuals()
+                self._display_overall_text()
+            else:
+                self.plainTextEditOverallStats.setPlainText(
+                    'Select one or more runs below to view statistics.')
         else:
             self.tabWidgetMain.setEnabled(False)
             QtWidgets.QMessageBox
             message_box = QtWidgets.QMessageBox(
-                text='It looks like this is your first time using eyeplus. Head over to File > Import... to get started, or check the documentation under Help.', parent=self.main_window)
+                text='It looks like this is your first time using eyeplus. \nHead over to File > Import... to get started, or check the documentation under Help.', parent=self.main_window)
             message_box.setWindowIcon(QtGui.QIcon(
                 QtGui.QPixmap(':/icons/info.svg')))
             message_box.setWindowTitle('Welcome to eyeplus!')
@@ -382,13 +367,20 @@ class EyeMainWindow(Ui_MainWindow):
         original_index = self._title_filter_model.mapToSource(index)
         runid_index = self._runs_model.index(original_index.row(), 0)
         self._selected_run = int(self._runs_model.itemData(runid_index)[0])
-        self._roll_offset, self._pitch_multi, self._horizon_offset = self._db.get_parameters(
+        self._pitch_offset, self._pitch_multi, self._horizon_offset = self._db.get_parameters(
             self._selected_run)
+        self._pitch_offset = int(self._pitch_offset)
         if 'player' in self.__dict__:
             self._stop_clicked()
+        self._part_selection_enabled = False
         self._load_summary_data()
-        self._display_summary_visuals()
         self._display_summary_text()
+        self._display_summary_visuals()
+        self.lineEditStartTime.setText('00:00:00')
+        self.lineEditEndTime.setText(
+            self._get_string_from_timestamp(self._horizon_timestamps[-1]))
+        self._selected_end_time = self._horizon_timestamps[-1]
+        self._selected_start_time = 0.0
         self._update_status(
             f'Successfully loaded summary for runid {self._selected_run}')
 
@@ -500,18 +492,20 @@ class EyeMainWindow(Ui_MainWindow):
                 'Error: You selected no zip file to import.')
 
     def _ingest_data(self, found_items: list[Path], ftype: str):
-        try:
-            ingest_worker = IngestWorker(self._db_path, found_items, ftype)
-            ingest_worker.signals.started.connect(
-                self._progress_dialog_start)
-            ingest_worker.signals.progress.connect(
-                self._progress_dialog_update)
-            ingest_worker.signals.finished.connect(
-                self._progress_dialog_finish)
-            self._thread_pool.start(ingest_worker)
-        except FileExistsError:
-            self._error_box.showMessage(
-                'Error: You have attempted to import one or more runs which already have been imported.')
+        ingest_worker = IngestWorker(self._db_path, found_items, ftype)
+        ingest_worker.signals.started.connect(
+            self._progress_dialog_start)
+        ingest_worker.signals.progress.connect(
+            self._progress_dialog_update)
+        ingest_worker.signals.finished.connect(
+            self._progress_dialog_finish)
+        ingest_worker.signals.error.connect(self._ingest_error)
+        self._thread_pool.start(ingest_worker)
+
+    def _ingest_error(self, error: str) -> None:
+        self.main_window.show()
+        self.processing_dialog.hide()
+        self._error_box.showMessage(error)
 
     def _init_status_bar(self) -> None:
         """Initializes status bar widgets, since Qt Creator doesn't allow
@@ -608,17 +602,17 @@ class EyeMainWindow(Ui_MainWindow):
 
     def _show_parameter_window(self) -> None:
         self.parameter_window.set_values(
-            int(self._roll_offset), self._pitch_multi, -self._horizon_offset)
+            int(self._pitch_offset), self._pitch_multi, -self._horizon_offset)
         self.parameter_window.show()
         self.parameter_window.setFocus()
         self.parameter_window.move(250, 600)
 
     def _update_parameters(self) -> None:
-        self._roll_offset = self.parameter_window.ui.horizontalSliderRollOffset.value()
+        self._pitch_offset = self.parameter_window.ui.horizontalSliderPitchOffset.value()
         self._pitch_multi = float(
             self.parameter_window.ui.horizontalSliderPitchMulti.value() / 1000)
         self._horizon_offset = float(
-            -self.parameter_window.ui.horizontalSliderHorizonFuzzy.value() / 1000)
+            -self.parameter_window.ui.horizontalSliderHorizonFuzzy.value() / 100)
 
     def _filter_runs(self, text: str) -> None:
         self._title_filter_model.setFilterRegularExpression(text)
@@ -629,7 +623,7 @@ class EyeMainWindow(Ui_MainWindow):
         self._stop_clicked()
         runs_to_redo = [self._selected_run]
         ingest_worker = ReprocessWorker(
-            self._db_path, runs_to_redo, self._roll_offset, self._pitch_multi, self._horizon_offset)
+            self._db_path, runs_to_redo, self._pitch_offset, self._pitch_multi, self._horizon_offset)
         ingest_worker.signals.started.connect(
             self._reprocess_started)
         ingest_worker.signals.progress.connect(
@@ -647,21 +641,25 @@ class EyeMainWindow(Ui_MainWindow):
             f'Processed: {self._all_runs_dict[self._selected_run]["process_date"]}')
         self.labelSummaryTag.setText(
             f'Title: {self._all_runs_dict[self._selected_run]["tags"]}')
-        self._tree_predicted2d = self._db.get_pgazed2d_data(self._selected_run)
+        if self._part_selection_enabled:
+            self._tree_predicted2d = self._db.get_pgazed2d_data(
+                self._selected_run, self._selected_start_time, self._selected_end_time)
+            self._horizon = self._db.get_processed_data(
+                self._selected_run, self._selected_start_time, self._selected_end_time)
+            self._fusion_data = self._db.get_fusion_data(
+                self._selected_run, self._selected_start_time, self._selected_end_time)
+        else:
+            self._tree_predicted2d = self._db.get_pgazed2d_data(
+                self._selected_run)
+            self._horizon = self._db.get_processed_data(self._selected_run)
+            self._fusion_data = self._db.get_fusion_data(self._selected_run)
         self._gaze_distance = self._db.get_gaze3d_z(self._selected_run)
         self._gaze_distance_timestamps = list(self._gaze_distance.keys())
-        self._gaze_distance_timestamps_dict = {}
-        for i, j in enumerate(self._gaze_distance_timestamps):
-            self._gaze_distance_timestamps_dict[i] = j
-        self._fusion_data = self._db.get_fusion_data(self._selected_run)
-        self._fusion_timestamps = list(self._fusion_data.keys())
-        self._fusion_timestamps_dict = {}
-        for i, j in enumerate(self._fusion_timestamps):
-            self._fusion_timestamps_dict[i] = j
-        self._horizon = self._db.get_processed_data(self._selected_run)
         self._horizon_timestamps = list(self._horizon.keys())
+        self._fusion_timestamps = list(self._fusion_data.keys())
+        self._first_timestamp = next(iter(self._tree_predicted2d.keys()))
         self.parameter_window.set_values(
-            self._roll_offset, self._pitch_multi, self._horizon_offset)
+            self._pitch_offset, self._pitch_multi, self._horizon_offset)
 
     def _display_summary_visuals(self) -> None:
         self._visual_summary_up_down.plot(
@@ -690,7 +688,9 @@ class EyeMainWindow(Ui_MainWindow):
             f'  Looking Up  : {self._horizon[last_horizon]["up_count"]:>6} | {self._horizon[last_horizon]["percent_up"]:>7.4}\n'
             f'  Looking Down: {self._horizon[last_horizon]["down_count"]:>6} | {self._horizon[last_horizon]["percent_down"]:>7.4f}\n\n'
             f'Offsets\n'
-            f'  Horizon: {-self._horizon_offset:>5.2f}, Roll: {self._roll_offset}, Pitch: {self._pitch_multi:>5.2f}'
+            f'  Horizon    : {-self._horizon_offset:>5.2f}\n'
+            f'  Pitch      : {self._pitch_offset}\n'
+            f'  Pitch Multi: {self._pitch_multi:>5.2f}'
         )
 
     def _setup_visual_widgets(self) -> None:
@@ -766,3 +766,98 @@ class EyeMainWindow(Ui_MainWindow):
             self.listWidgetOverallSelectRuns.setCurrentRow(0)
         self._overall_selected_runs.sort()
         self._display_overall_visuals()
+        self._display_overall_text()
+
+    def _verify_start_time(self) -> None:
+        if self._selected_end_time == -1.0:
+            self._selected_end_time = self._horizon_timestamps[-1]
+        new_time = self._get_timestamp_from_string(
+            self.lineEditStartTime.text())
+        if new_time + 60 > self._selected_end_time:
+            self._selected_start_time = self._selected_end_time - 60
+        else:
+            self._selected_start_time = new_time
+        self.lineEditStartTime.setText(
+            self._get_string_from_timestamp(self._selected_start_time))
+
+    def _verify_end_time(self) -> None:
+        if self._selected_start_time == -1.0:
+            self._selected_start_time = 0.0
+        new_time = self._get_timestamp_from_string(self.lineEditEndTime.text())
+        if new_time > self._horizon_timestamps[-1]:
+            self._selected_end_time = self._horizon_timestamps[-1]
+        elif new_time < self._selected_start_time + 60:
+            self._selected_end_time = self._selected_start_time + 60
+        else:
+            self._selected_end_time = new_time
+        self.lineEditEndTime.setText(
+            self._get_string_from_timestamp(self._selected_end_time))
+
+    def _get_string_from_timestamp(self, timestamp: float) -> str:
+        seconds = timestamp
+        minutes, seconds = divmod(seconds, 60)
+        hours, minutes = divmod(minutes, 60)
+        if hours < 1:
+            hours = 0.0
+        if minutes < 1:
+            minutes = 0.0
+        return f'{hours:02.0f}:{minutes:02.0f}:{seconds:02.0f}'
+
+    def _get_timestamp_from_string(self, string_time: str) -> float:
+        year_2000 = datetime(2000, 1, 1)
+        new_time = datetime.strptime(
+            string_time, '%H:%M:%S').replace(year=2000)
+        return (new_time - year_2000).total_seconds()
+
+    def _apply_parts_clicked(self) -> None:
+        self._part_selection_enabled = True
+        if 'player' in self.__dict__:
+            self._stop_clicked()
+        self._load_summary_data()
+        self._display_summary_visuals()
+        self._display_summary_text()
+        self._update_status(
+            f'Successfully applied active time for runid {self._selected_run}')
+
+    def _display_overall_text(self) -> None:
+        overall_data = self._db.get_processed_view()
+
+        greatest_up_time = overall_data[self._overall_selected_runs[0]][0]
+        greatest_up_time_run = self._overall_selected_runs[0]
+
+        greatest_down_time = overall_data[self._overall_selected_runs[0]][1]
+        greatest_down_time_run = self._overall_selected_runs[0]
+
+        greatest_pitch_mean = get_fusion_stats(self._db.get_fusion_data(
+            self._overall_selected_runs[0]))['pitch']['mean']
+        greatest_pitch_mean_run = self._overall_selected_runs[0]
+
+        lowest_pitch_mean = greatest_pitch_mean
+        lowest_pitch_mean_run = greatest_pitch_mean_run
+
+        for run in self._overall_selected_runs:
+            if overall_data[run][0] > greatest_up_time:
+                greatest_up_time = overall_data[run][0]
+                greatest_up_time_run = run
+
+            if overall_data[run][1] > greatest_down_time:
+                greatest_down_time = overall_data[run][1]
+                greatest_down_time_run = run
+
+            pitch_mean = get_fusion_stats(self._db.get_fusion_data(run))[
+                'pitch']['mean']
+            if pitch_mean > greatest_pitch_mean:
+                greatest_pitch_mean = pitch_mean
+                greatest_pitch_mean_run = run
+
+            if lowest_pitch_mean > pitch_mean:
+                lowest_pitch_mean = pitch_mean
+                lowest_pitch_mean_run = run
+
+        self.plainTextEditOverallStats.setPlainText(
+            f'Number of selected runs: {len(self._overall_selected_runs)}\n\n'
+            f'Run {greatest_up_time_run} had the greatest proportion of time looking up\n\n'
+            f'Run {greatest_down_time_run} had the lowest proportion of time looking up\n\n'
+            f'Run {greatest_pitch_mean_run} had the greatest pitch mean\n\n'
+            f'Run {lowest_pitch_mean_run} had the lowest pitch mean\n\n'
+        )

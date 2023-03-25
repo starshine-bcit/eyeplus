@@ -1,3 +1,4 @@
+from utils.statutils import next_greatest_element
 
 
 class HorizonGaze():
@@ -23,13 +24,7 @@ class HorizonGaze():
         self._gaze2d_ts = list(self._gaze2d.keys())
         self._length = len(self._gaze2d_ts) - 2
         self._fused_ts = list(self._fused.keys())
-        self._fused_ts_dict = {}
-        for i, j in enumerate(self._fused_ts):
-            self._fused_ts_dict[i] = j
         self._gaze3d_ts = list(self._gaze3d.keys())
-        self._gaze3d_ts_dict = {}
-        for i, j in enumerate(self._gaze3d_ts):
-            self._gaze3d_ts_dict[i] = j
 
     def calculates_all(self) -> dict:
         """Performs a calculation for each timestamp in gaze2d.
@@ -60,12 +55,15 @@ class HorizonGaze():
             timestamp (float): Timestamp to be processed.
         """
         if timestamp >= 1:
-            closest_fuse = self._get_close_fuse(timestamp)
+            closest_fuse = next_greatest_element(timestamp, self._fused_ts)
             slope = self._fused[closest_fuse]['slope']
             y_intercept = self._fused[closest_fuse]['y_intercept']
-            closest_gaze3d = self._get_close_3d(timestamp)
-            if closest_gaze3d:
-                distance = self._gaze3d[closest_gaze3d]
+            closest_gaze3d = next_greatest_element(timestamp, self._gaze3d_ts)
+            if self._gaze3d[closest_gaze3d]:
+                if self._gaze3d[closest_gaze3d] - timestamp < 0.05:
+                    distance = closest_gaze3d
+                else:
+                    distance = None
             else:
                 distance = None
             gaze_x = self._gaze2d[timestamp][0]
@@ -79,74 +77,6 @@ class HorizonGaze():
                 self._readings_looking_down += 1
                 self._currently_up = False
             self._total_readings += 1
-
-    def _get_close_3d(self, timestamp: float) -> float | None:
-        """Gets the closest 3dgaze timestamp.
-
-        Args:
-            timestamp (float): Timestamp to search for.
-
-        Returns:
-            float | None: Closest found gaze3d timestamp. Or None if there is not one within 0.05 seconds.
-        """
-        length = len(self._gaze3d_ts)
-        mid = length / 2
-        time = -1
-        count = 1
-        while time < 0:
-            count += 1
-            diff = length / 2**count
-            mid_point1 = self._gaze3d_ts_dict[int(mid)]
-            try:
-                mid_point2 = self._gaze3d_ts_dict[int(mid+1)]
-            except KeyError:
-                return self._gaze3d_ts_dict[length - 1]
-            if timestamp >= mid_point1 and timestamp <= mid_point2:
-                left = timestamp - mid_point1
-                right = mid_point2 - timestamp
-                if left < right and left <= 0.05:
-                    return mid_point1
-                elif right >= left and right <= 0.05:
-                    return mid_point2
-                else:
-                    return None
-            elif timestamp < mid_point1:
-                mid -= diff
-            else:
-                mid += diff
-
-    def _get_close_fuse(self, timestamp: float) -> float:
-        """Gets closest timestamp from fusion data.
-
-        Args:
-            timestamp (float): Timestamp to search for.
-
-        Returns:
-            float: The closest found fusion timestamp.
-        """
-        length = len(self._fused_ts)
-        mid = length / 2
-        closest_fused = -1
-        count = 1
-        while closest_fused < 0:
-            count += 1
-            diff = length / 2**count
-            mid_point1 = self._fused_ts_dict[int(mid)]
-            try:
-                mid_point2 = self._fused_ts_dict[int(mid + 1)]
-            except KeyError:
-                return self._fused_ts_dict[length-1]
-            if timestamp >= mid_point1 and timestamp <= mid_point2:
-                left = timestamp - mid_point1
-                right = mid_point2 - timestamp
-                if left < right:
-                    return mid_point1
-                else:
-                    return mid_point2
-            elif timestamp < mid_point1:
-                mid -= diff
-            else:
-                mid += diff
 
     def _calculate_up(self, slope: float, y_intercept: float, gaze_x: float, gaze_y: float, gaze_distance: float | None) -> bool:
         """Calculates whether the gaze2d point is above or below the provided horizon line.
