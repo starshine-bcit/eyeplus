@@ -615,6 +615,7 @@
               <property name="font">
                <font>
                 <family>Consolas</family>
+                <pointsize>8</pointsize>
                </font>
               </property>
               <property name="frameShadow">

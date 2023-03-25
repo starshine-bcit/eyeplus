@@ -834,10 +834,10 @@ class EyeMainWindow(Ui_MainWindow):
         max_down_run = -1
         for k, v in overall_data.items():
             if v[1] > max_up and k in self._overall_selected_runs:
-                max_up = v[1]
+                max_up = v[0]
                 max_up_run = k
             if v[2] > max_down and k in self._overall_selected_runs:
-                max_down = v[2]
+                max_down = v[1]
                 max_down_run = k
         max_pitch_mean = -100
         max_pitch_mean_run = -1
@@ -863,14 +863,14 @@ class EyeMainWindow(Ui_MainWindow):
                 eyey_run = runid
 
         self.plainTextEditOverallStats.setPlainText(
-            f'Selected run quantity : {len(self._overall_selected_runs)}\n'
+            f'Selected run quantity : {len(self._overall_selected_runs)}\n\n'
             f'Up/Down:\n'
-            f'  Max proportion up   : Run {max_up_run} @ {max_up:0.4f}\n'
-            f'  Max proportion down : Run {max_down_run} @ {max_down:0.4f}\n'
+            f'  Max prop. up   : Run {max_up_run} @ {max_up:0.4f}\n'
+            f'  Max prop. down : Run {max_down_run} @ {max_down:0.4f}\n\n'
             f'Pitch:\n'
-            f'  Max pitch mean      : Run {max_pitch_mean_run} @ {max_pitch_mean:4.2f}\n'
-            f'  Min pitch mean      : Run {min_pitch_mean_run} @ {min_pitch_mean:4.2f}\n'
+            f'  Max pitch mean : Run {max_pitch_mean_run} @ {max_pitch_mean:4.2f}\n'
+            f'  Min pitch mean : Run {min_pitch_mean_run} @ {min_pitch_mean:4.2f}\n\n'
             f'Other:\n'
-            f'  Max roll stdev      : Run {rolly_run} @ {rolly:0.4f}\n'
-            f'  Max gaze2d x+y stdev: Run {eyey_run} @ {eyey:0.4f}'
+            f'  Run {rolly_run} had the max roll stdev @ {rolly:0.4f}\n'
+            f'  Run {eyey_run} had the max gaze2d stdev @ {eyey:0.4f}'
         )

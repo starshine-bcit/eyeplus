@@ -56,7 +56,7 @@ def get_fusion_stats(fusion: dict) -> dict:
 
 
 def get_pitch_offset(fusion: dict) -> float:
-    """Find average average roll throughout a run, in an attempt to provide a sane default value.
+    """Find average average roll throughout a run, in an attempt to provide a sane default value. Not used at this time, simply returns 0.
 
     Args:
         fusion (dict): All fusion data from the currently processing run.
@@ -64,9 +64,10 @@ def get_pitch_offset(fusion: dict) -> float:
     Returns:
         float: The calculated roll offset to store and use.
     """
-    roll_vals = [v['pitch'] for v in fusion.values()]
-    mean_pitch = np.mean(roll_vals)
-    return int(mean_pitch)
+    # roll_vals = [v['pitch'] for v in fusion.values()]
+    # mean_pitch = np.mean(roll_vals)
+    # return int(mean_pitch)
+    return 0
 
 
 def calc_horizon_line(fusion: dict, pitch_offset: int, pitch_multi: float) -> dict:

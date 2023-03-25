@@ -309,6 +309,7 @@ class Ui_MainWindow(object):
         self.plainTextEditOverallStats = QtWidgets.QPlainTextEdit(self.tabOverallSummary)
         font = QtGui.QFont()
         font.setFamily("Consolas")
+        font.setPointSize(8)
         self.plainTextEditOverallStats.setFont(font)
         self.plainTextEditOverallStats.setFrameShadow(QtWidgets.QFrame.Shadow.Sunken)
         self.plainTextEditOverallStats.setReadOnly(True)

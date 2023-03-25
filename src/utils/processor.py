@@ -50,7 +50,7 @@ def ingest_and_process(cb_progress, eyedb: EyeDB, paths: list[Path], type: str =
         processed = horizon.calculates_all()
         progress += 0.10 / len(runs_to_process)
         cb_progress(
-            f'Run {current_run} of {max_run}: Calculating summary statistics...')
+            f'Run {current_run} of {max_run}: Calculating summary statistics...', progress)
         gaze2d_stats = get_gaze_stats(predicted_gaze)
         fusion_stats = get_fusion_stats(fused)
         progress += 0.20 / len(runs_to_process)

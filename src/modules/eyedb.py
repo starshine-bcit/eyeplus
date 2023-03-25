@@ -333,7 +333,7 @@ class EyeDB():
                 gaze2dymedian REAL NOT NULL,
                 gaze2dystdev REAL NOT NULL,
                 gaze2dcount INTEGER NOT NULL,
-                FOREIGN KEY(runid) REFERENCES run(id));)''')
+                FOREIGN KEY(runid) REFERENCES run(id));''')
 
         self._cur.execute('''CREATE INDEX idx_imu_id
                 ON imu (id, runid);''')
@@ -828,6 +828,8 @@ class EyeDB():
         for line in data:
             view_dict[line[0]] = [line[1], line[2], line[3], line[4], line[5]]
 
+        print(view_dict)
+
         return view_dict
 
     def get_overall_up_down(self, runids: list[int]) -> dict:
@@ -992,7 +994,7 @@ class EyeDB():
             'fusioncount': fusion_stats['num_samples'],
             'gaze2dxmean': gaze2d_stats['x']['mean'],
             'gaze2dxmedian': gaze2d_stats['x']['median'],
-            'gaze2xstdev': gaze2d_stats['x']['stdev'],
+            'gaze2dxstdev': gaze2d_stats['x']['stdev'],
             'gaze2dymean': gaze2d_stats['y']['mean'],
             'gaze2dymedian': gaze2d_stats['y']['median'],
             'gaze2dystdev': gaze2d_stats['y']['stdev'],
