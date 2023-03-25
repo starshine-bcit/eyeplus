@@ -478,36 +478,23 @@ class PitchHistogram(BasicCanvas):
             total_observations (int): Total number of observations that were binned.
             pitch_binned (dict): Contains relative frequency of each bin.
         """
-        self.ax1.clear()
-        self.ax2.clear()
-        self.ax3.clear()
-        self.ax4.clear()
+        self.ax.clear()
         x = []
         y = []
         for k, v in pitch_binned.items():
             x.append(k)
             y.append(v)
-        bars = self.ax1.bar(x, y, [4.5] * len(pitch_binned),
-                            align='edge', edgecolor='black')
-
-        bars2 = self.ax2.bar(x, y, [4.5] * len(pitch_binned),
-                             align='edge', edgecolor='black')
-
-        bars3 = self.ax3.bar(x, y, [4.5] * len(pitch_binned),
-                             align='edge', edgecolor='black')
-        bars4 = self.ax4.bar(x, y, [4.5] * len(pitch_binned),
-                             align='edge', edgecolor='black')
-
-        # y_max = round(max(y), 1) + 0.1
-        # y_marks = np.linspace(0, y_max, int(y_max * 20 + 1))
-        # self.ax.set_yticks(y_marks)
-        # self.ax.set_yticklabels([str(round(x, 2)) for x in y_marks])
-        # x_marks = [-36, -31.5, -27, -22.5, -18, -13.5, -
-        #            9, -4.5, 0, 4.5, 9, 13.5, 18, 22.5, 27, 31.5, 36]
-        # self.ax.set_xticks(x_marks)
-        # self.ax.set_xticklabels([str(x) for x in x_marks])
+        bars = self.ax.bar(x, y, [4.5] * len(pitch_binned),
+                           align='edge', edgecolor='black')
+        y_max = round(max(y), 1) + 0.1
+        y_marks = np.linspace(0, y_max, int(y_max * 20 + 1))
+        self.ax.set_yticks(y_marks)
+        self.ax.set_yticklabels([str(round(x, 2)) for x in y_marks])
+        x_marks = [-36, -31.5, -27, -22.5, -18, -13.5, -
+                   9, -4.5, 0, 4.5, 9, 13.5, 18, 22.5, 27, 31.5, 36]
+        self.ax.set_xticks(x_marks)
+        self.ax.set_xticklabels([str(x) for x in x_marks])
         self.ax.set_title(
             f'Proportion of Pitch over {total_observations} observations')
-        # self.ax.set_xlim(-30, 30)
-
-        # self.fig.canvas.draw()
+        self.ax.set_xlim(-30, 30)
+        self.fig.canvas.draw()
