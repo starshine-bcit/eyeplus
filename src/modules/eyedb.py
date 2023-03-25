@@ -325,16 +325,16 @@ class EyeDB():
         self._cur.execute('''CREATE INDEX idx_mag_id
                 ON mag (id, runid);''')
 
-        self._cur.execute('''CREATE INDEX idx_processed_id
+        self._cur.execute('''CREATE INDEX idx_processed_id 
                 ON processed (timestamp, runid, id);''')
 
-        self._cur.execute('''CREATE INDEX idx_pgaze2d_id
+        self._cur.execute('''CREATE INDEX idx_pgaze2d_id 
                 ON pgaze2d (timestamp, runid, id);''')
 
-        self._cur.execute('''CREATE INDEX idx_fusion_id
+        self._cur.execute('''CREATE INDEX idx_fusion_id 
                 ON fusion (timestamp, runid, id)''')
 
-        self._cur.execute('''CREATE INDEX idx_fusion_pitch
+        self._cur.execute('''CREATE INDEX idx_fusion_pitch 
                 ON fusion (pitch, runid, id);''')
 
         self._con.commit()
@@ -856,23 +856,15 @@ class EyeDB():
         """
         binned_data = {}
         ranges = [-45 + (4.5 * x) for x in range(20)]
-        query1 = 'SELECT id, runid, pitch FROM fusion WHERE runid=? and pitch >= ? and pitch < ? ORDER BY id;'
-        query2 = 'SELECT COUNT(id) FROM fusion WHERE runid=?;'
-        for runid in runids:
-            self._cur.execute(query2, (runid,))
-            total_count = self._cur.fetchone()[0]
-            self._cur.execute(query1, (runid, ranges[0], ranges[-1] + 4.5))
-            run_data = {}
-            for x in ranges:
-                count = 0
-                for row in self._cur.fetchall():
-                    if row[2] >= x and row[2] < x + 4.5:
-                        count += 1
-                run_data[x] = count / total_count
-                self._cur.execute(query1, (runid, x, x + 4.5))
-            binned_data[runid] = run_data
-
-        return binned_data, total_count
+        query2 = f'SELECT COUNT (id) FROM fusion WHERE runid in ({",".join(["?" for _ in range(len(runids))])});'
+        self._cur.execute(query2, [*runids])
+        total_count = self._cur.fetchone()[0]
+        query = f'SELECT COUNT(pitch) FROM fusion WHERE runid IN ({",".join(["?" for _ in range(len(runids))])}) AND pitch >= (?) AND pitch < (?);'
+        for x in ranges:
+            self._cur.execute(query, (*runids, x, x + 4.5))
+            res = self._cur.fetchone()[0] / total_count
+            binned_data[x] = res
+        return total_count, binned_data
 
     def get_raw_fusion_data(self, runid: int) -> dict:
         """Gets the heading, pitch, roll, and quaternion values for the given runid.
