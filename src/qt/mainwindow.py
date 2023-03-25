@@ -682,14 +682,14 @@ class EyeMainWindow(Ui_MainWindow):
             f'Sensor Fusion: {fusion_stats["num_samples"]} Observations\n'
             f'         Mean      Median    Std. Dev.\n'
             f'  Pitch: {fusion_stats["pitch"]["mean"]:>7.4f} | {fusion_stats["pitch"]["median"]:>7.4f} | {fusion_stats["pitch"]["stdev"]:>7.4f}\n'
-            f'  Roll : {fusion_stats["roll"]["mean"]:.4f} | {fusion_stats["roll"]["median"]:>7.4f} | {fusion_stats["roll"]["stdev"]:>7.4f}\n\n'
+            f'  Roll : {fusion_stats["roll"]["mean"]:>7.4f} | {fusion_stats["roll"]["median"]:>7.4f} | {fusion_stats["roll"]["stdev"]:>7.4f}\n\n'
             f'Horizon: {self._horizon[last_horizon]["total"]} Observations\n'
             f'                  Count   Prop.\n'
             f'  Looking Up  : {self._horizon[last_horizon]["up_count"]:>6} | {self._horizon[last_horizon]["percent_up"]:>7.4}\n'
             f'  Looking Down: {self._horizon[last_horizon]["down_count"]:>6} | {self._horizon[last_horizon]["percent_down"]:>7.4f}\n\n'
             f'Offsets\n'
             f'  Horizon    : {-self._horizon_offset:>5.2f}\n'
-            f'  Pitch      : {self._pitch_offset}\n'
+            f'  Pitch      : {self._pitch_offset:>2}\n'
             f'  Pitch Multi: {self._pitch_multi:>5.2f}'
         )
 
