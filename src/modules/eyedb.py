@@ -859,26 +859,34 @@ class EyeDB():
                 gaze_data[runid]['y'].append(line[1])
         return gaze_data
 
-    def get_binned_pitch_data(self, runids: list[int]) -> Tuple[dict, int]:
+    def get_binned_pitch_data(self, runids: list[int]) -> dict:
         """Gets agregate binned pitch data from any number of input runs.
 
         Args:
             runids (list[int]): List of runids to get data for.
 
         Returns:
-            Tuple[dict, int]: Contains total count of samples alongside the aggregate binned data.
+            dict: Contains binned data alongside total count of samples
+                for the provided list of runids.
         """
         binned_data = {}
-        ranges = [-45 + (4.5 * x) for x in range(20)]
-        query2 = f'SELECT COUNT (id) FROM fusion WHERE runid in ({",".join(["?" for _ in range(len(runids))])});'
-        self._cur.execute(query2, [*runids])
-        total_count = self._cur.fetchone()[0]
-        query = f'SELECT COUNT(pitch) FROM fusion WHERE runid IN ({",".join(["?" for _ in range(len(runids))])}) AND pitch >= (?) AND pitch < (?);'
-        for x in ranges:
-            self._cur.execute(query, (*runids, x, x + 4.5))
-            res = self._cur.fetchone()[0] / total_count
-            binned_data[x] = res
-        return total_count, binned_data
+        ranges = [-45 + (5 * x) for x in range(18)]
+        count_query = '''SELECT COUNT (id) 
+                        FROM fusion 
+                        WHERE runid = (?);'''
+        bin_query = '''SELECT COUNT (pitch)
+                        FROM fusion
+                        WHERE runid = (?)
+                            AND pitch >= (?) AND pitch < (?);'''
+        for runid in runids:
+            binned_data[runid] = {}
+            self._cur.execute(count_query, (runid,))
+            binned_data[runid]['count'] = self._cur.fetchone()[0]
+            for x in ranges:
+                self._cur.execute(bin_query, (runid, x, x + 5))
+                binned_data[runid][x] = self._cur.fetchone()[0] / \
+                    binned_data[runid]['count']
+        return binned_data
 
     def get_raw_fusion_data(self, runid: int) -> dict:
         """Gets the heading, pitch, roll, and quaternion values for the given runid.

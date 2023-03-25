@@ -741,13 +741,20 @@ class EyeMainWindow(Ui_MainWindow):
         self.horizontalScrollBarLongChart.setMaximum(self._longest_run)
         self.horizontalScrollBarLongChart.setValue(30)
         self.horizontalScrollBarLongChart.setMinimum(30)
-        overall_up_down = self._db.get_overall_up_down(
-            self._overall_selected_runs)
+        if len(self._overall_selected_runs) > 4:
+            overall_up_down = self._db.get_overall_up_down(
+                self._overall_selected_runs[:4])
+        else:
+            overall_up_down = self._db.get_overall_up_down(
+                self._overall_selected_runs[:4])
         self._visual_overall_up_down.plot(overall_up_down)
-        total_pitch_observations, binned_pitch = self._db.get_binned_pitch_data(
-            self._overall_selected_runs)
-        self._visual_overall_pitch_hist.plot(
-            total_pitch_observations, binned_pitch)
+        if len(self._overall_selected_runs) > 2:
+            binned_pitch = self._db.get_binned_pitch_data(
+                self._overall_selected_runs[:2])
+        else:
+            binned_pitch = self._db.get_binned_pitch_data(
+                self._overall_selected_runs)
+        self._visual_overall_pitch_hist.plot(binned_pitch)
 
     def _overall_graphic_slider_moved(self, val: int) -> None:
         self._visual_overall_gaze2d.update_scroll(val)

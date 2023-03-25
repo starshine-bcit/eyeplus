@@ -373,7 +373,8 @@ class OverallGaze2DY(BasicCanvas):
             dpi (float): DPI of the plot to make.
         """
         super().__init__(width, height, dpi)
-        self.colours = [x for x in colours.XKCD_COLORS]
+        self.colours = ['saddlebrown', 'darkolivegreen',
+                        'mediumvioletred', 'mediumblue']
         shuffle(self.colours)
         self.colour_index = 0
         nothing_patch = mpatches.Patch(color='purple', label=' ')
@@ -455,48 +456,6 @@ class OverallUpAndDown(BasicCanvas):
         self.fig.canvas.draw()
 
 
-# class PitchHistogram(BasicCanvas):
-#     def __init__(self, width: int, height: int, dpi: float):
-#         """Displays a histogram of already binned calculated pitch values.
-
-#         Args:
-#             width (int): Width of the plot to make in pixels.
-#             height (int): Height of the plot to make in pixels.
-#             dpi (float): DPI of the plot to make.
-#         """
-#         super().__init__(width, height, dpi)
-
-#     def plot(self, total_observations: int, pitch_binned: dict) -> None:
-#         """Plots the already binned pitch values, along with regular
-#             x and y ticks, including total observations included in title.
-
-#         Args:
-#             total_observations (int): Total number of observations that were binned.
-#             pitch_binned (dict): Contains relative frequency of each bin.
-#         """
-#         self.ax.clear()
-#         x = []
-#         y = []
-#         for k, v in pitch_binned.items():
-#             x.append(k)
-#             y.append(v)
-#         bars = self.ax.bar(x, y, [4.5] * len(pitch_binned),
-#                            align='edge', edgecolor='black')
-#         y_max = round(max(y), 1) + 0.1
-#         y_marks = np.linspace(0, y_max, int(y_max * 20 + 1))
-#         self.ax.set_yticks(y_marks)
-#         self.ax.set_yticklabels([str(round(x, 2)) for x in y_marks])
-#         x_marks = [-36, -31.5, -27, -22.5, -18, -13.5, -
-#                    9, -4.5, 0, 4.5, 9, 13.5, 18, 22.5, 27, 31.5, 36]
-#         self.ax.set_xticks(x_marks)
-#         self.ax.set_xticklabels([str(x) for x in x_marks])
-#         self.ax.set_title(
-#             f'Proportion of Pitch over {total_observations} observations')
-#         self.ax.set_xlim(-30, 30)
-#         self.fig.canvas.draw()
-
-
-# create a class called PitchHistogram that inherits from BasicCanvas and creates 4 plots
 class PitchHistogram(BasicCanvas):
     def __init__(self, width: int, height: int, dpi: float):
         """Displays a histogram of already binned calculated pitch values.
@@ -507,8 +466,11 @@ class PitchHistogram(BasicCanvas):
             dpi (float): DPI of the plot to make.
         """
         super().__init__(width, height, dpi)
+        self.fig.clear()
+        self.ax1 = self.fig.add_subplot(1, 2, 1)
+        self.ax2 = self.fig.add_subplot(1, 2, 2)
 
-    def plot(self, total_observations: int, pitch_binned: dict) -> None:
+    def plot(self, pitch_binned: dict) -> None:
         """Plots the already binned pitch values, along with regular
             x and y ticks, including total observations included in title.
 
@@ -516,156 +478,30 @@ class PitchHistogram(BasicCanvas):
             total_observations (int): Total number of observations that were binned.
             pitch_binned (dict): Contains relative frequency of each bin.
         """
-        self.ax.clear()
-        x = []
-        y = []
-        for k, v in pitch_binned.items():
-            x.append(k)
-            y.append(v)
-        bars = self.ax.bar(x, y, [4.5] * len(pitch_binned),
-                           align='edge', edgecolor='black')
-        y_max = round(max(y), 1) + 0.1
-        y_marks = np.linspace(0, y_max, int(y_max * 20 + 1))
-        self.ax.set_yticks(y_marks)
-        self.ax.set_yticklabels([str(round(x, 2)) for x in y_marks])
-        x_marks = [-36, -31.5, -27, -22.5, -18, -13.5, -
-                   9, -4.5, 0, 4.5, 9, 13.5, 18, 22.5, 27, 31.5, 36]
-        self.ax.set_xticks(x_marks)
-        self.ax.set_xticklabels([str(x) for x in x_marks])
-        self.ax.set_title(
-            f'Proportion of Pitch over {total_observations} observations')
-        self.ax.set_xlim(-30, 30)
-        self.fig.canvas.draw()
-
-    def plot2(self, total_observations: int, pitch_binned: dict) -> None:
-        """Plots the already binned pitch values, along with regular
-            x and y ticks, including total observations included in title.
-
-        Args:
-            total_observations (int): Total number of observations that were binned.
-            pitch_binned (dict): Contains relative frequency of each bin.
-        """
+        self.ax1.clear()
         self.ax2.clear()
-        x = []
-        y = []
+        ax = self.ax1
         for k, v in pitch_binned.items():
-            x.append(k)
-            y.append(v)
-        bars = self.ax2.bar(x, y, [4.5] * len(pitch_binned),
-                            align='edge', edgecolor='black')
-        y_max = round(max(y), 1) + 0.1
-        y_marks = np.linspace(0, y_max, int(y_max * 20 + 1))
-        self.ax2.set_yticks(y_marks)
-        self.ax2.set_yticklabels([str(round(x, 2)) for x in y_marks])
-        x_marks = [-36, -31.5, -27, -22.5, -18, -13.5, -
-                   9, -4.5, 0, 4.5, 9, 13.5, 18, 22.5, 27, 31.5, 36]
-        self.ax2.set_xticks(x_marks)
-        self.ax2.set_xticklabels([str(x) for x in x_marks])
-        self.ax2.set_title(
-            f'Proportion of Pitch over {total_observations} observations')
-        self.ax2.set_xlim(-30, 30)
-        self.fig.canvas.draw()
-
-    def plot3(self, total_observations: int, pitch_binned: dict) -> None:
-        """Plots the already binned pitch values, along with regular
-            x and y ticks, including total observations included in title.
-
-        Args:
-            total_observations (int): Total number of observations that were binned.
-            pitch_binned (dict): Contains relative frequency of each bin.
-        """
-        self.ax3.clear()
-        x = []
-        y = []
-        for k, v in pitch_binned.items():
-            x.append(k)
-            y.append(v)
-        bars = self.ax3.bar(x, y, [4.5] * len(pitch_binned),
-                            align='edge', edgecolor='black')
-        y_max = round(max(y), 1) + 0.1
-        y_marks = np.linspace(0, y_max, int(y_max * 20 + 1))
-        self.ax3.set_yticks(y_marks)
-        self.ax3.set_yticklabels([str(round(x, 2)) for x in y_marks])
-        x_marks = [-36, -31.5, -27, -22.5, -18, -13.5, -
-                   9, -4.5, 0, 4.5, 9, 13.5, 18, 22.5, 27, 31.5, 36]
-        self.ax3.set_xticks(x_marks)
-        self.ax3.set_xticklabels([str(x) for x in x_marks])
-        self.ax3.set_title(
-            f'Proportion of Pitch over {total_observations} observations')
-        self.ax3.set_xlim(-30, 30)
-        self.fig.canvas.draw()
-
-    def plot4(self, total_observations: int, pitch_binned: dict) -> None:
-        """Plots the already binned pitch values, along with regular
-            x and y ticks, including total observations included in title.
-
-        Args:
-            total_observations (int): Total number of observations that were binned.
-            pitch_binned (dict): Contains relative frequency of each bin.
-        """
-        self.ax4.clear()
-        x = []
-        y = []
-        for k, v in pitch_binned.items():
-            x.append(k)
-            y.append(v)
-        bars = self.ax4.bar(x, y, [4.5] * len(pitch_binned),
-                            align='edge', edgecolor='black')
-        y_max = round(max(y), 1) + 0.1
-        y_marks = np.linspace(0, y_max, int(y_max * 20 + 1))
-        self.ax4.set_yticks(y_marks)
-        self.ax4.set_yticklabels([str(round(x, 2)) for x in y_marks])
-        x_marks = [-36, -31.5, -27, -22.5, -18, -13.5, -
-                   9, -4.5, 0, 4.5, 9, 13.5, 18, 22.5, 27, 31.5, 36]
-        self.ax4.set_xticks(x_marks)
-        self.ax4.set_xticklabels([str(x) for x in x_marks])
-        self.ax4.set_title(
-            f'Proportion of Pitch over {total_observations} observations')
-        self.ax4.set_xlim(-30, 30)
-        self.fig.canvas.draw()
-
-
-class PitchHistogram(BasicCanvas):
-    def __init__(self, width: int, height: int, dpi: float, num_plots: int):
-        """Displays a histogram of already binned calculated pitch values.
-
-        Args:
-            width (int): Width of the plot to make in pixels.
-            height (int): Height of the plot to make in pixels.
-            dpi (float): DPI of the plot to make.
-            num_plots (int): Number of plots to create.
-        """
-        super().__init__(width, height, dpi)
-        self.num_plots = num_plots
-
-    def plot(self, total_observations_list: list, pitch_binned_list: list) -> None:
-        """Plots the already binned pitch values for multiple plots.
-
-        Args:
-            total_observations_list (list): List of total number of observations that were binned for each plot.
-            pitch_binned_list (list): List of dictionaries containing relative frequency of each bin for each plot.
-        """
-        self.fig.clf()
-        for i in range(self.num_plots):
-            ax = self.fig.add_subplot(self.num_plots, 1, i+1)
             x = []
             y = []
-            pitch_binned = pitch_binned_list[i]
-            for k, v in pitch_binned.items():
-                x.append(k)
-                y.append(v)
-            bars = ax.bar(x, y, [4.5] * len(pitch_binned),
-                          align='edge', edgecolor='black')
+            for k2, v2 in v.items():
+                if isinstance(k2, str):
+                    continue
+                x.append(k2)
+                y.append(v2)
+            ax.bar(x, y, [5] * (len(v) - 1),
+                   align='edge', edgecolor='black')
             y_max = round(max(y), 1) + 0.1
             y_marks = np.linspace(0, y_max, int(y_max * 20 + 1))
             ax.set_yticks(y_marks)
             ax.set_yticklabels([str(round(x, 2)) for x in y_marks])
-            x_marks = [-36, -31.5, -27, -22.5, -18, -13.5, -
-                       9, -4.5, 0, 4.5, 9, 13.5, 18, 22.5, 27, 31.5, 36]
+            x_marks = [-40, -30, -20, -10, 0, 10, 20, 30, 40]
             ax.set_xticks(x_marks)
             ax.set_xticklabels([str(x) for x in x_marks])
+            ax.set_xlim(-40, 40)
             ax.set_title(
-                f'Proportion of Pitch over {total_observations_list[i]} observations')
-            ax.set_xlim(-30, 30)
-        self.fig.tight_layout()
+                f'Run ID {k}: {v["count"]} Observations')
+            ax = self.ax2
+        self.fig.suptitle(
+            f'Proportion of Pitch', fontsize=8)
         self.fig.canvas.draw()
