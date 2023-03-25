@@ -110,23 +110,15 @@ class PitchLive(BasicCanvas):
             dpi (float): DPI of the plot to make.
         """
         super().__init__(width, height, dpi)
-        self._pause = False
         self.current_timestamp = 0.0
 
-    @property
-    def is_paused(self) -> bool:
-        return self._pause
-
-    def _init_line(self):
-        self.line, = self.ax.plot(self.x, self.y)
-        return self.line,
-
-    def _draw_next_frame(self, frame: float):
+    def update_frame(self, timestamp: float):
         """Adjusts the xlim of the plot based on currently playing timestamp.
 
         Args:
-            frame (float): The frame number provided by funcAnimation..
+            timestamp (float): Currently playing timestamp.
         """
+        self.current_timestamp = timestamp
         if self.current_timestamp + 10 > self.fusion_timestamps[0]:
             x_low = self.current_timestamp - 10
             x_high = self.current_timestamp
@@ -134,6 +126,7 @@ class PitchLive(BasicCanvas):
             x_low = self.current_timestamp
             x_high = self.current_timestamp + 10
         self.ax.set_xlim(x_low, x_high)
+        self.fig.canvas.draw_idle()
 
     def plot(self, fusion: dict, fusion_timestamps: list) -> None:
         """Extracts the pitch data from the fusion data, and plots a
@@ -157,23 +150,9 @@ class PitchLive(BasicCanvas):
         ymod = ((ymax // 15) + 1) * 15
         self.ax.set_ylim(-ymod - 2, ymod + 2)
         self.ax.set_yticks(np.arange(-ymod, ymod + 1, 15))
-        self.ani = FuncAnimation(
-            self.fig, self._draw_next_frame, frames=self.frames_range, init_func=self._init_line, interval=100)
-        self.draw()
+        self.ax.plot(self.x, self.y)
         self.ax.set_xlim(self.current_timestamp, self.current_timestamp + 10)
-        self._pause = True
-        self.ani.pause()
-
-    def start(self) -> None:
-        self._pause = False
-        self.ani.resume()
-
-    def pause(self) -> None:
-        self._pause = True
-        self.ani.pause()
-
-    def stop(self) -> None:
-        self.ax.clear()
+        self.fig.canvas.draw()
 
 
 class HeatMap(BasicCanvas):
@@ -268,10 +247,6 @@ class GazeLive(BasicCanvas):
         """
         super().__init__(width, height, dpi)
 
-    @property
-    def is_paused(self) -> bool:
-        return self._pause
-
     def _draw_single_line(self, x: list, y: list, colour: str) -> None:
         self.ax.plot(x, y, color=colour)
 
@@ -302,12 +277,13 @@ class GazeLive(BasicCanvas):
             colour = 'mediumseagreen' if not current_up else 'firebrick'
             self._draw_single_line(inner_x, inner_y, colour)
 
-    def _draw_next_frame(self, frame: float):
+    def update_frame(self, timestamp: float):
         """Adjusts the xlim of the plot based on currently playing timestamp.
 
         Args:
-            frame (float): The frame number provided by funcAnimation.
+            timestamp (float): The current timestamp of playback.
         """
+        self.current_timestamp = timestamp
         if self.current_timestamp + 10 > self.processed_timestamps[0]:
             x_low = self.current_timestamp - 10
             x_high = self.current_timestamp
@@ -315,6 +291,7 @@ class GazeLive(BasicCanvas):
             x_low = self.current_timestamp
             x_high = self.current_timestamp + 10
         self.ax.set_xlim(x_low, x_high)
+        self.fig.canvas.draw_idle()
 
     def plot(self, gaze2d: dict, processed: dict) -> None:
         """Plots the 2d gaze y over time, with the colour changing
@@ -343,23 +320,9 @@ class GazeLive(BasicCanvas):
         self.ax.set_yticks(
             [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.0])
         self.ax.invert_yaxis()
-        self.ani = FuncAnimation(self.fig, self._draw_next_frame,
-                                 frames=self.frames_range, init_func=self._init_line, interval=100)
-        self.draw()
+        self._init_line()
         self.ax.set_xlim(self.current_timestamp, self.current_timestamp + 10)
-        self._pause = True
-        self.ani.pause()
-
-    def start(self) -> None:
-        self._pause = False
-        self.ani.resume()
-
-    def pause(self) -> None:
-        self._pause = True
-        self.ani.pause()
-
-    def stop(self) -> None:
-        pass
+        self.fig.canvas.draw()
 
 
 class OverallGaze2DY(BasicCanvas):

@@ -2,7 +2,7 @@ from pathlib import Path
 import sys
 import os
 import re
-from datetime import timedelta, datetime, time
+from datetime import datetime
 
 from PyQt6 import QtCore, QtGui, QtWidgets
 
@@ -169,12 +169,8 @@ class EyeMainWindow(Ui_MainWindow):
             curr_timestamp = round(self.player.time_pos, 1)
             if curr_timestamp < self._first_timestamp:
                 curr_timestamp = self._first_timestamp
-            if self._visual_review_pitch.is_paused:
-                self._visual_review_pitch.start()
-            if self._visual_review_gaze_live.is_paused:
-                self._visual_review_gaze_live.start()
-            self._visual_review_pitch.current_timestamp = curr_timestamp
-            self._visual_review_gaze_live.current_timestamp = curr_timestamp
+            self._visual_review_pitch.update_frame(curr_timestamp)
+            self._visual_review_gaze_live.update_frame(curr_timestamp)
             if self.player.duration - self.player.time_pos <= 2:
                 curr_timestamp = curr_timestamp - 2
             closest_fusion = next_greatest_element(
@@ -272,12 +268,8 @@ class EyeMainWindow(Ui_MainWindow):
     def _pause_clicked(self):
         if self.player.pause:
             self.player.command('set', 'pause', 'no')
-            self._visual_review_pitch.start()
-            self._visual_review_gaze_live.start()
         else:
             self.player.command('set', 'pause', 'yes')
-            self._visual_review_pitch.pause()
-            self._visual_review_gaze_live.pause()
 
     def _stop_clicked(self):
         self.parameter_window.hide()
