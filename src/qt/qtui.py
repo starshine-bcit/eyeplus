@@ -533,7 +533,7 @@ class Ui_MainWindow(object):
         self.menuHelp.setTitle(_translate("MainWindow", "Help"))
         self.menuActions.setTitle(_translate("MainWindow", "Actions"))
         self.toolBar.setWindowTitle(_translate("MainWindow", "toolBar"))
-        self.actionImport_Zip.setText(_translate("MainWindow", "Import Zip(s)..."))
+        self.actionImport_Zip.setText(_translate("MainWindow", "Import Zip..."))
         self.actionImport_Zip.setToolTip(_translate("MainWindow", "Select one or more zip files to import"))
         self.actionImport_Zip.setShortcut(_translate("MainWindow", "Ctrl+I"))
         self.actionExit.setText(_translate("MainWindow", "Exit"))

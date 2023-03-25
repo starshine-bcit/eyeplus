@@ -871,7 +871,7 @@
      <normaloff>:/icons/upload.svg</normaloff>:/icons/upload.svg</iconset>
    </property>
    <property name="text">
-    <string>Import Zip(s)...</string>
+    <string>Import Zip...</string>
    </property>
    <property name="toolTip">
     <string>Select one or more zip files to import</string>
