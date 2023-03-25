@@ -458,7 +458,7 @@ class OverallUpAndDown(BasicCanvas):
 
 class PitchHistogram(BasicCanvas):
     def __init__(self, width: int, height: int, dpi: float):
-        """Displays a histogram of already binned calculated pitch values.
+        """Displays side-by-side histograms of already binned pitch data.
 
         Args:
             width (int): Width of the plot to make in pixels.
@@ -475,7 +475,6 @@ class PitchHistogram(BasicCanvas):
             x and y ticks, including total observations included in title.
 
         Args:
-            total_observations (int): Total number of observations that were binned.
             pitch_binned (dict): Contains relative frequency of each bin.
         """
         self.ax1.clear()

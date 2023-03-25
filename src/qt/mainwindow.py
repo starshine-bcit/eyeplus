@@ -19,7 +19,7 @@ from modules.export import DataExporter
 from modules.visualize import TotalUpDown, CumulativeUpDown, PitchLive, HeatMap, TotalUpDownStacked, GazeLive, OverallGaze2DY, OverallUpAndDown, PitchHistogram
 from utils.fileutils import validate_import_folder
 from utils.imageutils import create_video_overlay
-from utils.statutils import get_gaze_stats, get_fusion_stats, next_greatest_element
+from utils.statutils import next_greatest_element
 
 
 class EyeMainWindow(Ui_MainWindow):
@@ -671,8 +671,8 @@ class EyeMainWindow(Ui_MainWindow):
             self._tree_predicted2d, self._horizon)
 
     def _display_summary_text(self) -> None:
-        gaze_stats = get_gaze_stats(self._tree_predicted2d)
-        fusion_stats = get_fusion_stats(self._fusion_data)
+        fusion_stats, gaze_stats = self._db.get_summary_data(
+            self._selected_run)
         last_horizon = self._horizon_timestamps[-1]
         self.plainTextEditSummary.setPlainText(
             f'Gaze 2D: {gaze_stats["num_samples"]} Observations\n'
@@ -828,43 +828,49 @@ class EyeMainWindow(Ui_MainWindow):
 
     def _display_overall_text(self) -> None:
         overall_data = self._db.get_processed_view()
-
-        greatest_up_time = overall_data[self._overall_selected_runs[0]][0]
-        greatest_up_time_run = self._overall_selected_runs[0]
-
-        greatest_down_time = overall_data[self._overall_selected_runs[0]][1]
-        greatest_down_time_run = self._overall_selected_runs[0]
-
-        greatest_pitch_mean = get_fusion_stats(self._db.get_fusion_data(
-            self._overall_selected_runs[0]))['pitch']['mean']
-        greatest_pitch_mean_run = self._overall_selected_runs[0]
-
-        lowest_pitch_mean = greatest_pitch_mean
-        lowest_pitch_mean_run = greatest_pitch_mean_run
-
-        for run in self._overall_selected_runs:
-            if overall_data[run][0] > greatest_up_time:
-                greatest_up_time = overall_data[run][0]
-                greatest_up_time_run = run
-
-            if overall_data[run][1] > greatest_down_time:
-                greatest_down_time = overall_data[run][1]
-                greatest_down_time_run = run
-
-            pitch_mean = get_fusion_stats(self._db.get_fusion_data(run))[
-                'pitch']['mean']
-            if pitch_mean > greatest_pitch_mean:
-                greatest_pitch_mean = pitch_mean
-                greatest_pitch_mean_run = run
-
-            if lowest_pitch_mean > pitch_mean:
-                lowest_pitch_mean = pitch_mean
-                lowest_pitch_mean_run = run
+        max_up = -1
+        max_up_run = -1
+        max_down = -1
+        max_down_run = -1
+        for k, v in overall_data.items():
+            if v[1] > max_up and k in self._overall_selected_runs:
+                max_up = v[1]
+                max_up_run = k
+            if v[2] > max_down and k in self._overall_selected_runs:
+                max_down = v[2]
+                max_down_run = k
+        max_pitch_mean = -100
+        max_pitch_mean_run = -1
+        min_pitch_mean = 100
+        min_pitch_mean_run = 1
+        rolly = -1
+        rolly_run = -1
+        eyey = -1
+        eyey_run = -1
+        for runid in self._overall_selected_runs:
+            fusion_stats, gaze_stats = self._db.get_summary_data(runid)
+            if fusion_stats['pitch']['mean'] > max_pitch_mean:
+                max_pitch_mean = fusion_stats['pitch']['mean']
+                max_pitch_mean_run = runid
+            if fusion_stats['pitch']['mean'] < min_pitch_mean:
+                min_pitch_mean = fusion_stats['pitch']['mean']
+                min_pitch_mean_run = runid
+            if fusion_stats['roll']['stdev'] > rolly:
+                rolly = fusion_stats['roll']['stdev']
+                rolly_run = runid
+            if gaze_stats['x']['stdev'] + gaze_stats['y']['stdev'] > eyey:
+                eyey = gaze_stats['x']['stdev'] + gaze_stats['y']['stdev']
+                eyey_run = runid
 
         self.plainTextEditOverallStats.setPlainText(
-            f'Number of selected runs: {len(self._overall_selected_runs)}\n\n'
-            f'Run {greatest_up_time_run} had the greatest proportion of time looking up\n\n'
-            f'Run {greatest_down_time_run} had the lowest proportion of time looking up\n\n'
-            f'Run {greatest_pitch_mean_run} had the greatest pitch mean\n\n'
-            f'Run {lowest_pitch_mean_run} had the lowest pitch mean\n\n'
+            f'Selected run quantity : {len(self._overall_selected_runs)}\n'
+            f'Up/Down:\n'
+            f'  Max proportion up   : Run {max_up_run} @ {max_up:0.4f}\n'
+            f'  Max proportion down : Run {max_down_run} @ {max_down:0.4f}\n'
+            f'Pitch:\n'
+            f'  Max pitch mean      : Run {max_pitch_mean_run} @ {max_pitch_mean:4.2f}\n'
+            f'  Min pitch mean      : Run {min_pitch_mean_run} @ {min_pitch_mean:4.2f}\n'
+            f'Other:\n'
+            f'  Max roll stdev      : Run {rolly_run} @ {rolly:0.4f}\n'
+            f'  Max gaze2d x+y stdev: Run {eyey_run} @ {eyey:0.4f}'
         )

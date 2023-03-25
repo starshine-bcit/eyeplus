@@ -316,6 +316,25 @@ class EyeDB():
                 currentup INTEGER NOT NULL,
                 FOREIGN KEY(runid) REFERENCES run(id));''')
 
+        self._cur.execute('''CREATE TABLE IF NOT EXISTS summary(
+                id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                runid INTEGER NOT NULL,
+                pitchmean REAL NOT NULL,
+                pitchmedian REAL NOT NULL,
+                pitchstdev REAL NOT NULL,
+                rollmean REAL NOT NULL,
+                rollmedian REAL NOT NULL,
+                rollstdev REAL NOT NULL,
+                fusioncount INTEGER NOT NULL,
+                gaze2dxmean REAL NOT NULL,
+                gaze2dxmedian REAL NOT NULL,
+                gaze2dxstdev REAL NOT NULL,
+                gaze2dymean REAL NOT NULL,
+                gaze2dymedian REAL NOT NULL,
+                gaze2dystdev REAL NOT NULL,
+                gaze2dcount INTEGER NOT NULL,
+                FOREIGN KEY(runid) REFERENCES run(id));)''')
+
         self._cur.execute('''CREATE INDEX idx_imu_id
                 ON imu (id, runid);''')
 
@@ -336,6 +355,9 @@ class EyeDB():
 
         self._cur.execute('''CREATE INDEX idx_fusion_pitch 
                 ON fusion (pitch, runid, id);''')
+
+        self._cur.execute('''CREATE INDEX idx_summary_id
+                ON summary (id, runid);''')
 
         self._con.commit()
 
@@ -792,6 +814,7 @@ class EyeDB():
 
         self._cur.execute(drop_view_query)
         self._cur.execute(view_query)
+        self._con.commit()
 
     def get_processed_view(self) -> dict:
         """Creates and returns a dictionary containing the contents of the overall_percentage_view view."""
@@ -917,6 +940,66 @@ class EyeDB():
             return fusion_dict
         else:
             raise RuntimeError(f'Trying to select a non-existant ID: {runid}')
+
+    def get_summary_data(self, runid: int) -> Tuple[dict, dict]:
+        get_summary_query = '''SELECT * FROM summary WHERE runid=(?);'''
+        self._cur.execute(get_summary_query, (runid,))
+        res = self._cur.fetchone()
+        fusion_stats = {
+            'pitch': {
+                'mean': res[2],
+                'median': res[3],
+                'stdev': res[4]
+            },
+            'roll': {
+                'mean': res[5],
+                'median': res[6],
+                'stdev': res[7]
+            },
+            'num_samples': res[8]
+        }
+        gaze2d_stats = {
+            'x': {
+                'mean': res[9],
+                'median': res[10],
+                'stdev': res[11]
+            },
+            'y': {
+                'mean': res[12],
+                'median': res[13],
+                'stdev': res[14]
+            },
+            'num_samples': res[15]
+        }
+        return fusion_stats, gaze2d_stats
+
+    def write_summary_data(self, runid: int, fusion_stats: dict, gaze2d_stats: dict) -> None:
+        write_summary_query = '''INSERT INTO summary
+            (runid, pitchmean, pitchmedian, pitchstdev, rollmean, rollmedian,
+                rollstdev, fusioncount, gaze2dxmean, gaze2dxmedian, gaze2dxstdev,
+                gaze2dymean, gaze2dymedian, gaze2dystdev, gaze2dcount)
+            VALUES(:runid, :pitchmean, :pitchmedian, :pitchstdev, :rollmean, :rollmedian,
+                :rollstdev, :fusioncount, :gaze2dxmean, :gaze2dxmedian, :gaze2dxstdev,
+                :gaze2dymean, :gaze2dymedian, :gaze2dystdev, :gaze2dcount);'''
+        summary_dict = {
+            'runid': runid,
+            'pitchmean': fusion_stats['pitch']['mean'],
+            'pitchmedian': fusion_stats['pitch']['median'],
+            'pitchstdev': fusion_stats['pitch']['stdev'],
+            'rollmean': fusion_stats['roll']['mean'],
+            'rollmedian': fusion_stats['roll']['median'],
+            'rollstdev': fusion_stats['roll']['stdev'],
+            'fusioncount': fusion_stats['num_samples'],
+            'gaze2dxmean': gaze2d_stats['x']['mean'],
+            'gaze2dxmedian': gaze2d_stats['x']['median'],
+            'gaze2xstdev': gaze2d_stats['x']['stdev'],
+            'gaze2dymean': gaze2d_stats['y']['mean'],
+            'gaze2dymedian': gaze2d_stats['y']['median'],
+            'gaze2dystdev': gaze2d_stats['y']['stdev'],
+            'gaze2dcount': gaze2d_stats['num_samples']
+        }
+        self._cur.execute(write_summary_query, summary_dict)
+        self._con.commit()
 
 
 if __name__ == '__main__':
