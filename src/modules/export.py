@@ -23,8 +23,12 @@ class DataExporter:
         pgaze = self._db.get_pgazed2d_data(runid)
         pgaze = [{'runid': runid, 'timestamp': k,
                   'pgaze2dx': v[0], 'pgaze2dy': v[1]} for k, v in pgaze.items()]
+        analyze = self._db.get_processed_data(runid)
+        analyze = [{'runid': runid, 'timestamp': k, 'up_count':v['up_count'], 'down_count':v['down_count'], 
+                  'percent_up':v['percent_up'], 'percent_down':v['percent_down']} for k, v in analyze.items()]
         fused_out = out_path.with_name(f'{out_path.stem}_fusion.csv')
         pgaze_out = out_path.with_name(f'{out_path.stem}_pgaze.csv')
+        analyze_out = out_path.with_name(f'{out_path.stem}_analysis.csv')
         with fused_out.open('w', encoding='utf8', newline='') as fo:
             csv_writer = csv.DictWriter(fo, fieldnames=list(fused[0].keys()))
             csv_writer.writeheader()
@@ -33,6 +37,10 @@ class DataExporter:
             csv_writer = csv.DictWriter(fo, fieldnames=list(pgaze[0].keys()))
             csv_writer.writeheader()
             csv_writer.writerows(pgaze)
+        with analyze_out.open('w', encoding='utf8', newline='') as fo:
+            csv_writer = csv.DictWriter(fo, fieldnames=list(analyze[0].keys()))
+            csv_writer.writeheader()
+            csv_writer.writerows(analyze)
 
     def export_all(self, out_path: Path) -> None:
         """Gets list of all runs from database and exports everything to the specified directory.
