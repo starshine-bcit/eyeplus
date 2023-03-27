@@ -461,6 +461,7 @@ class PitchHistogram(BasicCanvas):
             ax.set_xticks(x_marks)
             ax.set_xticklabels([str(x) for x in x_marks])
             ax.set_xlim(-40, 40)
+            ax.set_ylim(0, 0.35)
             ax.set_title(
                 f'Run {k}: {v["count"]} Observations')
             ax = self.ax2

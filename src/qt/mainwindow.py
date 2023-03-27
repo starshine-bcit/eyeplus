@@ -242,8 +242,6 @@ class EyeMainWindow(Ui_MainWindow):
         self.actionAdjust.setEnabled(False)
         self.horizontalSliderVolume.setEnabled(False)
         self.actionMute.setEnabled(False)
-        self._visual_review_pitch.stop()
-        self._visual_review_gaze_live.stop()
         self._reset_stats_text()
         self._update_status('Playback stopped')
 

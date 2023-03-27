@@ -6,6 +6,20 @@ eyeplus was created for MAKE+ by a team of 7 students and reads raw Tobii Pro 3 
 
 Data can be imported from either a zip file or folder structure. It is then automatically ingested and processed. From there, you can look at a general overview of each run, review a live playback with cumulative visuals, or see the overall results. The processed data can also be exported in a standard csv format, so that it may be imported into other data analysis software.
 
+## Screenshots
+
+### Summary Tab
+
+![SummaryTab](./docs/images/eyeplus_summary_tab.png)
+
+### Review Tab
+
+![ReviewTab](./docs/images/eyeplus_review_tab.png)
+
+### Overall Tab
+
+![OverallTab](./docs/images/eyeplus_overall_tab.png)
+
 ## Installation
 
 You may install either using the binary Windows installer, available under releases, or from source. If you choose to use the installer, all required software packages are included, and you simply need to follow along.
