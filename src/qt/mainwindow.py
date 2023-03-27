@@ -465,7 +465,7 @@ class EyeMainWindow(Ui_MainWindow):
     def _display_confirmation_dialog(self, message: str) -> None:
         message_box = QtWidgets.QMessageBox(self.main_window)
         message_box.setWindowTitle('eyeplus | Confirmation')
-        message_box.setText('Successfully wrote all .csv files!')
+        message_box.setText(message)
         message_box.exec()
 
     def _user_chosen_input_dir(self):
