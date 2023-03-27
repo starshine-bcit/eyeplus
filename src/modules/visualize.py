@@ -3,10 +3,8 @@ from random import shuffle
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
-from matplotlib.animation import FuncAnimation
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-import matplotlib.colors as colours
 import matplotlib.patches as mpatches
 import numpy as np
 
