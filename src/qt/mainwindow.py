@@ -451,12 +451,22 @@ class EyeMainWindow(Ui_MainWindow):
         if len(user_selected_file) > 0 and user_selected_file[0] != '':
             csv_to_save = Path(user_selected_file[0])
             self._csv.export_single(csv_to_save, self._selected_run)
+            self._display_confirmation_dialog(
+                'Successfully wrote .csv files for one run!')
 
     def _user_chosen_output_dir(self):
         user_selected_dir = self.output_dir_chooser.selectedFiles()
         if len(user_selected_dir) > 0 and user_selected_dir[0] != '':
             dir_to_save = Path(user_selected_dir[0])
             self._csv.export_all(dir_to_save)
+            self._display_confirmation_dialog(
+                'Successfully wrote all .csv files!')
+
+    def _display_confirmation_dialog(self, message: str) -> None:
+        message_box = QtWidgets.QMessageBox(self.main_window)
+        message_box.setWindowTitle('eyeplus | Confirmation')
+        message_box.setText('Successfully wrote all .csv files!')
+        message_box.exec()
 
     def _user_chosen_input_dir(self):
         user_selected_dir = self.input_dir_chooser.selectedFiles()
