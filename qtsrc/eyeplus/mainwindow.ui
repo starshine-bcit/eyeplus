@@ -270,7 +270,7 @@
                 <number>8</number>
                </property>
                <property name="cursorPosition">
-                <number>0</number>
+                <number>8</number>
                </property>
                <property name="alignment">
                 <set>Qt::AlignCenter</set>
@@ -304,7 +304,7 @@
                 <number>8</number>
                </property>
                <property name="cursorPosition">
-                <number>0</number>
+                <number>8</number>
                </property>
                <property name="alignment">
                 <set>Qt::AlignCenter</set>
@@ -615,6 +615,7 @@
               <property name="font">
                <font>
                 <family>Consolas</family>
+                <pointsize>8</pointsize>
                </font>
               </property>
               <property name="frameShadow">
@@ -757,7 +758,14 @@
          </layout>
         </item>
         <item>
-         <layout class="QHBoxLayout" name="horizontalLayoutOverallButtons" stretch="0,0">
+         <layout class="QHBoxLayout" name="horizontalLayoutOverallButtons" stretch="0,0,0">
+          <item>
+           <widget class="QLabel" name="labelOverallWarning">
+            <property name="text">
+             <string>Display Maximums: 2 Pitch Histograms, 4 Eye 2D Y Gaze Plots</string>
+            </property>
+           </widget>
+          </item>
           <item>
            <spacer name="horizontalSpacer_2">
             <property name="orientation">
@@ -863,7 +871,7 @@
      <normaloff>:/icons/upload.svg</normaloff>:/icons/upload.svg</iconset>
    </property>
    <property name="text">
-    <string>Import Zip(s)...</string>
+    <string>Import Zip...</string>
    </property>
    <property name="toolTip">
     <string>Select one or more zip files to import</string>

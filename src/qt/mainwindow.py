@@ -2,7 +2,7 @@ from pathlib import Path
 import sys
 import os
 import re
-from datetime import timedelta, datetime, time
+from datetime import datetime
 
 from PyQt6 import QtCore, QtGui, QtWidgets
 
@@ -19,7 +19,7 @@ from modules.export import DataExporter
 from modules.visualize import TotalUpDown, CumulativeUpDown, PitchLive, HeatMap, TotalUpDownStacked, GazeLive, OverallGaze2DY, OverallUpAndDown, PitchHistogram
 from utils.fileutils import validate_import_folder
 from utils.imageutils import create_video_overlay
-from utils.statutils import get_gaze_stats, get_fusion_stats, next_greatest_element
+from utils.statutils import next_greatest_element
 
 
 class EyeMainWindow(Ui_MainWindow):
@@ -169,12 +169,8 @@ class EyeMainWindow(Ui_MainWindow):
             curr_timestamp = round(self.player.time_pos, 1)
             if curr_timestamp < self._first_timestamp:
                 curr_timestamp = self._first_timestamp
-            if self._visual_review_pitch.is_paused:
-                self._visual_review_pitch.start()
-            if self._visual_review_gaze_live.is_paused:
-                self._visual_review_gaze_live.start()
-            self._visual_review_pitch.current_timestamp = curr_timestamp
-            self._visual_review_gaze_live.current_timestamp = curr_timestamp
+            self._visual_review_pitch.update_frame(curr_timestamp)
+            self._visual_review_gaze_live.update_frame(curr_timestamp)
             if self.player.duration - self.player.time_pos <= 2:
                 curr_timestamp = curr_timestamp - 2
             closest_fusion = next_greatest_element(
@@ -246,8 +242,6 @@ class EyeMainWindow(Ui_MainWindow):
         self.actionAdjust.setEnabled(False)
         self.horizontalSliderVolume.setEnabled(False)
         self.actionMute.setEnabled(False)
-        self._visual_review_pitch.stop()
-        self._visual_review_gaze_live.stop()
         self._reset_stats_text()
         self._update_status('Playback stopped')
 
@@ -272,12 +266,8 @@ class EyeMainWindow(Ui_MainWindow):
     def _pause_clicked(self):
         if self.player.pause:
             self.player.command('set', 'pause', 'no')
-            self._visual_review_pitch.start()
-            self._visual_review_gaze_live.start()
         else:
             self.player.command('set', 'pause', 'yes')
-            self._visual_review_pitch.pause()
-            self._visual_review_gaze_live.pause()
 
     def _stop_clicked(self):
         self.parameter_window.hide()
@@ -461,12 +451,22 @@ class EyeMainWindow(Ui_MainWindow):
         if len(user_selected_file) > 0 and user_selected_file[0] != '':
             csv_to_save = Path(user_selected_file[0])
             self._csv.export_single(csv_to_save, self._selected_run)
+            self._display_confirmation_dialog(
+                'Successfully wrote .csv files for one run!')
 
     def _user_chosen_output_dir(self):
         user_selected_dir = self.output_dir_chooser.selectedFiles()
         if len(user_selected_dir) > 0 and user_selected_dir[0] != '':
             dir_to_save = Path(user_selected_dir[0])
             self._csv.export_all(dir_to_save)
+            self._display_confirmation_dialog(
+                'Successfully wrote all .csv files!')
+
+    def _display_confirmation_dialog(self, message: str) -> None:
+        message_box = QtWidgets.QMessageBox(self.main_window)
+        message_box.setWindowTitle('eyeplus | Confirmation')
+        message_box.setText(message)
+        message_box.exec()
 
     def _user_chosen_input_dir(self):
         user_selected_dir = self.input_dir_chooser.selectedFiles()
@@ -671,8 +671,8 @@ class EyeMainWindow(Ui_MainWindow):
             self._tree_predicted2d, self._horizon)
 
     def _display_summary_text(self) -> None:
-        gaze_stats = get_gaze_stats(self._tree_predicted2d)
-        fusion_stats = get_fusion_stats(self._fusion_data)
+        fusion_stats, gaze_stats = self._db.get_summary_data(
+            self._selected_run)
         last_horizon = self._horizon_timestamps[-1]
         self.plainTextEditSummary.setPlainText(
             f'Gaze 2D: {gaze_stats["num_samples"]} Observations\n'
@@ -682,14 +682,14 @@ class EyeMainWindow(Ui_MainWindow):
             f'Sensor Fusion: {fusion_stats["num_samples"]} Observations\n'
             f'         Mean      Median    Std. Dev.\n'
             f'  Pitch: {fusion_stats["pitch"]["mean"]:>7.4f} | {fusion_stats["pitch"]["median"]:>7.4f} | {fusion_stats["pitch"]["stdev"]:>7.4f}\n'
-            f'  Roll : {fusion_stats["roll"]["mean"]:.4f} | {fusion_stats["roll"]["median"]:>7.4f} | {fusion_stats["roll"]["stdev"]:>7.4f}\n\n'
+            f'  Roll : {fusion_stats["roll"]["mean"]:>7.4f} | {fusion_stats["roll"]["median"]:>7.4f} | {fusion_stats["roll"]["stdev"]:>7.4f}\n\n'
             f'Horizon: {self._horizon[last_horizon]["total"]} Observations\n'
             f'                  Count   Prop.\n'
             f'  Looking Up  : {self._horizon[last_horizon]["up_count"]:>6} | {self._horizon[last_horizon]["percent_up"]:>7.4}\n'
             f'  Looking Down: {self._horizon[last_horizon]["down_count"]:>6} | {self._horizon[last_horizon]["percent_down"]:>7.4f}\n\n'
             f'Offsets\n'
             f'  Horizon    : {-self._horizon_offset:>5.2f}\n'
-            f'  Pitch      : {self._pitch_offset}\n'
+            f'  Pitch      : {self._pitch_offset:>2}\n'
             f'  Pitch Multi: {self._pitch_multi:>5.2f}'
         )
 
@@ -741,13 +741,20 @@ class EyeMainWindow(Ui_MainWindow):
         self.horizontalScrollBarLongChart.setMaximum(self._longest_run)
         self.horizontalScrollBarLongChart.setValue(30)
         self.horizontalScrollBarLongChart.setMinimum(30)
-        overall_up_down = self._db.get_overall_up_down(
-            self._overall_selected_runs)
+        if len(self._overall_selected_runs) > 4:
+            overall_up_down = self._db.get_overall_up_down(
+                self._overall_selected_runs[:4])
+        else:
+            overall_up_down = self._db.get_overall_up_down(
+                self._overall_selected_runs[:4])
         self._visual_overall_up_down.plot(overall_up_down)
-        total_pitch_observations, binned_pitch = self._db.get_binned_pitch_data(
-            self._overall_selected_runs)
-        self._visual_overall_pitch_hist.plot(
-            total_pitch_observations, binned_pitch)
+        if len(self._overall_selected_runs) > 2:
+            binned_pitch = self._db.get_binned_pitch_data(
+                self._overall_selected_runs[:2])
+        else:
+            binned_pitch = self._db.get_binned_pitch_data(
+                self._overall_selected_runs)
+        self._visual_overall_pitch_hist.plot(binned_pitch)
 
     def _overall_graphic_slider_moved(self, val: int) -> None:
         self._visual_overall_gaze2d.update_scroll(val)
@@ -821,43 +828,59 @@ class EyeMainWindow(Ui_MainWindow):
 
     def _display_overall_text(self) -> None:
         overall_data = self._db.get_processed_view()
-
-        greatest_up_time = overall_data[self._overall_selected_runs[0]][0]
-        greatest_up_time_run = self._overall_selected_runs[0]
-
-        greatest_down_time = overall_data[self._overall_selected_runs[0]][1]
-        greatest_down_time_run = self._overall_selected_runs[0]
-
-        greatest_pitch_mean = get_fusion_stats(self._db.get_fusion_data(
-            self._overall_selected_runs[0]))['pitch']['mean']
-        greatest_pitch_mean_run = self._overall_selected_runs[0]
-
-        lowest_pitch_mean = greatest_pitch_mean
-        lowest_pitch_mean_run = greatest_pitch_mean_run
-
-        for run in self._overall_selected_runs:
-            if overall_data[run][0] > greatest_up_time:
-                greatest_up_time = overall_data[run][0]
-                greatest_up_time_run = run
-
-            if overall_data[run][1] > greatest_down_time:
-                greatest_down_time = overall_data[run][1]
-                greatest_down_time_run = run
-
-            pitch_mean = get_fusion_stats(self._db.get_fusion_data(run))[
-                'pitch']['mean']
-            if pitch_mean > greatest_pitch_mean:
-                greatest_pitch_mean = pitch_mean
-                greatest_pitch_mean_run = run
-
-            if lowest_pitch_mean > pitch_mean:
-                lowest_pitch_mean = pitch_mean
-                lowest_pitch_mean_run = run
+        max_up = -1
+        max_up_run = -1
+        max_down = -1
+        max_down_run = -1
+        for k, v in overall_data.items():
+            if v[1] > max_up and k in self._overall_selected_runs:
+                max_up = v[0]
+                max_up_run = k
+            if v[2] > max_down and k in self._overall_selected_runs:
+                max_down = v[1]
+                max_down_run = k
+        max_pitch_mean = -100
+        max_pitch_mean_run = -1
+        min_pitch_mean = 100
+        min_pitch_mean_run = 1
+        rolly = -1
+        rolly_run = -1
+        eyey = -1
+        eyey_run = -1
+        gaze_samples = -1
+        gaze_samples_run = -1
+        fusion_samples = -1
+        for runid in self._overall_selected_runs:
+            fusion_stats, gaze_stats = self._db.get_summary_data(runid)
+            if fusion_stats['pitch']['mean'] > max_pitch_mean:
+                max_pitch_mean = fusion_stats['pitch']['mean']
+                max_pitch_mean_run = runid
+            if fusion_stats['pitch']['mean'] < min_pitch_mean:
+                min_pitch_mean = fusion_stats['pitch']['mean']
+                min_pitch_mean_run = runid
+            if fusion_stats['roll']['stdev'] > rolly:
+                rolly = fusion_stats['roll']['stdev']
+                rolly_run = runid
+            if gaze_stats['x']['stdev'] + gaze_stats['y']['stdev'] > eyey:
+                eyey = gaze_stats['x']['stdev'] + gaze_stats['y']['stdev']
+                eyey_run = runid
+            if gaze_stats['num_samples'] > gaze_samples:
+                gaze_samples = gaze_stats['num_samples']
+                fusion_samples = fusion_stats['num_samples']
+                gaze_samples_run = 1
 
         self.plainTextEditOverallStats.setPlainText(
-            f'Number of selected runs: {len(self._overall_selected_runs)}\n\n'
-            f'Run {greatest_up_time_run} had the greatest proportion of time looking up\n\n'
-            f'Run {greatest_down_time_run} had the lowest proportion of time looking up\n\n'
-            f'Run {greatest_pitch_mean_run} had the greatest pitch mean\n\n'
-            f'Run {lowest_pitch_mean_run} had the lowest pitch mean\n\n'
+            f'Selected run quantity : {len(self._overall_selected_runs)}\n\n'
+            f'Up/Down:\n'
+            f'  Max prop. up   : Run {max_up_run} @ {max_up:0.4f}\n'
+            f'  Max prop. down : Run {max_down_run} @ {max_down:0.4f}\n\n'
+            f'Pitch:\n'
+            f'  Max pitch mean : Run {max_pitch_mean_run} @ {max_pitch_mean:4.2f}\n'
+            f'  Min pitch mean : Run {min_pitch_mean_run} @ {min_pitch_mean:4.2f}\n\n'
+            f'Longest run: {gaze_samples_run}\n'
+            f'  Gaze samples   : {gaze_samples}\n'
+            f'  Fusion samples : {fusion_samples}\n\n'
+            f'Other:\n'
+            f'  Run {rolly_run} had the max roll stdev @ {rolly:0.4f}\n'
+            f'  Run {eyey_run} had the max gaze2d stdev @ {eyey:0.4f}'
         )
