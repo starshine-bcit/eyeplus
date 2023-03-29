@@ -54,8 +54,8 @@ class EyeDB():
         # Create backup here
 
         run_query = '''INSERT INTO run
-        (importdate, tags, video, hash, pitchoffset, pitchmulti, horizonoffset)
-        VALUES(:importdate, :tags, :video, :hash, :pitchoffset, :pitchmulti, :horizonoffset);'''
+        (importdate, tags, video, hash, pitchoffset, pitchmulti, horizonoffset, start, end)
+        VALUES(:importdate, :tags, :video, :hash, :pitchoffset, :pitchmulti, :horizonoffset, :start, :end);'''
 
         imu_query = '''INSERT INTO imu
         (runid, timestamp, accelerometer0, accelerometer1,
@@ -128,7 +128,9 @@ class EyeDB():
                 'hash': hash,
                 'pitchoffset': 0,
                 'pitchmulti': 1.0,
-                'horizonoffset': 0.0
+                'horizonoffset': 0.0,
+                'start': -1,
+                'end': -1
             }
 
             self._cur.execute(run_query, run_data_to_import)
@@ -234,7 +236,9 @@ class EyeDB():
                 tags TEXT,
                 pitchoffset INTEGER NOT NULL,
                 pitchmulti REAL NOT NULL,
-                horizonoffset REAL NOT NULL);''')
+                horizonoffset REAL NOT NULL,
+                start INT NOT NULL,
+                end INT NOT NULL);''')
 
         self._cur.execute('''CREATE TABLE IF NOT EXISTS gaze(
                 id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
@@ -375,7 +379,7 @@ class EyeDB():
         Returns:
             list[dict]: Information from the 'run' table that is deemed relevant.
         """
-        self._cur.execute('''SELECT id, importdate, processdate, video, tags, pitchoffset, pitchmulti, horizonoffset
+        self._cur.execute('''SELECT id, importdate, processdate, video, tags, pitchoffset, pitchmulti, horizonoffset, start, end
         FROM run;''')
         all_runs = self._cur.fetchall()
         ret_runs = []
@@ -388,7 +392,9 @@ class EyeDB():
                 'tags': run[4],
                 'pitch_offset': run[5],
                 'pitch_multi': run[6],
-                'horizon_offset': run[7]
+                'horizon_offset': run[7],
+                'start': run[8],
+                'end': run[9]
             })
         return ret_runs
 
@@ -991,6 +997,14 @@ class EyeDB():
             fusion_stats (dict): Previously calculated fusion statistics.
             gaze2d_stats (dict): Previously calculated gaze2d statistics.
         """
+        self._cur.execute('''SELECT * FROM summary
+                        WHERE runid = (?);''', (runid,))
+        res = self._cur.fetchone()
+        if res:
+            self._cur.execute('''DELETE FROM summary
+                        WHERE runid = (?);''', (runid,))
+            self._con.commit()
+
         write_summary_query = '''INSERT INTO summary
             (runid, pitchmean, pitchmedian, pitchstdev, rollmean, rollmedian,
                 rollstdev, fusioncount, gaze2dxmean, gaze2dxmedian, gaze2dxstdev,
@@ -1016,6 +1030,13 @@ class EyeDB():
             'gaze2dcount': gaze2d_stats['num_samples']
         }
         self._cur.execute(write_summary_query, summary_dict)
+        self._con.commit()
+
+    def update_start_end(self, runid: int, start: int, end: int) -> None:
+        update_query = '''UPDATE run 
+                        SET start = (?), end = (?)
+                        WHERE id = (?);'''
+        self._cur.execute(update_query, (start, end, runid))
         self._con.commit()
 
 

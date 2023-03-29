@@ -19,7 +19,7 @@ from modules.export import DataExporter
 from modules.visualize import TotalUpDown, CumulativeUpDown, PitchLive, HeatMap, TotalUpDownStacked, GazeLive, OverallGaze2DY, OverallUpAndDown, PitchHistogram
 from utils.fileutils import validate_import_folder
 from utils.imageutils import create_video_overlay
-from utils.statutils import next_greatest_element
+from utils.statutils import next_greatest_element, get_gaze_stats, get_fusion_stats
 
 
 class EyeMainWindow(Ui_MainWindow):
@@ -301,7 +301,9 @@ class EyeMainWindow(Ui_MainWindow):
             self._all_runs_dict[int(run['id'])] = {
                 'process_date': run['processdate'],
                 'import_date': run['importdate'],
-                'tags': run['tags']
+                'tags': run['tags'],
+                'start': run['start'],
+                'end': run['end']
             }
         run_count = len(self._all_runs_list)
         if run_count > 0:
@@ -364,15 +366,28 @@ class EyeMainWindow(Ui_MainWindow):
         self._pitch_offset = int(self._pitch_offset)
         if 'player' in self.__dict__:
             self._stop_clicked()
-        self._part_selection_enabled = False
+        if self._all_runs_dict[self._selected_run]['start'] != -1 and self._all_runs_dict[self._selected_run]['end'] != -1:
+            self._part_selection_enabled = True
+            self._selected_start_time = float(
+                self._all_runs_dict[self._selected_run]['start'])
+            self._selected_end_time = float(
+                self._all_runs_dict[self._selected_run]['end'])
+        else:
+            self._part_selection_enabled = False
         self._load_summary_data()
         self._display_summary_text()
         self._display_summary_visuals()
-        self.lineEditStartTime.setText('00:00:00')
-        self.lineEditEndTime.setText(
-            self._get_string_from_timestamp(self._horizon_timestamps[-1]))
-        self._selected_end_time = self._horizon_timestamps[-1]
-        self._selected_start_time = 0.0
+        if self._part_selection_enabled:
+            self.lineEditStartTime.setText(
+                self._get_string_from_timestamp(self._selected_start_time))
+            self.lineEditEndTime.setText(
+                self._get_string_from_timestamp(self._selected_end_time))
+        else:
+            self.lineEditStartTime.setText('00:00:00')
+            self.lineEditEndTime.setText(
+                self._get_string_from_timestamp(self._horizon_timestamps[-1]))
+            self._selected_end_time = self._horizon_timestamps[-1]
+            self._selected_start_time = 0.0
         self._update_status(
             f'Successfully loaded summary for runid {self._selected_run}')
 
@@ -635,6 +650,8 @@ class EyeMainWindow(Ui_MainWindow):
         self._thread_pool.start(ingest_worker)
 
     def _load_summary_data(self) -> None:
+        if self._selected_start_time != -1 and self._selected_end_time != -1:
+            self._part_selection_enabled = True
         self.labelSummaryTitle.setText(
             f'Summary for Run ID {self._selected_run}')
         self.labelSummaryDate.setText(
@@ -823,6 +840,16 @@ class EyeMainWindow(Ui_MainWindow):
         self._part_selection_enabled = True
         if 'player' in self.__dict__:
             self._stop_clicked()
+        self._db.update_start_end(self._selected_run, int(
+            self._selected_start_time), int(self._selected_end_time))
+        tree_predicted2d = self._db.get_pgazed2d_data(
+            self._selected_run, self._selected_start_time, self._selected_end_time)
+        fusion_data = self._db.get_fusion_data(
+            self._selected_run, self._selected_start_time, self._selected_end_time)
+        gaze_stats = get_gaze_stats(tree_predicted2d)
+        fusion_stats = get_fusion_stats(fusion_data)
+        self._db.write_summary_data(
+            self._selected_run, fusion_stats, gaze_stats)
         self._load_summary_data()
         self._display_summary_visuals()
         self._display_summary_text()
