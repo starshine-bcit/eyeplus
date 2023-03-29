@@ -220,14 +220,14 @@ Each run produces 3 discrete .csv files containing information. All of these val
 8. **xinter** (float): The x-intercept of the calculated horizon line.
 9. **slope** (float): The slope of the calculated horizon line.
 
-### Processed Gaze Data (pgaze)
+#### Processed Gaze Data (pgaze)
 
 1. **runid** (integer): This is simply the internal id number of the exported run, as determined by the software.
 2. **timestamp** (float): This is the timestamp for which this row of data applies.
 3. **pgaze2dx** (float): The x value of where the user is looking in 2D space. 0 is fully to the left. Can be mapped onto the video with `pgaze2dx * video_width`.
 4. **pgaze2dy** (float): The y value of where the user is looking in 2D space. 0 is at the top. Can be mapped onto the video with `pgaze2dy * video_height`.
 
-### Analysis Data
+#### Analysis Data
 
 1. **runid** (integer): This is simply the internal id number of the exported run, as determined by the software.
 2. **timestamp** (float): This is the timestamp for which this row of data applies.
