@@ -1,6 +1,6 @@
 # eyeplus Usage
 
-This guide will help to familiarize yourself with the eyeplus software and it's features and is aimed at Windows users who will use the installer to get it setup. It's recommmended new users start in Section 1 - Getting Started, which describes how to get setup and what to expect as you move through the interface. In the appendices, you will find some technical details regarding the software's capabilities.
+This guide will help to familiarize yourself with the eyeplus software and it's features and is aimed at Windows users who will use the installer to get it setup. It's recommmended new users start in [Section 1 - Getting Started](#getting-started), which describes how to get setup and what to expect as you move through the interface. In the appendices, you will find some technical details regarding the software's capabilities.
 
 ## Table of Contents
 
@@ -11,7 +11,7 @@ This guide will help to familiarize yourself with the eyeplus software and it's 
    1. [Transferring Imported Data](#transferring-imported-data)
 3. [Summary Review](#summary-review)
    1. [Left Pane (Summary)](#left-pane-summary)
-   2. [Right Pane](#right-pane)
+   2. [Right Pane (Summary)](#right-pane-summary)
    3. [Command Bar](#command-bar)
 4. [Review Run](#review-run)
    1. [Left Pane (Review)](#left-pane-review)
@@ -20,14 +20,19 @@ This guide will help to familiarize yourself with the eyeplus software and it's 
    4. [Bottom Toolbar](#bottom-toolbar)
       1. [Parameter Tuner](#parameter-tuner)
 5. [Overall Summary](#overall-summary)
+   1. [Left Pane (Overall)](#left-pane-overall)
+   2. [Right Pane (Overall)](#right-pane-overall)
 6. [Exporting Data](#exporting-data)
+   1. [Exporting Single Run](#exporting-single-run)
+   2. [Exporting All Data](#exporting-all-data)
 7. [Appendices](#appendices)
+   1. [A - Exported Values](#a---exported-values)
 
 ## Getting Started
 
 If you haven't already, download and install the eyeplus installer, available via Github Releases. The installation process should be easy enough if you have ever used a wizard-style installer before. After it is finished, a desktop icon will be created, which will allow you to launch the program. If you ever lose this icon, the program is installed to `C:\Program Files\Makeplus\eyeplus\` (unless you have modified this location within Windows).
 
-When you are ready to launch the program, double-click the icon. It may take several seconds to load the first time, depending on the speed of your system, as the software must complete some first-run tasks. When it is complete, you will be greeted with a small welcome screen, telling you to import some data. This process is detailed in Section 2 - Importing Data.
+When you are ready to launch the program, double-click the icon. It may take several seconds to load the first time, depending on the speed of your system, as the software must complete some first-run tasks. When it is complete, you will be greeted with a small welcome screen, telling you to import some data. This process is detailed in [Section 2 - Importing Data](#importing-data).
 
 ### Data Collection
 
@@ -56,7 +61,7 @@ When you are ready to launch the program, double-click the icon. It may take sev
 
 Before you start the process of importing data, first determine which option to use. eyeplus will import a .zip containing the files it needs, or it can work with folders. If you choose the folder import, it must be either a folder with directly contains the needed files, or a parent folder with subfolders containing all the necessary files. For the sake of clarity, these are the files that should be present.
 
-![files](./images/eyeplus_usage_files.png)
+![files](images/eyeplus_usage_files.png)
 
 _Once you have determined which option you are using, follow these steps to import data:_
 
@@ -64,7 +69,7 @@ _Once you have determined which option you are using, follow these steps to impo
 2. Click either **Import Zip...**, or **Import Folder(s)...**. A standard Windows Explorer dialog will pop up.
 3. Navigate to the location of folder/zip that you wish to import, then click **Open**. The main windows will dissapear, and a loading screen will display.
 
-Now, all you have to do is wait. This process may take some time, especially on longer runs. When it is complete, the loading screen will dissapear, and the main window will be visible again, this time with the summary of the first run you imported. What all of this means is described in Section 3 - Summary Review.
+Now, all you have to do is wait. This process may take some time, especially on longer runs. When it is complete, the loading screen will dissapear, and the main window will be visible again, this time with the summary of the first run you imported. What all of this means is described in [Section 3 - Summary Review](#summary-review).
 
 ### Transferring Imported Data
 
@@ -81,7 +86,7 @@ Next time you launch the software on the new system, it will load up exactly lik
 
 The Summary Review Tab, or Processed Runs, is the default screen when starting up eyeplus. It displays a list of imported data, allowing you choose which one you would like to review, alongside programatically generated statistics and charts. It will look something like this.
 
-![run_summary](./images/eyeplus_summary_tab.png)
+![run_summary](images/eyeplus_summary_tab.png)
 
 ### Left Pane (Summary)
 
@@ -91,7 +96,7 @@ At the bottom of the pane, you can enter text in order to filter by title, which
 
 In order to select a run, simply single-click on it. You may notice some delay between the click and the updated data loading. This is normal and expected.
 
-### Right Pane
+### Right Pane (Summary)
 
 The Right pane is composed of four panels, with a command bar along the bottom -- more on the later.
 
@@ -109,7 +114,7 @@ The command bar, located in the Summary Review (Processed Runs) tab, provides se
 
 You have the option to enter a start and end time, which will affect which data points the software considers for it's statistics and visualizations of data. This can be useful if you wish to exclude a certain time, such as the beginning of the data collection, when calibrating is still taking place. To adjust this, simply enter your desired start/end time and click apply.
 
-The **Export CSVs** button will help to export a series of CSV files for further analysis in other software, see Section 6 - Exporting Data for details on this.
+The **Export CSVs** button will help to export a series of CSV files for further analysis in other software, see [Section 6 - Exporting Data](#exporting-data) for details on this.
 
 The **Open Review** button will allow you to open a live Review Run, which includes a visual overlay, among other things. If you are ready to proceed to the next section, click this button.
 
@@ -117,7 +122,7 @@ The **Open Review** button will allow you to open a live Review Run, which inclu
 
 After clicking the **Open Review** button in the previous tab, you will be greeted with a mostly blank tab. **Hit the \*Triangle Play Button** in the bottom toolbar to start the review. The video will start playing.
 
-![review_tab](./images/eyeplus_review_tab.png)
+![review_tab](images/eyeplus_review_tab.png)
 
 ### Left Pane (Review)
 
@@ -153,7 +158,7 @@ The left-most button on this toolbar allows you to adjust some parameters relate
 
 The Parameter Tuner windows allows to adjust parameters related to the horizon line calculation, and can only be opened during Review Run. To adjust any of these parameters, simply click and hold the sliders, then click the **Apply** button.
 
-![parameter_tuner](./images/eyeplus_parameters.png)
+![parameter_tuner](images/eyeplus_parameters.png)
 
 The **Pitch Multiplier** provides a static multiplier to the calculated pitch values. This effectively controls how much the horizon line will move up or down depending on the pitch of the user's head. 1000 (default) corresponds to `1.0 x pitch`. When adjusting this value, the only immediate change will be the yellow bar representing pitch.
 
@@ -167,10 +172,66 @@ Once you are happy with your adjustments, you can click the **Recalculate** butt
 
 The Overall Summary tab allows to compare data between multiple runs, providing insight either between users, or between the same user during different data collections.
 
-![overall_summary](./images/eyeplus_overall_tab.png)
+![overall_summary](images/eyeplus_overall_tab.png)
 
 If you open the Overall Summary tab with only one or two runs imported, then those will displayed immediately. Otherwise, you must select one or more you wish to view. To do this, single click items (one at a time) that you wish to select in the **Bottom Left Pane**.
 
+### Left Pane (Overall)
+
+The **Top** panel here displays text statistics and comparisons between all of the runs you have selected.
+
+The **Bottom** panel here allows you to choose which runs are selected for comparison. You can select any number, but only up to pitch histograms are displayed, and 4 line plots of 2D Eye Y.
+
+### Right Pane (Overall)
+
+The **Top Left** panel displays a graph combining the overall up/down proportion between all selected runs.
+
+The **Top Right** Panel displays up to two side-by-side pitch histograms, allowing a comparison between general head pitch. The numbers values are binned in increments of 5 degrees, with values ranging between -40 / + 40.
+
+The **Bottom** panel displays plots of of the 2D Eye Y values over time. It can be scrolled using the scrollbar just below it, and will extend as far as the longest run selected.
+
 ## Exporting Data
 
+You have the option to export data from one run at a time, or all of them at once. Regardless of your choice, each run will produce 3 discrete .csv files containing the processed data. For more information on what these values mean, see [Appendix A - Exported Values](#a---exported-values)
+
+### Exporting Single Run
+
+In order to export data from a single run, select it in the Processed Runs (Summary Review) tab and click the **Export CSVs** button near the bottom right. This will open a file chooser where you can give it a name and save location. After clicking **Save** in the file chooser, the software will export all the data, providing a confirmation message when it is complete.
+
+### Exporting All Data
+
+To export all data, you can either click **Export All as CSV** in the Overall Summary tab, or click **Actions** and then **Export All** in the top menu bar at any time. A file chooser will open, allowing you to choose a save directory for everything. When you have selected an appropriate location, click **Save** and the software will export all of the data, providing a confirmation message when it is completed.
+
 ## Appendices
+
+### A - Exported Values
+
+Each run produces 3 discrete .csv files containing information. All of these values are floats or integers. Each .csv uses a header column, labelling what information each column contains.
+
+#### Fusion Data
+
+1. **runid** (integer): This is simply the internal id number of the exported run, as determined by the software.
+2. **timestamp** (float): This is the timestamp for which this row of data applies.
+3. **heading** (float): The calculated heading based on magnetometer data. **_Note: This is not accurate._**
+4. **pitch** (float): The calculated pitch of the user's head at a given point in time, in degrees. 0 is perfectly level, with positive values indicating their head is tilted back.
+5. **roll** (float): The calculated roll of the user's head at a given point in time, in degrees. 0 is holding their head perfectly straight up, while negative values indicate they are rolling their head to the left.
+6. **qo-q3** (float): These values, put together, are a quaternion indicating the user's head position in 3D space. As the magnetometer values are not accurate, neither are these.
+7. **yinter** (float): The y-intercept of the calculated horizon line.
+8. **xinter** (float): The x-intercept of the calculated horizon line.
+9. **slope** (float): The slope of the calculated horizon line.
+
+### Processed Gaze Data (pgaze)
+
+1. **runid** (integer): This is simply the internal id number of the exported run, as determined by the software.
+2. **timestamp** (float): This is the timestamp for which this row of data applies.
+3. **pgaze2dx** (float): The x value of where the user is looking in 2D space. 0 is fully to the left. Can be mapped onto the video with `pgaze2dx * video_width`.
+4. **pgaze2dy** (float): The y value of where the user is looking in 2D space. 0 is at the top. Can be mapped onto the video with `pgaze2dy * video_height`.
+
+### Analysis Data
+
+1. **runid** (integer): This is simply the internal id number of the exported run, as determined by the software.
+2. **timestamp** (float): This is the timestamp for which this row of data applies.
+3. **up_count** (int): The total number of times, up until this point, that a user is observed to be looking above the horizon line.
+4. **down_count** (int): The total number of times, up until this point, that a user is observed to be looking below the horizon line.
+5. **percent_up** (float): The proportion of time, up until this point, that a user is observed to be looking above the horizon line.
+6. **percent_down** (float): The proportion of time, up until this point, that a user is observed to be looking below the horizon line.
