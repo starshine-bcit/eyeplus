@@ -42,6 +42,7 @@ class PlaybackWorker(QtCore.QRunnable):
             time_position = self.player.time_pos
             if time_position >= self.end:
                 self.signals.finished.emit()
+                self.player.stop()
             current_progress = int(
                 (time_position - self.start) / (self.end - self.start) * 1000)
             self.signals.progress.emit(current_progress)
