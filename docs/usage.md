@@ -10,11 +10,16 @@ This guide will help to familiarize yourself with the eyeplus software and it's 
 2. [Importing Data](#importing-data)
    1. [Transferring Imported Data](#transferring-imported-data)
 3. [Summary Review](#summary-review)
-   1. [Left Pane](#left-pane)
+   1. [Left Pane (Summary)](#left-pane-summary)
    2. [Right Pane](#right-pane)
    3. [Command Bar](#command-bar)
-4. [Playback Review](#playback-review)
-5. [Overall Review](#overall-review)
+4. [Review Run](#review-run)
+   1. [Left Pane (Review)](#left-pane-review)
+   2. [Video Pane](#video-pane)
+   3. [Top Pane (Review)](#top-pane-review)
+   4. [Bottom Toolbar](#bottom-toolbar)
+      1. [Parameter Tuner](#parameter-tuner)
+5. [Overall Summary](#overall-summary)
 6. [Exporting Data](#exporting-data)
 7. [Appendices](#appendices)
 
@@ -78,7 +83,7 @@ The Summary Review Tab, or Processed Runs, is the default screen when starting u
 
 ![run_summary](./images/eyeplus_summary_tab.png)
 
-### Left Pane
+### Left Pane (Summary)
 
 The left pane displays a list of all imported runs. The date column indicates the date that the source files were last modified, while the Processed indicates the date the run was last processed/reprocessed.
 
@@ -106,15 +111,65 @@ You have the option to enter a start and end time, which will affect which data 
 
 The **Export CSVs** button will help to export a series of CSV files for further analysis in other software, see Section 6 - Exporting Data for details on this.
 
-The **Open Review** button will allow you to open a live playback review, which includes a visual overlay, among other things. If you are ready to proceed to the next section, click this button.
+The **Open Review** button will allow you to open a live Review Run, which includes a visual overlay, among other things. If you are ready to proceed to the next section, click this button.
 
-## Playback Review
+## Review Run
 
 After clicking the **Open Review** button in the previous tab, you will be greeted with a mostly blank tab. **Hit the \*Triangle Play Button** in the bottom toolbar to start the review. The video will start playing.
 
 ![review_tab](./images/eyeplus_review_tab.png)
 
-## Overall Review
+### Left Pane (Review)
+
+The Left Pane displays raw text values, corresponding the current timestamp of the video. These are some of the values which are used to generate the overlay and live charts that you see.
+
+### Video Pane
+
+The video is displayed in this pane, with an overlay containing useful information for determining the accuray of the horizon line calculation.
+
+The **Orange Dot** signifies the user's 2D gaze point at the given time, while the **Green Line** represents the calculated horizon line. The **Left Yellow Bar** is representation of the pitch of the user's head, with up meaning they are tilting their head back. Finally, the **Top Yellow Bar** indicates the roll value of the user's head, with left meaning that their head was tilting to the left.
+
+**_Note: There may be a slight delay in seeing some of the overlay update versus the video. This is normal. The underlying calculations line up much more exactly._**
+
+### Top Pane (Review)
+
+The top pane display 3 live charts, which aim to provide insight on the user's gaze and head position during review.
+
+The **Top Left** graphic displays a cumulative summary of the time spent looking up versus down. This is a running total of observations up until the current time in the video.
+
+The **Top Middle** graphic plots the user's head pitch over time. The right-most point of the graph is the current timestamp in the video, and goes 10 seconds back in history.
+
+The **Top Right** graphic plots the user's 2D Y gaze point over time. Like the previous one, the right-most part of the graph is the current timestamp in the video. The line change colours depending on whether the user is calculated to be looking up or down at that specific time. Green for looking up, Red for looking down.
+
+### Bottom Toolbar
+
+The bottom toolbar displays standard media player controls, where you can pause, stop, mute, or adjust the volume. The slider that is slightly above these controls also allows you to scrub through the video.
+
+_Please note that if you click stop or playback ends, you must go back to the previous tab and click **Open Review** in order to start again._
+
+The left-most button on this toolbar allows you to adjust some parameters related to the horizon calculation. If you would like to do this, click the button. A new window will open, where you can adjust them live while watching the video.
+
+#### Parameter Tuner
+
+The Parameter Tuner windows allows to adjust parameters related to the horizon line calculation, and can only be opened during Review Run. To adjust any of these parameters, simply click and hold the sliders, then click the **Apply** button.
+
+![parameter_tuner](./images/eyeplus_parameters.png)
+
+The **Pitch Multiplier** provides a static multiplier to the calculated pitch values. This effectively controls how much the horizon line will move up or down depending on the pitch of the user's head. 1000 (default) corresponds to `1.0 x pitch`. When adjusting this value, the only immediate change will be the yellow bar representing pitch.
+
+The **Pitch Offset** provides a static offset to the pitch values for the whole data collection. This may be useful if it's determined the the software believes the user's head is constantly pitched up or down when you believe it was not. These values are in degrees. When adjusting this value, the only immediate change will be the yellow bar representing pitch.
+
+The **Horizon Offset** slider provides a static offset to the final calculated horizon line, moving it up or down. Higher values move the line up, while lower values move the line, with a maximum and minimum roughly corresponding to -25% / +25% of the video width. This values is immediately reflected in the horizon line in the video overlay.
+
+Once you are happy with your adjustments, you can click the **Recalculate** button. This will close the current playback, and redo all horizon line and up/down calculations, storing them. Upon click Recalculate, a loading window will open. This will take some time, but after it is done you will be returned to the Summary Review (Processed Runs) tab, and can check how it affects the final result.
+
+## Overall Summary
+
+The Overall Summary tab allows to compare data between multiple runs, providing insight either between users, or between the same user during different data collections.
+
+![overall_summary](./images/eyeplus_overall_tab.png)
+
+If you open the Overall Summary tab with only one or two runs imported, then those will displayed immediately. Otherwise, you must select one or more you wish to view. To do this, single click items (one at a time) that you wish to select in the **Bottom Left Pane**.
 
 ## Exporting Data
 

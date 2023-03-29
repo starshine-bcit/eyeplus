@@ -169,6 +169,8 @@ class EyeMainWindow(Ui_MainWindow):
             curr_timestamp = round(self.player.time_pos, 1)
             if curr_timestamp < self._first_timestamp:
                 curr_timestamp = self._first_timestamp
+            elif curr_timestamp < self._last_timestamp:
+                self._stop_clicked
             self._visual_review_pitch.update_frame(curr_timestamp)
             self._visual_review_gaze_live.update_frame(curr_timestamp)
             if self.player.duration - self.player.time_pos <= 2:
@@ -658,6 +660,7 @@ class EyeMainWindow(Ui_MainWindow):
         self._horizon_timestamps = list(self._horizon.keys())
         self._fusion_timestamps = list(self._fusion_data.keys())
         self._first_timestamp = next(iter(self._tree_predicted2d.keys()))
+        self._last_timestamp = round(self._horizon_timestamps[-1], 1) - 0.1
         self.parameter_window.set_values(
             self._pitch_offset, self._pitch_multi, self._horizon_offset)
 
