@@ -364,6 +364,8 @@ class EyeMainWindow(Ui_MainWindow):
         self._pitch_offset, self._pitch_multi, self._horizon_offset = self._db.get_parameters(
             self._selected_run)
         self._pitch_offset = int(self._pitch_offset)
+        self._max_allowed_timestamp = self._db.get_total_duration(
+            self._selected_run)
         if 'player' in self.__dict__:
             self._stop_clicked()
         if self._all_runs_dict[self._selected_run]['start'] != -1 and self._all_runs_dict[self._selected_run]['end'] != -1:
@@ -811,8 +813,8 @@ class EyeMainWindow(Ui_MainWindow):
         if self._selected_start_time == -1.0:
             self._selected_start_time = 0.0
         new_time = self._get_timestamp_from_string(self.lineEditEndTime.text())
-        if new_time > self._horizon_timestamps[-1]:
-            self._selected_end_time = self._horizon_timestamps[-1]
+        if new_time > self._max_allowed_timestamp:
+            self._selected_end_time = self._max_allowed_timestamp
         elif new_time < self._selected_start_time + 60:
             self._selected_end_time = self._selected_start_time + 60
         else:

@@ -1039,6 +1039,12 @@ class EyeDB():
         self._cur.execute(update_query, (start, end, runid))
         self._con.commit()
 
+    def get_total_duration(self, runid: int) -> float:
+        self._cur.execute('''SELECT MAX(timestamp) FROM pgaze2d
+                            WHERE runid = (?);''', (runid,))
+        res = self._cur.fetchone()[0]
+        return int(res) - 1
+
 
 if __name__ == '__main__':
     pass
