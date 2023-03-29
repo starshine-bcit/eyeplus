@@ -1,6 +1,6 @@
 # eyeplus
 
-eyeplus was created for MAKE+ by a team of 7 students and reads raw Tobii Pro 3 Glasses data to determine how much time a user spends looking at the horizon versus obstacles in their path.
+eyeplus reads raw Tobii Pro 3 Glasses data to determine how much time a user spends looking at the horizon versus obstacles in their path.
 
 ## Description
 
