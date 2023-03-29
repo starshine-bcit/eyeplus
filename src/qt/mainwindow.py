@@ -19,7 +19,7 @@ from modules.export import DataExporter
 from modules.visualize import TotalUpDown, CumulativeUpDown, PitchLive, HeatMap, TotalUpDownStacked, GazeLive, OverallGaze2DY, OverallUpAndDown, PitchHistogram
 from utils.fileutils import validate_import_folder
 from utils.imageutils import create_video_overlay
-from utils.statutils import next_greatest_element
+from utils.statutils import next_greatest_element, get_gaze_stats, get_fusion_stats
 
 
 class EyeMainWindow(Ui_MainWindow):
@@ -163,75 +163,79 @@ class EyeMainWindow(Ui_MainWindow):
         self._update_status('Playback started')
 
     def _playing_update_progress_callback(self, progress: int):
-        if not self.horizontalSliderSeek.isSliderDown():
-            self.horizontalSliderSeek.setSliderPosition(progress)
-        if not self.player.pause:
-            curr_timestamp = round(self.player.time_pos, 1)
-            if curr_timestamp < self._first_timestamp:
-                curr_timestamp = self._first_timestamp
-            self._visual_review_pitch.update_frame(curr_timestamp)
-            self._visual_review_gaze_live.update_frame(curr_timestamp)
-            if self.player.duration - self.player.time_pos <= 2:
-                curr_timestamp = curr_timestamp - 2
-            closest_fusion = next_greatest_element(
-                curr_timestamp, self._fusion_timestamps)
-            closest_distance = next_greatest_element(
-                curr_timestamp, self._gaze_distance_timestamps)
+        if self.player.duration:
+            if not self.horizontalSliderSeek.isSliderDown():
+                self.horizontalSliderSeek.setSliderPosition(progress)
+            if not self.player.pause:
+                curr_timestamp = round(self.player.time_pos, 1)
+                if curr_timestamp < self._first_timestamp:
+                    curr_timestamp = self._first_timestamp
+                elif curr_timestamp < self._last_timestamp:
+                    self._stop_clicked
+                self._visual_review_pitch.update_frame(curr_timestamp)
+                self._visual_review_gaze_live.update_frame(curr_timestamp)
+                if self.player.duration - self.player.time_pos <= 2:
+                    curr_timestamp = curr_timestamp - 2
+                closest_fusion = next_greatest_element(
+                    curr_timestamp, self._fusion_timestamps)
+                closest_distance = next_greatest_element(
+                    curr_timestamp, self._gaze_distance_timestamps)
 
-            if self._overlay.overlay_id:
-                self._overlay.remove()
+                if self._overlay.overlay_id:
+                    self._overlay.remove()
 
-            gaze_x = self._tree_predicted2d[curr_timestamp][0]
-            gaze_y = self._tree_predicted2d[curr_timestamp][1]
-            y_intercept = self._fusion_data[closest_fusion]['y_intercept']
-            x_intercept = self._fusion_data[closest_fusion]['x_intercept']
-            slope = self._fusion_data[closest_fusion]['slope']
-            roll = self._fusion_data[closest_fusion]['roll']
-            pitch = self._fusion_data[closest_fusion]['pitch']
-            total_count = self._horizon[curr_timestamp]['total']
-            up_count = self._horizon[curr_timestamp]['up_count']
-            down_count = self._horizon[curr_timestamp]['down_count']
-            percent_up = self._horizon[curr_timestamp]['percent_up']
-            percent_down = self._horizon[curr_timestamp]['percent_down']
-            currently_up = self._horizon[curr_timestamp]['currently_up']
+                gaze_x = self._tree_predicted2d[curr_timestamp][0]
+                gaze_y = self._tree_predicted2d[curr_timestamp][1]
+                y_intercept = self._fusion_data[closest_fusion]['y_intercept']
+                x_intercept = self._fusion_data[closest_fusion]['x_intercept']
+                slope = self._fusion_data[closest_fusion]['slope']
+                roll = self._fusion_data[closest_fusion]['roll']
+                pitch = self._fusion_data[closest_fusion]['pitch']
+                total_count = self._horizon[curr_timestamp]['total']
+                up_count = self._horizon[curr_timestamp]['up_count']
+                down_count = self._horizon[curr_timestamp]['down_count']
+                percent_up = self._horizon[curr_timestamp]['percent_up']
+                percent_down = self._horizon[curr_timestamp]['percent_down']
+                currently_up = self._horizon[curr_timestamp]['currently_up']
 
-            pitch -= self._pitch_offset
-            pitch *= self._pitch_multi
+                pitch -= self._pitch_offset
+                pitch *= self._pitch_multi
 
-            img, pos_x, pos_y = create_video_overlay(
-                self.player.osd_dimensions, gaze_x, gaze_y, y_intercept, x_intercept, slope, roll, pitch, self._horizon_offset)
-            self._overlay.update(img, pos=(pos_x, pos_y))
+                img, pos_x, pos_y = create_video_overlay(
+                    self.player.osd_dimensions, gaze_x, gaze_y, y_intercept, x_intercept, slope, roll, pitch, self._horizon_offset)
+                self._overlay.update(img, pos=(pos_x, pos_y))
 
-            self._visual_review_up_down.plot(
-                self._horizon[curr_timestamp], curr_timestamp)
+                self._visual_review_up_down.plot(
+                    self._horizon[curr_timestamp], curr_timestamp)
 
-            # catch timer having None type at end of video
-            if self.player.time_pos == None or self.player.duration == None:
-                self._playing_complete_callback()
-            else:
-                self.plainTextEditStats.setPlainText(
-                    f'RunID      : {self._selected_run}\n'
-                    f'Title      : {self._all_runs_list[self._selected_run -1]["tags"]}\n'
-                    f'Timestamp  : {self.player.time_pos:.2f}\n'
-                    f'Duration   : {self.player.duration:.2f}\n\n'
-                    f'Human Time : {self._get_string_from_timestamp(self.player.time_pos)}\n\n'
-                    f'Gaze X     : {gaze_x:.4f}\n'
-                    f'Gaze Y     : {gaze_y:.4f}\n\n'
-                    f'Roll       : {roll:.4f}\n'
-                    f'Pitch      : {pitch:.4f}\n\n'
-                    f'x_intercept: {x_intercept:.4f}\n'
-                    f'y_intercept: {y_intercept:.4f}\n'
-                    f'slope      : {slope:.4f}\n\n'
-                    f'Gaze3d Z   : {closest_distance if closest_distance is not None else "None"}\n\n'
-                    f'Obervation : {"Looking Up" if currently_up else "Looking Down"}\n'
-                    f'Up %       : {percent_up:.4f}\n'
-                    f'Down %     : {percent_down:.4f}\n'
-                    f'Total Calcs: {total_count}\n'
-                )
+                # catch timer having None type at end of video
+                if self.player.time_pos == None or self.player.duration == None:
+                    self._playing_complete_callback()
+                else:
+                    self.plainTextEditStats.setPlainText(
+                        f'RunID      : {self._selected_run}\n'
+                        f'Title      : {self._all_runs_list[self._selected_run -1]["tags"]}\n'
+                        f'Timestamp  : {self.player.time_pos:.2f}\n'
+                        f'Duration   : {self.player.duration:.2f}\n\n'
+                        f'Human Time : {self._get_string_from_timestamp(self.player.time_pos)}\n\n'
+                        f'Gaze X     : {gaze_x:.4f}\n'
+                        f'Gaze Y     : {gaze_y:.4f}\n\n'
+                        f'Roll       : {roll:.4f}\n'
+                        f'Pitch      : {pitch:.4f}\n\n'
+                        f'x_intercept: {x_intercept:.4f}\n'
+                        f'y_intercept: {y_intercept:.4f}\n'
+                        f'slope      : {slope:.4f}\n\n'
+                        f'Gaze3d Z   : {closest_distance if closest_distance is not None else "None"}\n\n'
+                        f'Obervation : {"Looking Up" if currently_up else "Looking Down"}\n'
+                        f'Up %       : {percent_up:.4f}\n'
+                        f'Down %     : {percent_down:.4f}\n'
+                        f'Total Calcs: {total_count}\n'
+                    )
 
     def _playing_complete_callback(self):
-        if self._overlay.overlay_id:
-            self._overlay.remove()
+        if '_overlay' in self.__dict__:
+            if self._overlay.overlay_id:
+                self._overlay.remove()
         self.playback_worker.timer.stop()
         self.horizontalSliderSeek.setEnabled(False)
         self.horizontalSliderSeek.setSliderPosition(0)
@@ -299,7 +303,9 @@ class EyeMainWindow(Ui_MainWindow):
             self._all_runs_dict[int(run['id'])] = {
                 'process_date': run['processdate'],
                 'import_date': run['importdate'],
-                'tags': run['tags']
+                'tags': run['tags'],
+                'start': run['start'],
+                'end': run['end']
             }
         run_count = len(self._all_runs_list)
         if run_count > 0:
@@ -360,17 +366,32 @@ class EyeMainWindow(Ui_MainWindow):
         self._pitch_offset, self._pitch_multi, self._horizon_offset = self._db.get_parameters(
             self._selected_run)
         self._pitch_offset = int(self._pitch_offset)
+        self._max_allowed_timestamp = self._db.get_total_duration(
+            self._selected_run)
         if 'player' in self.__dict__:
             self._stop_clicked()
-        self._part_selection_enabled = False
+        if self._all_runs_dict[self._selected_run]['start'] != -1 and self._all_runs_dict[self._selected_run]['end'] != -1:
+            self._part_selection_enabled = True
+            self._selected_start_time = float(
+                self._all_runs_dict[self._selected_run]['start'])
+            self._selected_end_time = float(
+                self._all_runs_dict[self._selected_run]['end'])
+        else:
+            self._part_selection_enabled = False
         self._load_summary_data()
         self._display_summary_text()
         self._display_summary_visuals()
-        self.lineEditStartTime.setText('00:00:00')
-        self.lineEditEndTime.setText(
-            self._get_string_from_timestamp(self._horizon_timestamps[-1]))
-        self._selected_end_time = self._horizon_timestamps[-1]
-        self._selected_start_time = 0.0
+        if self._part_selection_enabled:
+            self.lineEditStartTime.setText(
+                self._get_string_from_timestamp(self._selected_start_time))
+            self.lineEditEndTime.setText(
+                self._get_string_from_timestamp(self._selected_end_time))
+        else:
+            self.lineEditStartTime.setText('00:00:00')
+            self.lineEditEndTime.setText(
+                self._get_string_from_timestamp(self._horizon_timestamps[-1]))
+            self._selected_end_time = self._horizon_timestamps[-1]
+            self._selected_start_time = 0.0
         self._update_status(
             f'Successfully loaded summary for runid {self._selected_run}')
 
@@ -633,6 +654,8 @@ class EyeMainWindow(Ui_MainWindow):
         self._thread_pool.start(ingest_worker)
 
     def _load_summary_data(self) -> None:
+        if self._selected_start_time != -1 and self._selected_end_time != -1:
+            self._part_selection_enabled = True
         self.labelSummaryTitle.setText(
             f'Summary for Run ID {self._selected_run}')
         self.labelSummaryDate.setText(
@@ -658,6 +681,7 @@ class EyeMainWindow(Ui_MainWindow):
         self._horizon_timestamps = list(self._horizon.keys())
         self._fusion_timestamps = list(self._fusion_data.keys())
         self._first_timestamp = next(iter(self._tree_predicted2d.keys()))
+        self._last_timestamp = round(self._horizon_timestamps[-1], 1) - 0.1
         self.parameter_window.set_values(
             self._pitch_offset, self._pitch_multi, self._horizon_offset)
 
@@ -791,8 +815,8 @@ class EyeMainWindow(Ui_MainWindow):
         if self._selected_start_time == -1.0:
             self._selected_start_time = 0.0
         new_time = self._get_timestamp_from_string(self.lineEditEndTime.text())
-        if new_time > self._horizon_timestamps[-1]:
-            self._selected_end_time = self._horizon_timestamps[-1]
+        if new_time > self._max_allowed_timestamp:
+            self._selected_end_time = self._max_allowed_timestamp
         elif new_time < self._selected_start_time + 60:
             self._selected_end_time = self._selected_start_time + 60
         else:
@@ -820,6 +844,16 @@ class EyeMainWindow(Ui_MainWindow):
         self._part_selection_enabled = True
         if 'player' in self.__dict__:
             self._stop_clicked()
+        self._db.update_start_end(self._selected_run, int(
+            self._selected_start_time), int(self._selected_end_time))
+        tree_predicted2d = self._db.get_pgazed2d_data(
+            self._selected_run, self._selected_start_time, self._selected_end_time)
+        fusion_data = self._db.get_fusion_data(
+            self._selected_run, self._selected_start_time, self._selected_end_time)
+        gaze_stats = get_gaze_stats(tree_predicted2d)
+        fusion_stats = get_fusion_stats(fusion_data)
+        self._db.write_summary_data(
+            self._selected_run, fusion_stats, gaze_stats)
         self._load_summary_data()
         self._display_summary_visuals()
         self._display_summary_text()
