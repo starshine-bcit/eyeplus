@@ -838,7 +838,7 @@ class EyeDB():
 
         return view_dict
 
-    def get_overall_up_down(self, runids: list[int]) -> dict:
+    def get_overall_up_down(self, runids: list[int], start: float = -1, end: float = -1) -> dict:
         """Gets the final cumulative calculated up/down for any number of runs.
 
         Args:
@@ -850,11 +850,19 @@ class EyeDB():
         p_up = []
         p_down = []
         for runid in runids:
-            self._cur.execute('''SELECT id, runid, percentup, percentdown
-                            FROM processed
-                            WHERE runid=(?)
-                            ORDER BY id DESC
-                            LIMIT 1;''', str(runid))
+            if start == -1 and end == -1:
+                self._cur.execute('''SELECT id, runid, percentup, percentdown
+                                FROM processed
+                                WHERE runid=(?)
+                                ORDER BY id DESC
+                                LIMIT 1;''', (runid))
+            else:
+                self._cur.execute('''SELECT id, runid, percentup, percentdown
+                                FROM processed
+                                WHERE runid=(?)
+                                    AND timestamp BETWEEN (?) AND (?)
+                                ORDER BY id DESC
+                                LIMIT 1;''', (runid, start, end))
             line = self._cur.fetchone()
             p_up.append(line[2])
             p_down.append(line[3])

@@ -765,12 +765,8 @@ class EyeMainWindow(Ui_MainWindow):
         self.horizontalScrollBarLongChart.setMaximum(self._longest_run)
         self.horizontalScrollBarLongChart.setValue(30)
         self.horizontalScrollBarLongChart.setMinimum(30)
-        if len(self._overall_selected_runs) > 4:
-            overall_up_down = self._db.get_overall_up_down(
-                self._overall_selected_runs[:4])
-        else:
-            overall_up_down = self._db.get_overall_up_down(
-                self._overall_selected_runs[:4])
+        overall_up_down = self._db.get_overall_up_down(
+            self._overall_selected_runs, self._selected_start_time, self._selected_end_time)
         self._visual_overall_up_down.plot(overall_up_down)
         if len(self._overall_selected_runs) > 2:
             binned_pitch = self._db.get_binned_pitch_data(
