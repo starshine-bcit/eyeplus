@@ -864,7 +864,6 @@ class EyeDB():
                                 ORDER BY id DESC
                                 LIMIT 1;''', (runid, start, end))
             line = self._cur.fetchone()
-            print(runid, line[2])
             p_up.append(line[2])
             p_down.append(line[3])
         return {
