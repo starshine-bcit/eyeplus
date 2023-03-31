@@ -838,7 +838,7 @@ class EyeDB():
 
         return view_dict
 
-    def get_overall_up_down(self, runids: list[int]) -> dict:
+    def get_overall_up_down(self, runids: list[int], start_times: list[float] = [-1], end_times: list[float] = [-1]) -> dict:
         """Gets the final cumulative calculated up/down for any number of runs.
 
         Args:
@@ -849,12 +849,20 @@ class EyeDB():
         """
         p_up = []
         p_down = []
-        for runid in runids:
-            self._cur.execute('''SELECT id, runid, percentup, percentdown
-                            FROM processed
-                            WHERE runid=(?)
-                            ORDER BY id DESC
-                            LIMIT 1;''', str(runid))
+        for runid, start, end in zip(runids, start_times, end_times):
+            if start == -1 and end == -1:
+                self._cur.execute('''SELECT id, runid, percentup, percentdown
+                                FROM processed
+                                WHERE runid=(?)
+                                ORDER BY id DESC
+                                LIMIT 1;''', str(runid))
+            else:
+                self._cur.execute('''SELECT id, runid, percentup, percentdown
+                                FROM processed
+                                WHERE runid=(?)
+                                    AND timestamp BETWEEN (?) AND (?)
+                                ORDER BY id DESC
+                                LIMIT 1;''', (runid, start, end))
             line = self._cur.fetchone()
             p_up.append(line[2])
             p_down.append(line[3])
@@ -890,7 +898,7 @@ class EyeDB():
                 gaze_data[runid]['y'].append(line[1])
         return gaze_data
 
-    def get_binned_pitch_data(self, runids: list[int]) -> dict:
+    def get_binned_pitch_data(self, runids: list[int], start_times: list[float], end_times: list[float]) -> dict:
         """Gets agregate binned pitch data from any number of input runs.
 
         Args:
@@ -902,21 +910,39 @@ class EyeDB():
         """
         binned_data = {}
         ranges = [-45 + (5 * x) for x in range(18)]
-        count_query = '''SELECT COUNT (id) 
+        count_query_default_time = '''SELECT COUNT (id) 
                         FROM fusion 
                         WHERE runid = (?);'''
-        bin_query = '''SELECT COUNT (pitch)
+        bin_query_default_time = '''SELECT COUNT (pitch)
                         FROM fusion
                         WHERE runid = (?)
                             AND pitch >= (?) AND pitch < (?);'''
-        for runid in runids:
-            binned_data[runid] = {}
-            self._cur.execute(count_query, (runid,))
-            binned_data[runid]['count'] = self._cur.fetchone()[0]
-            for x in ranges:
-                self._cur.execute(bin_query, (runid, x, x + 5))
-                binned_data[runid][x] = self._cur.fetchone()[0] / \
-                    binned_data[runid]['count']
+        count_query = '''SELECT COUNT (id) 
+                        FROM fusion 
+                        WHERE runid = (?)
+                            AND timestamp BETWEEN (?) AND (?);'''
+        bin_query = '''SELECT COUNT (pitch)
+                        FROM fusion
+                        WHERE runid = (?)
+                            AND pitch >= (?) AND pitch < (?)
+                            AND timestamp BETWEEN (?) AND (?);'''
+        for runid, start, end in zip(runids, start_times, end_times):
+            if start == -1 or end == -1:
+                binned_data[runid] = {}
+                self._cur.execute(count_query_default_time, (runid,))
+                binned_data[runid]['count'] = self._cur.fetchone()[0]
+                for x in ranges:
+                    self._cur.execute(bin_query_default_time, (runid, x, x + 5))
+                    binned_data[runid][x] = self._cur.fetchone()[0] / \
+                        binned_data[runid]['count']
+            else:
+                binned_data[runid] = {}
+                self._cur.execute(count_query, (runid,start,end))
+                binned_data[runid]['count'] = self._cur.fetchone()[0]
+                for x in ranges:
+                    self._cur.execute(bin_query, (runid, x, x + 5,start,end))
+                    binned_data[runid][x] = self._cur.fetchone()[0] / \
+                        binned_data[runid]['count']
         return binned_data
 
     def get_raw_fusion_data(self, runid: int) -> dict:

@@ -739,19 +739,21 @@ class EyeMainWindow(Ui_MainWindow):
         self.horizontalScrollBarLongChart.setMaximum(self._longest_run)
         self.horizontalScrollBarLongChart.setValue(30)
         self.horizontalScrollBarLongChart.setMinimum(30)
-        if len(self._overall_selected_runs) > 4:
-            overall_up_down = self._db.get_overall_up_down(
-                self._overall_selected_runs[:4])
-        else:
-            overall_up_down = self._db.get_overall_up_down(
-                self._overall_selected_runs[:4])
+        start_times = []
+        end_times = []
+        self._all_runs_list = self._db.get_all_runs()
+        for runid in self._overall_selected_runs:
+            start_times.append(float(self._all_runs_list[runid-1]['start']))
+            end_times.append(float(self._all_runs_list[runid-1]['end']))
+        overall_up_down = self._db.get_overall_up_down(
+            self._overall_selected_runs, start_times, end_times)
         self._visual_overall_up_down.plot(overall_up_down)
         if len(self._overall_selected_runs) > 2:
             binned_pitch = self._db.get_binned_pitch_data(
-                self._overall_selected_runs[:2])
+                self._overall_selected_runs[:2], start_times[:2], end_times[:2])
         else:
             binned_pitch = self._db.get_binned_pitch_data(
-                self._overall_selected_runs)
+                self._overall_selected_runs, start_times, end_times)
         self._visual_overall_pitch_hist.plot(binned_pitch)
 
     def _overall_graphic_slider_moved(self, val: int) -> None:
