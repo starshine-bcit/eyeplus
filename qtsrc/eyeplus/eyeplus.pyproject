@@ -1,0 +1,3 @@
+{
+    "files": ["mainwindow.ui","processDialog.ui","icons.qrc","parameterDialog.ui"]
+}
